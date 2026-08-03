@@ -3,6 +3,7 @@ import type {
 	OptionsPayoffResponse,
 	OptionsChainResponse,
 	StanceResponse,
+	StrategiesResponse,
 	SavedTrade,
 	AssetType
 } from './types';
@@ -43,6 +44,20 @@ export async function getOptionPayoff(
 		`${BASE_URL}/api/v1/options/${symbol}/payoff?contract_symbol=${contractSymbol}`
 	);
 	if (!resp.ok) throw new Error(`Options payoff failed: ${resp.status}`);
+	return resp.json();
+}
+
+export async function getStrategies(
+	symbol: string,
+	sentiment: string,
+	strike: number,
+	expirationGte: string,
+	expirationLte: string
+): Promise<StrategiesResponse> {
+	const resp = await fetch(
+		`${BASE_URL}/api/v1/options/${symbol}/strategies?sentiment=${sentiment}&strike=${strike}&expiration_gte=${expirationGte}&expiration_lte=${expirationLte}`
+	);
+	if (!resp.ok) throw new Error(`Strategies failed: ${resp.status}`);
 	return resp.json();
 }
 

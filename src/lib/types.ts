@@ -68,11 +68,28 @@ export interface OptionsChainResponse {
 }
 
 export interface StanceResponse {
-  stance: Stance;
-  reason: string;
-  pnl_pct: number;
-  take_profit_at: number;
-  cut_loss_at: number;
+	stance: Stance;
+	reason: string;
+	pnl_pct: number;
+	take_profit_at: number;
+	cut_loss_at: number;
+}
+
+export interface StrategyCard {
+	name: string;
+	subtitle: string;
+	is_bullish: boolean;
+	max_profit: number | null;
+	max_loss: number | null;
+	breakeven: number;
+	return_on_risk: number | null;
+	payoff_curve: PayoffRow[];
+}
+
+export interface StrategiesResponse {
+	symbol: string;
+	sentiment: string;
+	strategies: StrategyCard[];
 }
 
 export interface SavedTrade {
