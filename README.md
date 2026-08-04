@@ -44,17 +44,18 @@ frontend/
 
 ## Setup
 
-Requires Node.js 22+ and npm.
+Requires Node.js 22+ and Yarn Berry (v4). The repo pins Yarn 4.17.0 via `packageManager` + a committed release in `.yarn/releases/`.
 
 ```bash
 cd frontend
-npm install
+corepack enable          # activate the pinned Yarn version (once)
+yarn install
 ```
 
 ## Run
 
 ```bash
-npm run dev                  # http://localhost:5173 (proxies /api → http://localhost:8000)
+yarn dev                 # http://localhost:5173 (proxies /api → http://localhost:8000)
 ```
 
 Start the backend first (see `backend/README.md`). The dev proxy forwards `/api` to the FastAPI server.
@@ -62,17 +63,31 @@ Start the backend first (see `backend/README.md`). The dev proxy forwards `/api`
 To point the client at a non-local backend:
 
 ```bash
-VITE_API_URL=https://your-api.example.com npm run dev
+VITE_API_URL=https://your-api.example.com yarn dev
 ```
 
 ## Build & Deploy
 
 ```bash
-npm run check                # svelte-check (type checking)
-npm run build                # production build via @sveltejs/adapter-cloudflare
+yarn check               # svelte-check (type checking)
+yarn build               # production build via @sveltejs/adapter-cloudflare
 ```
 
 The app is pre-configured for **Cloudflare Pages** via `@sveltejs/adapter-cloudflare` (SSR, ~5ms cold start on the free tier). Build output goes to `.svelte-kit/cloudflare`.
+
+### Deploy to Cloudflare Pages (recommended, free)
+
+1. Push the repo to GitHub (`Al0ngsy`).
+2. In the Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git**.
+3. Pick the repo + `frontend` as the root directory.
+4. Build settings:
+   - **Build command:** `yarn build`
+   - **Output directory:** `.svelte-kit/cloudflare`
+   - **Framework preset:** SvelteKit (auto-detected)
+5. Add environment variable `VITE_API_URL` pointing at your deployed backend (e.g. `https://api.vexarium.com`).
+6. Deploy. Optionally set a custom domain (e.g. `app.vexarium.com`).
+
+> The GitHub Actions workflow also runs `yarn build` on every push/PR, so a failed build blocks the branch.
 
 ## Design Language
 
