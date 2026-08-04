@@ -88,20 +88,16 @@
 
 	// Short one-line signal note per indicator (mirrors IndicatorCard's explanations).
 	const SIGNALS: Record<string, string> = {
-		RSI: 'Neutral momentum zone',
-		MACD: 'Momentum rising',
-		'SMA 50': 'Golden-cross uptrend',
-		'SMA 200': 'Long-term trend',
-		'EMA 20': 'Short-term trend line',
-		'EMA 50': 'Mid-term trend line',
-		STOCHASTIC: 'Oscillator mid-range',
-		BOLLINGER: 'Mid-band',
-		ATR: 'Moderate volatility',
-		ADX: 'Weak trend strength',
-		OBV: 'Volume confirms advance',
-		VWAP: 'At volume-weighted avg',
-		ICHIMOKU: 'Above the cloud',
-		'BOLLINGER %B': 'Position inside bands'
+		RSI: 'Momentum oscillator',
+		MACD: 'Trend momentum',
+		'SMA(50)/EMA(200)': 'Price vs long-term trend',
+		BOLLINGER: 'Volatility bands',
+		STOCHASTIC: 'Oscillator momentum',
+		ATR: 'Volatility magnitude',
+		ADX: 'Trend strength',
+		OBV: 'Volume flow',
+		VWAP: 'Volume-weighted average',
+		ICHIMOKU: 'Cloud trend structure'
 	};
 	function signalNote(name: string): string {
 		const n = name.toUpperCase();
@@ -112,14 +108,30 @@
 	}
 
 	// Format an indicator's value (number or dict) as a compact readout string.
+	// Dict values (SMA/EMA, MACD, Bollinger, etc.) get human-friendly labels.
+	const VALUE_LABELS: Record<string, string> = {
+		sma50: 'SMA50', ema200: 'EMA200', ema20: 'EMA20', ema50: 'EMA50',
+		current_price: 'Price',
+		macd: 'MACD', histogram: 'Hist', signal: 'Signal',
+		pct_b: '%B', lower: 'Lower', upper: 'Upper', middle: 'Mid',
+		atr: 'ATR', close: 'Close',
+		obv: 'OBV', trend: 'Trend',
+		vwap: 'VWAP',
+		conversion: 'Conv', base: 'Base', cloud_top: 'Cloud↑', cloud_bottom: 'Cloud↓',
+		direction: 'Dir', crossover: 'Cross',
+	};
 	function formatIndicatorValue(value: IndicatorResult['value']): string {
 		if (value === null || value === undefined) return '—';
 		if (typeof value === 'number') {
 			return Number.isInteger(value) ? String(value) : value.toFixed(2);
 		}
 		return Object.entries(value)
-			.map(([k, v]) => `${k}:${typeof v === 'number' ? v.toFixed(1) : v}`)
-			.join(' ');
+			.map(([k, v]) => {
+				const label = VALUE_LABELS[k] || k;
+				const val = typeof v === 'number' ? v.toFixed(2) : String(v);
+				return `${label}:${val}`;
+			})
+			.join('  ');
 	}
 
 	// Symbols that get a free AI preview (matches backend FEATURED_SYMBOLS).
