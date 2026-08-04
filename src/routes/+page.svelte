@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import type { AssetInfo, AssetType } from '$lib/types';
 	import { searchAssets } from '$lib/api';
-	import { getRecentAnalyses, addRecentAnalysis, type RecentAnalysis } from '$lib/storage';
+	import { getRecentAnalyses, type RecentAnalysis } from '$lib/storage';
 	import { formatTimeAgo } from '$lib/format';
 	import { VERDICT_COLORS, VERDICT_LABELS } from '$lib/verdict';
 
@@ -81,9 +81,17 @@
 		activeIndex = 0;
 		if (searchTimer) clearTimeout(searchTimer);
 		searchTimer = setTimeout(async () => {
-			const found = await searchAssets(q);
+			let found = await searchAssets(q);
+			// Prioritize an exact symbol match so it's always visible (e.g. typing "SPY"
+			// returns ~13 SPY* symbols; the exact match otherwise sorts to the bottom).
+			const qU = symbol.trim().toUpperCase();
+			found = found.sort((a, b) => {
+				const aExact = a.symbol.toUpperCase() === qU ? 0 : 1;
+				const bExact = b.symbol.toUpperCase() === qU ? 0 : 1;
+				return aExact - bExact;
+			});
 			suggestions = found.slice(0, 12);
-			deriveAssetType(symbol.trim().toUpperCase());
+			deriveAssetType(qU);
 			dropdownOpen = suggestions.length > 0;
 			activeIndex = 0;
 		}, 250);
@@ -130,14 +138,9 @@
 	function onAnalyze() {
 		if (!symbol.trim()) return;
 		const sym = symbol.trim().toUpperCase();
-		addRecentAnalysis({
-			symbol: sym,
-			assetType,
-			analyzedAt: new Date().toISOString(),
-			verdict: 'pending'
-		});
-		recent = getRecentAnalyses();
 		dropdownOpen = false;
+		// NOTE: recent-analyses history is recorded by the analysis page on SUCCESS only,
+		// so a failed analysis (e.g. an index like SPX with no bar data) is never added.
 		if (optionsMode) {
 			goto(`/options/${sym}`);
 		} else {
