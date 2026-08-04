@@ -23,6 +23,46 @@ export interface AnalysisResponse {
   current_price: number | null;
   overall: OverallVerdict;
   indicators: IndicatorResult[];
+  analyzed_at?: string | null;
+  price_series?: PricePoint[];
+  indicator_series?: IndicatorSeries[];
+}
+
+export interface PricePoint {
+  t: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+export interface IndicatorPoint {
+  t: string;
+  v: number;
+}
+
+export interface IndicatorSeries {
+  name: string;
+  kind: 'overlay' | 'oscillator';
+  points: IndicatorPoint[];
+}
+
+export interface AssetInfo {
+  symbol: string;
+  name: string;
+  exchange: string;
+  asset_type: AssetType;
+}
+
+export interface AIAnalysisResponse {
+  symbol: string;
+  analysis: string;
+  model: string;
+  analyzed_at: string;
+}
+
+export interface AssetSearchResponse {
+  assets: AssetInfo[];
 }
 
 export interface Greeks {

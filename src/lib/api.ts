@@ -5,7 +5,10 @@ import type {
 	StanceResponse,
 	StrategiesResponse,
 	SavedTrade,
-	AssetType
+	AssetType,
+	AIAnalysisResponse,
+	AssetInfo,
+	AssetSearchResponse
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -75,4 +78,24 @@ export async function getStance(trade: SavedTrade, currentPrice: number): Promis
 	});
 	if (!resp.ok) throw new Error(`Stance failed: ${resp.status}`);
 	return resp.json();
+}
+
+export async function getAIAnalysis(
+	symbol: string,
+	assetType: AssetType = 'stock'
+): Promise<AIAnalysisResponse> {
+	const resp = await fetch(`${BASE_URL}/api/v1/analysis/ai`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ symbol, asset_type: assetType })
+	});
+	if (!resp.ok) throw new Error(`AI analysis failed: ${resp.status}`);
+	return resp.json();
+}
+
+export async function searchAssets(q: string): Promise<AssetInfo[]> {
+	const resp = await fetch(`${BASE_URL}/api/v1/assets/search?q=${encodeURIComponent(q)}`);
+	if (!resp.ok) return [];
+	const data = (await resp.json()) as AssetSearchResponse;
+	return data.assets || [];
 }
