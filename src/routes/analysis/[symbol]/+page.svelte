@@ -23,8 +23,6 @@
 	let showSave = $state(false);
 	let aiLoading = $state(false);
 	let aiMessage = $state<string | null>(null);
-	let aiModel = $state<string | null>(null);
-	let aiAnalyzedAt = $state<string | null>(null);
 
 	onMount(() => {
 		load();
@@ -34,8 +32,6 @@
 		loading = true;
 		error = null;
 		aiMessage = null;
-		aiModel = null;
-		aiAnalyzedAt = null;
 		try {
 			analysis = proMode ? await analyzeExtended(symbol, assetType) : await analyze(symbol, assetType);
 			// Record this analysis into local recent-analyses history so it shows on home.
@@ -63,13 +59,9 @@
 	async function runAI() {
 		aiLoading = true;
 		aiMessage = null;
-		aiModel = null;
-		aiAnalyzedAt = null;
 		try {
 			const res = await getAIAnalysis(symbol, assetType);
 			aiMessage = res.analysis;
-			aiModel = res.model;
-			aiAnalyzedAt = res.analyzed_at;
 		} catch (e) {
 			aiMessage = `AI analysis failed: ${e instanceof Error ? e.message : 'unknown error'}`;
 		} finally {
@@ -214,11 +206,6 @@
 			<p class="mt-4 font-mono" style="color: var(--accent-primary); letter-spacing: 0.15em">ANALYZING...</p>
 		{:else if aiMessage}
 			<div class="mt-4">
-				{#if aiModel && aiAnalyzedAt}
-					<p class="label" style="color: var(--foreground-subtle); font-size: 0.7rem">
-						{aiModel} · {aiAnalyzedAt}
-					</p>
-				{/if}
 				<p class="label mt-2" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap;">
 					{aiMessage}
 				</p>
