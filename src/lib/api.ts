@@ -9,7 +9,9 @@ import type {
 	AIAnalysisResponse,
 	AssetInfo,
 	AssetSearchResponse,
-	OptionValueAtPrice
+	OptionValueAtPrice,
+	WarrantsResponse,
+	WarrantValue
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -116,6 +118,33 @@ export async function getOptionValueAtPrice(
 	if (targetDate) url += `&target_date=${targetDate}`;
 	const resp = await fetch(url);
 	if (!resp.ok) throw new Error(`Options value failed: ${resp.status}`);
+	return resp.json();
+}
+
+export async function getWarrants(
+	underlying?: string,
+	exerciseRight?: string,
+	limit = 200
+): Promise<WarrantsResponse> {
+	let url = `${BASE_URL}/api/v1/warrants?limit=${limit}`;
+	if (underlying) url += `&underlying=${encodeURIComponent(underlying)}`;
+	if (exerciseRight) url += `&exercise_right=${exerciseRight}`;
+	const resp = await fetch(url);
+	if (!resp.ok) throw new Error(`Warrants failed: ${resp.status}`);
+	return resp.json();
+}
+
+export async function getWarrantValue(
+	wkn: string,
+	targetPrice: number,
+	strike: number,
+	premium: number,
+	coverRatio: number,
+	exerciseRight: string
+): Promise<WarrantValue> {
+	const url = `${BASE_URL}/api/v1/warrants/${wkn}/value?target_price=${targetPrice}&strike=${strike}&premium=${premium}&cover_ratio=${coverRatio}&exercise_right=${exerciseRight}`;
+	const resp = await fetch(url);
+	if (!resp.ok) throw new Error(`Warrant value failed: ${resp.status}`);
 	return resp.json();
 }
 

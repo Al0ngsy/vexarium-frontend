@@ -49,6 +49,7 @@
 			<nav class="flex items-center gap-6">
 				<a href="/" class="link-crimson">ANALYZE</a>
 				<a href="/portfolio" class="link-crimson">PORTFOLIO</a>
+				<a href="/warrants/DAX" class="link-crimson">WARRANTS</a>
 				<a href="/pricing" class="link-crimson">PRICING</a>
 				{#if authed}
 					<span class="label" style="color: var(--foreground-muted)">
