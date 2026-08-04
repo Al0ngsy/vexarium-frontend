@@ -69,6 +69,16 @@ export interface AIAnalysisResponse {
   analyzed_at: string;
   news_sentiment?: NewsSentiment | null;
   news_articles?: NewsArticle[];
+  market?: {
+    price?: number | null;
+    day_change_pct?: number | null;
+    bid?: number | null;
+    ask?: number | null;
+    prev_close?: number | null;
+    high_52w?: number | null;
+    low_52w?: number | null;
+    ytd_change_pct?: number | null;
+  };
 }
 
 export interface NewsArticle {
