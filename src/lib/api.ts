@@ -47,6 +47,14 @@ export async function getMe(token: string): Promise<{ id: number; email: string;
 	return resp.json();
 }
 
+export async function createCheckoutSession(token: string): Promise<{ checkout_url: string }> {
+	const resp = await fetch(`${BASE_URL}/api/v1/billing/checkout?token=${encodeURIComponent(token)}`, {
+		method: 'POST'
+	});
+	if (!resp.ok) throw new Error(`Checkout failed: ${resp.status}`);
+	return resp.json();
+}
+
 export async function analyze(
 	symbol: string,
 	assetType: AssetType = 'stock',
