@@ -149,7 +149,7 @@
 		class="brand mb-2 text-3xl"
 		style="font-size: 2rem; border-bottom: 2px solid var(--accent-primary)"
 	>
-		VEXARIUM
+		<span style="color: var(--foreground)">VEX</span><span style="color: var(--accent-primary)">ARIUM</span>
 	</h1>
 	<p class="label mb-12">ENTER SYMBOL — TECHNICAL &amp; OPTIONS ANALYSIS</p>
 

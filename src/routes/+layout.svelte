@@ -45,7 +45,9 @@
 		style="border-color: var(--panel-border); background-color: var(--surface)"
 	>
 		<div class="mx-auto flex max-w-7xl items-center justify-between">
-			<a href="/" class="brand" style="border-bottom: 2px solid var(--accent-primary)">VEXARIUM</a>
+			<a href="/" class="brand" style="border-bottom: 2px solid var(--accent-primary)">
+				<span style="color: var(--foreground)">VEX</span><span style="color: var(--accent-primary)">ARIUM</span>
+			</a>
 			<nav class="flex items-center gap-6">
 				<a href="/" class="link-crimson">ANALYZE</a>
 				<a href="/portfolio" class="link-crimson">PORTFOLIO</a>
