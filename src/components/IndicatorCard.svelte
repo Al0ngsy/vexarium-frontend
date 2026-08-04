@@ -1,68 +1,73 @@
 <script lang="ts">
 	import type { IndicatorResult } from '$lib/types';
-	import VerdictBadge from './VerdictBadge.svelte';
+	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
 
 	let { indicator }: { indicator: IndicatorResult } = $props();
 
-	let expanded = $state(false);
-
-	// Plain-language explanations for progressive disclosure.
+	// Plain-language explanations for each technical indicator.
 	const EXPLANATIONS: Record<string, string> = {
-		RSI:
-			'Relative Strength Index — momentum oscillator (0-100); above 70 is overbought, below 30 is oversold.',
-		MACD: 'Moving Average Convergence Divergence — trend momentum; signal-line crossovers mark shifts in trend strength.',
-		'SMA 50': '50-day Simple Moving Average — recent average price; price above suggests short-term uptrend.',
-		'SMA 200': '200-day Simple Moving Average — long-term trend; the 50/200 crossover is the classic golden/death cross.',
-		'EMA 20': '20-day Exponential Moving Average — gives more weight to recent prices; short-term trend line.',
-		'EMA 50': '50-day Exponential Moving Average — mid-term trend line weighted toward recent action.',
-		STOCHASTIC: 'Stochastic oscillator — compares close to the recent high/low range; signals overbought/oversold.',
-		'Bollinger Bands': 'Volatility bands around a moving average; price at the edges signals overbought/oversold.',
-		ATR: 'Average True Range — measures volatility; higher values mean wider expected price swings.',
-		ADX: 'Average Directional Index — gauges trend strength; above 25 is a strong trend, below 20 is range-bound.',
-		OBV: 'On-Balance Volume — cumulative volume flow; rising OBV confirms price advances.',
-		CCI: 'Commodity Channel Index — detects cyclical turns; extreme readings signal overbought/oversold.',
-		MOMENTUM: 'Rate-of-change momentum — how fast price is moving; rising momentum confirms the trend.',
-		'VOLUME': 'Trading volume — participation level; price moves on strong volume are more significant.',
-		'VOLUME SMA': 'Volume Moving Average — baseline trading activity used to spot unusual volume spikes.',
-		SUPPORT: 'Support level — a price floor where buying historically absorbs selling pressure.',
-		RESISTANCE: 'Resistance level — a price ceiling where selling historically caps advances.',
-		'BOLLINGER %B': 'Percent-B — position within the Bollinger Bands; 0/1 mark the band edges.',
-		'CANDLE PATTERN': 'Single-candle shape analysis — patterns like doji or engulfing signal potential reversals.'
+		RSI: 'Momentum oscillator (0-100). Above 70 = overbought, below 30 = oversold.',
+		MACD: 'Trend momentum. Signal-line crossovers mark shifts in trend strength.',
+		'SMA 50': '50-day average price. Price above it suggests a short-term uptrend.',
+		'SMA 200': '200-day average. The 50/200 crossover is the classic golden/death cross.',
+		'EMA 20': '20-day average weighted toward recent prices — short-term trend line.',
+		'EMA 50': '50-day average weighted toward recent prices — mid-term trend line.',
+		STOCHASTIC: 'Compares close to the recent high/low range. Signals overbought/oversold.',
+		BOLLINGER: 'Volatility bands around a moving average. Price at the edges = overbought/oversold.',
+		ATR: 'Measures volatility — how much the price typically moves. Higher = wider swings.',
+		ADX: 'Gauges trend strength. Above 25 = strong trend, below 20 = range-bound.',
+		OBV: 'Cumulative volume flow. Rising OBV confirms price advances.',
+		VWAP: 'Volume-weighted average price — the true average price for the day.',
+		ICHIMOKU: 'Cloud-based trend system. Price above the cloud = bullish, below = bearish.',
+		'BOLLINGER %B': 'Position within the Bollinger Bands. 0/1 mark the band edges.'
 	};
+
+	function explanation(): string | null {
+		const name = indicator.name.toUpperCase();
+		for (const key of Object.keys(EXPLANATIONS)) {
+			if (name.includes(key.toUpperCase())) return EXPLANATIONS[key];
+		}
+		return null;
+	}
 
 	function formatValue(value: IndicatorResult['value']): string {
 		if (value === null || value === undefined) return '—';
 		if (typeof value === 'number') {
 			return Number.isInteger(value) ? String(value) : value.toFixed(2);
 		}
-		// Object of key:value pairs (e.g. { sma20: 123.4, sma50: 120.1 })
+		// Object of key:value pairs (e.g. { sma50: 123.4, ema200: 120.1 })
 		return Object.entries(value)
 			.map(([k, v]) => `${k.toUpperCase()}:${typeof v === 'number' ? v.toFixed(2) : v}`)
-			.join(' ');
+			.join('  ');
 	}
 
-	function explanation(): string | null {
-		const key = Object.keys(EXPLANATIONS).find(
-			(k) => indicator.name.toLowerCase() === k.toLowerCase() || indicator.name.toLowerCase().includes(k.toLowerCase())
-		);
-		return key ? EXPLANATIONS[key] : null;
-	}
+	const vColor = VERDICT_COLORS[indicator.verdict] || '#9999a0';
+	const vLabel = VERDICT_LABELS[indicator.verdict] || indicator.verdict.toUpperCase();
+	const vIcon = VERDICT_ICONS[indicator.verdict] || '—';
+	const expl = explanation();
 </script>
 
-<div
-	class="panel cursor-pointer p-4 transition-colors"
-	style="border-color: var(--panel-border)"
-	onclick={() => (expanded = !expanded)}
->
-	<div class="mb-2 flex items-center justify-between gap-2">
+<div class="panel flex flex-col gap-3 p-4" style="border-left: 3px solid {vColor}; border-color: var(--panel-border);">
+	<!-- Header: name + verdict -->
+	<div class="flex items-start justify-between gap-2">
 		<span class="label">{indicator.name}</span>
-		<VerdictBadge verdict={indicator.verdict} />
+		<span
+			class="label shrink-0 rounded px-2 py-1"
+			style="background-color: {vColor}22; color: {vColor}; border: 1px solid {vColor}44;"
+		>
+			{vIcon} {vLabel}
+		</span>
 	</div>
-	<div class="data" style="color: var(--foreground)">{formatValue(indicator.value)}</div>
 
-	{#if expanded && explanation()}
-		<p class="label mt-3" style="color: var(--foreground-muted); line-height: 1.5">
-			{explanation()}
+	<!-- Value -->
+	<div class="data" style="color: var(--foreground); font-size: 1.1rem;">
+		{formatValue(indicator.value)}
+	</div>
+
+	<!-- Explanation (always visible, compact) -->
+	{#if expl}
+		<p class="label" style="color: var(--foreground-muted); line-height: 1.5; font-size: 0.7rem; letter-spacing: 0.02em;">
+			{expl}
 		</p>
 	{/if}
 </div>

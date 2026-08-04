@@ -27,6 +27,7 @@ export interface AnalysisResponse {
   price_series?: PricePoint[];
   indicator_series?: IndicatorSeries[];
   news_sentiment?: NewsSentiment | null;
+  news_articles?: NewsArticle[];
 }
 
 export interface NewsSentiment {
@@ -71,10 +72,14 @@ export interface AIAnalysisResponse {
 }
 
 export interface NewsArticle {
+  id?: string | number | null;
   headline: string;
-  source?: string;
-  url?: string;
-  summary?: string;
+  source?: string | null;
+  url?: string | null;
+  summary?: string | null;
+  created_at?: string | null;
+  author?: string | null;
+  symbols?: string[];
 }
 
 export interface AssetSearchResponse {

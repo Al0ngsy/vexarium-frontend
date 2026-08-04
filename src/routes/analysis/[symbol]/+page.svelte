@@ -23,6 +23,7 @@
 	let showSave = $state(false);
 	let aiLoading = $state(false);
 	let aiMessage = $state<string | null>(null);
+	let newsOpen = $state(false);
 
 	onMount(() => {
 		load();
@@ -159,16 +160,40 @@
 		</div>
 	</div>
 
-	<!-- 1c. News sentiment -->
+	<!-- 1c. News sentiment + headlines dropdown -->
 	{#if analysis.news_sentiment}
 		{@const ns = analysis.news_sentiment}
 		{@const color = ns.sentiment_score > 0.2 ? '#16a34a' : ns.sentiment_score < -0.2 ? '#dc2626' : '#ca8a04'}
-		<div class="panel mb-6 flex flex-wrap items-center justify-between gap-3 p-4" style="border-top: 2px solid var(--panel-border)">
-			<span class="label">NEWS SENTIMENT</span>
-			<div class="flex items-center gap-4">
-				<span class="data" style="color: {color}">{ns.summary}</span>
-				<span class="label" style="color: var(--foreground-muted)">{ns.article_count} ARTICLES · SCORE {ns.sentiment_score}</span>
-			</div>
+		<div class="panel mb-6 overflow-hidden" style="border-top: 2px solid var(--panel-border)">
+			<button
+				class="flex w-full flex-wrap items-center justify-between gap-3 p-4"
+				onclick={() => (newsOpen = !newsOpen)}
+			>
+				<span class="label">NEWS SENTIMENT</span>
+				<div class="flex items-center gap-4">
+					<span class="data" style="color: {color}">{ns.summary}</span>
+					<span class="label" style="color: var(--foreground-muted)">{ns.article_count} ARTICLES · SCORE {ns.sentiment_score}</span>
+					<span class="label" style="color: var(--accent-primary)">{newsOpen ? '▲ HIDE' : '▼ SHOW HEADLINES'}</span>
+				</div>
+			</button>
+			{#if newsOpen && (analysis.news_articles?.length ?? 0) > 0}
+				<div class="flex flex-col border-t" style="border-color: var(--panel-border)">
+					{#each analysis.news_articles as article}
+						<a
+							href={article.url || '#'}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="flex flex-col gap-1 px-4 py-3 transition-colors"
+							style="border-bottom: 1px solid var(--grid-line); text-decoration: none;"
+						>
+							<span class="data" style="color: var(--foreground); line-height: 1.4">{article.headline}</span>
+							<span class="label" style="color: var(--foreground-muted)">
+								{article.source || 'SOURCE'}{article.created_at ? ` · ${new Date(article.created_at).toLocaleDateString()}` : ''}
+							</span>
+						</a>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	{/if}
 
