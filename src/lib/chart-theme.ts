@@ -4,7 +4,8 @@
 export const CHART_THEME = {
 	layout: {
 		background: { color: '#121215' },
-		textColor: '#9999a0'
+		textColor: '#9999a0',
+		attributionLogo: false
 	},
 	grid: {
 		vertLines: { color: '#1a1a1f' },
