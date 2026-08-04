@@ -2,9 +2,10 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 
-	import { analyze, getOptionPayoff, getStrategies } from '$lib/api';
+	import { analyze, getOptionChain, getOptionPayoff, getStrategies } from '$lib/api';
 	import type {
 		AnalysisResponse,
+		OptionContract,
 		OptionsPayoffResponse,
 		StrategiesResponse,
 		Greeks
@@ -12,6 +13,7 @@
 	import { VERDICT_COLORS } from '$lib/verdict';
 
 	import VerdictBadge from '../../../components/VerdictBadge.svelte';
+	import ContractPicker from '../../../components/ContractPicker.svelte';
 	import StrategyCard from '../../../components/StrategyCard.svelte';
 	import InfoPopover from '../../../components/InfoPopover.svelte';
 	import SaveTradeModal from '../../../components/SaveTradeModal.svelte';
@@ -23,7 +25,10 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
-	// 2. Strategies.
+	// 2. Option chain + selected contract (built via the picker).
+	let chain = $state<OptionContract[]>([]);
+	let chainLoading = $state(false);
+	let chainError = $state<string | null>(null);
 	let contractSymbol = $state('');
 
 	// 3. Greeks / payoff (from selected contract).
@@ -34,6 +39,7 @@
 
 	onMount(() => {
 		load();
+		loadChain();
 	});
 
 	async function load() {
@@ -49,9 +55,30 @@
 		}
 	}
 
-	async function loadStrategies() {
-		if (!contractSymbol) return;
-		const contract = contractSymbol.toUpperCase();
+	// Load a forward-looking option chain (next ~4 months) for the picker.
+	async function loadChain() {
+		chainLoading = true;
+		chainError = null;
+		try {
+			const gte = new Date().toISOString().slice(0, 10);
+			const lte = new Date(Date.now() + 120 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+			const resp = await getOptionChain(symbol, gte, lte);
+			chain = resp.contracts || [];
+		} catch (e) {
+			chain = [];
+			chainError = e instanceof Error ? e.message : 'Options chain failed';
+		} finally {
+			chainLoading = false;
+		}
+	}
+
+	async function onContractSelected(contractSymbolValue: string) {
+		contractSymbol = contractSymbolValue;
+		await loadStrategies(contractSymbolValue);
+	}
+
+	async function loadStrategies(contract: string) {
+		if (!contract) return;
 		strategyLoading = true;
 		strategyError = null;
 		strategyLoaded = false;
@@ -228,25 +255,23 @@
 
 		{#if !strategyLoaded}
 			<p class="label mb-3" style="color: var(--foreground-muted); text-transform: none">
-				Enter an option contract to see beginner-friendly strategy recommendations.
+				Build an option contract to see beginner-friendly strategy recommendations.
 			</p>
-			<div class="mb-4 flex flex-wrap items-center gap-3">
-				<input
-					type="text"
-					bind:value={contractSymbol}
-					placeholder="e.g. SPY250919C00750000"
-					class="rounded border px-3 py-2 font-mono"
-					style="border-color: var(--panel-border); background-color: var(--surface-2); color: var(--foreground); flex: 1; min-width: 200px;"
-				/>
-				<button
-					class="btn-primary"
-					onclick={loadStrategies}
-					disabled={strategyLoading || !contractSymbol}
-					style="opacity: {strategyLoading || !contractSymbol ? 0.5 : 1}"
-				>
-					{strategyLoading ? 'LOADING…' : 'LOAD STRATEGIES'}
-				</button>
-			</div>
+
+			{#if chainLoading}
+				<div class="flex h-40 items-center justify-center">
+					<span class="label" style="color: var(--foreground-muted)">LOADING CONTRACTS…</span>
+				</div>
+			{:else if chainError}
+				<p class="label" style="color: var(--accent-primary)">{chainError}</p>
+			{:else if chain.length === 0}
+				<p class="label" style="color: var(--foreground-muted)">NO OPTIONS AVAILABLE FOR {symbol}.</p>
+			{:else}
+				<div class="mb-4">
+					<ContractPicker contracts={chain} onSelect={onContractSelected} />
+				</div>
+			{/if}
+
 			{#if strategyError}
 				<p class="label" style="color: var(--accent-primary)">{strategyError}</p>
 			{/if}
