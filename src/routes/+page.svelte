@@ -20,12 +20,6 @@
 	let containerEl: HTMLDivElement;
 	let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
-	const assetTypes: { value: AssetType; label: string }[] = [
-		{ value: 'stock', label: 'STOCK' },
-		{ value: 'etf', label: 'ETF' },
-		{ value: 'index', label: 'INDEX' }
-	];
-
 	// Group suggestions by asset type, preserving order: stock, etf, index.
 	const grouped = $derived.by(() => {
 		const order: AssetType[] = ['stock', 'etf', 'index'];
@@ -209,22 +203,6 @@
 					{/each}
 				</div>
 			{/if}
-		</div>
-
-		<!-- Asset type selector -->
-		<div>
-			<span class="label block mb-2">ASSET TYPE</span>
-			<div class="flex gap-2">
-				{#each assetTypes as at}
-					<button
-						onclick={() => (assetType = at.value)}
-						class="flex-1 rounded px-3 py-2 label"
-						style="border: 1px solid {assetType === at.value ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {assetType === at.value ? 'var(--surface-active)' : 'var(--surface)'}; color: {assetType === at.value ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
-					>
-						{at.label}
-					</button>
-				{/each}
-			</div>
 		</div>
 
 		<!-- Mode toggle -->
