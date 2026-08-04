@@ -104,7 +104,8 @@
 		const m = contract.match(/(\d{6})[CP]/);
 		if (m) {
 			const d = m[1];
-			return { gte: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`, lte: d };
+			const formatted = `20${d.slice(0, 2)}-${d.slice(2, 4)}-${d.slice(4, 6)}`;
+			return { gte: formatted, lte: formatted };
 		}
 		return { gte: '', lte: '' };
 	}
