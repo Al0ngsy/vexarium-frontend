@@ -7,10 +7,13 @@
 
 FROM node:22-slim AS build
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+# Yarn Berry requires a writable HOME for its cache
+ENV YARN_CACHE_FOLDER=/tmp/yarn-cache
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn ./.yarn
+RUN corepack enable && yarn install --immutable
 COPY . .
-RUN npm run build
+RUN yarn build
 
 FROM node:22-slim AS runtime
 WORKDIR /app
