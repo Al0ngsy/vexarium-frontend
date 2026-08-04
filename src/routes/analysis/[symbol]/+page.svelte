@@ -62,7 +62,7 @@
 		aiLoading = true;
 		aiMessage = null;
 		try {
-			const res = await getAIAnalysis(symbol, assetType);
+			const res = await getAIAnalysis(symbol, assetType, getToken() ?? undefined);
 			aiMessage = res.analysis;
 		} catch (e) {
 			aiMessage = `AI analysis failed: ${e instanceof Error ? e.message : 'unknown error'}`;

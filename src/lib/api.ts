@@ -196,9 +196,13 @@ export async function getStance(trade: SavedTrade, currentPrice: number): Promis
 
 export async function getAIAnalysis(
 	symbol: string,
-	assetType: AssetType = 'stock'
+	assetType: AssetType = 'stock',
+	token?: string
 ): Promise<AIAnalysisResponse> {
-	const resp = await fetch(`${BASE_URL}/api/v1/analysis/ai`, {
+	const url = token
+		? `${BASE_URL}/api/v1/analysis/ai?token=${encodeURIComponent(token)}`
+		: `${BASE_URL}/api/v1/analysis/ai`;
+	const resp = await fetch(url, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ symbol, asset_type: assetType })
