@@ -21,6 +21,7 @@
 	let showSave = $state(false);
 	let aiLoading = $state(false);
 	let aiMessage = $state<string | null>(null);
+	let aiPreview = $state(false);
 	let newsOpen = $state(false);
 
 	// AI analysis is a Pro feature. All indicators are free.
@@ -61,9 +62,11 @@
 	async function runAI() {
 		aiLoading = true;
 		aiMessage = null;
+		aiPreview = false;
 		try {
 			const res = await getAIAnalysis(symbol, assetType, getToken() ?? undefined);
 			aiMessage = res.analysis;
+			aiPreview = !!res.is_preview;
 		} catch (e) {
 			aiMessage = `AI analysis failed: ${e instanceof Error ? e.message : 'unknown error'}`;
 		} finally {
@@ -118,6 +121,9 @@
 			.map(([k, v]) => `${k}:${typeof v === 'number' ? v.toFixed(1) : v}`)
 			.join(' ');
 	}
+
+	// Symbols that get a free AI preview (matches backend FEATURED_SYMBOLS).
+	const FEATURED_SYMBOLS = ['AAPL', 'MSFT', 'TSLA', 'SPY', 'NVDA', 'AMZN', 'GOOGL', 'META'];
 
 	// Tally bullish/bearish verdicts for the hero gauge breakdown.
 	const bullCount = $derived((analysis?.overall?.breakdown || []).filter((i) => ['buy', 'strong_buy'].includes(i.verdict)).length);
@@ -314,30 +320,44 @@
 	</div>
 </div>
 
-	<!-- 3. AI Analysis panel (Pro-only) -->
+	<!-- 3. AI Analysis panel (Pro-only, with free preview for featured symbols) -->
+	{@const isFeatured = FEATURED_SYMBOLS.includes(symbol.toUpperCase())}
 	<div class="panel mt-6 p-6" style="border-top: 2px solid var(--accent-primary)">
 		<div class="flex items-center justify-between">
-			<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">AI ANALYSIS</h2>
-			{#if proUser}
+			<div class="flex items-center gap-3">
+				<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">AI ANALYSIS</h2>
+				{#if !proUser && isFeatured}
+					<span class="label rounded px-2 py-1" style="background-color: #16a34a22; color: #16a34a; border: 1px solid #16a34a44;">FREE PREVIEW</span>
+				{/if}
+			</div>
+			{#if proUser || isFeatured}
 				<button class="btn-outline" onclick={runAI} disabled={aiLoading}>RUN AI ANALYSIS</button>
 			{:else}
 				<span class="label rounded px-2 py-1" style="background-color: var(--accent-primary)22; color: var(--accent-primary); border: 1px solid var(--accent-primary)44;">🔒 PRO</span>
 			{/if}
 		</div>
-		{#if proUser}
-			{#if aiLoading}
-				<p class="mt-4 font-mono" style="color: var(--accent-primary); letter-spacing: 0.15em">ANALYZING...</p>
-			{:else if aiMessage}
-				<div class="mt-4">
-					<p class="label mt-2" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap;">
-						{aiMessage}
-					</p>
-				</div>
-			{:else}
-				<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
-					Run AI to get a natural-language interpretation of the indicators and news.
+		{#if aiLoading}
+			<p class="mt-4 font-mono" style="color: var(--accent-primary); letter-spacing: 0.15em">ANALYZING...</p>
+		{:else if aiMessage}
+			<div class="mt-4">
+				{#if aiPreview}
+					<div class="mb-3 flex items-center justify-between rounded px-3 py-2" style="background-color: #16a34a15; border: 1px solid #16a34a44;">
+						<span class="label" style="color: #16a34a">FREE PREVIEW — UNLOCK AI FOR ALL SYMBOLS</span>
+						<a class="label link-crimson" href="/pricing">UPGRADE →</a>
+					</div>
+				{/if}
+				<p class="label mt-2" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap;">
+					{aiMessage}
 				</p>
-			{/if}
+			</div>
+		{:else if proUser}
+			<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
+				Run AI to get a natural-language interpretation of the indicators and news.
+			</p>
+		{:else if isFeatured}
+			<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
+				{symbol} is a featured symbol — get a free preview of the AI analysis. Unlock AI for every symbol with Pro.
+			</p>
 		{:else}
 			<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
 				AI analysis summarizes the technical indicators and news sentiment. It's available to

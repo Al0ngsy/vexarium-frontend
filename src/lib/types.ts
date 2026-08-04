@@ -79,6 +79,7 @@ export interface AIAnalysisResponse {
     low_52w?: number | null;
     ytd_change_pct?: number | null;
   };
+  is_preview?: boolean;
 }
 
 export interface NewsArticle {
