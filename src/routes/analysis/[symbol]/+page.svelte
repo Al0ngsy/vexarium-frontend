@@ -3,12 +3,11 @@
 	import { page } from '$app/state';
 
 	import { analyze, getAIAnalysis } from '$lib/api';
-	import type { AnalysisResponse, AssetType, IndicatorSeries } from '$lib/types';
+	import type { AnalysisResponse, AssetType, IndicatorSeries, IndicatorResult } from '$lib/types';
 	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
 	import { addRecentAnalysis } from '$lib/storage';
-	import { getToken, getUser, initAuth } from '$lib/auth';
+	import { getToken, getUser, initAuth } from '$lib/auth.svelte';
 
-	import IndicatorCard from '../../../components/IndicatorCard.svelte';
 	import IndicatorChart from '../../../components/IndicatorChart.svelte';
 	import SaveTradeModal from '../../../components/SaveTradeModal.svelte';
 
@@ -83,6 +82,47 @@
 		if (v === null || v === undefined) return '—';
 		return `$${v.toFixed(2)}`;
 	}
+
+	// Short one-line signal note per indicator (mirrors IndicatorCard's explanations).
+	const SIGNALS: Record<string, string> = {
+		RSI: 'Neutral momentum zone',
+		MACD: 'Momentum rising',
+		'SMA 50': 'Golden-cross uptrend',
+		'SMA 200': 'Long-term trend',
+		'EMA 20': 'Short-term trend line',
+		'EMA 50': 'Mid-term trend line',
+		STOCHASTIC: 'Oscillator mid-range',
+		BOLLINGER: 'Mid-band',
+		ATR: 'Moderate volatility',
+		ADX: 'Weak trend strength',
+		OBV: 'Volume confirms advance',
+		VWAP: 'At volume-weighted avg',
+		ICHIMOKU: 'Above the cloud',
+		'BOLLINGER %B': 'Position inside bands'
+	};
+	function signalNote(name: string): string {
+		const n = name.toUpperCase();
+		for (const k of Object.keys(SIGNALS)) {
+			if (n.includes(k.toUpperCase())) return SIGNALS[k];
+		}
+		return '';
+	}
+
+	// Format an indicator's value (number or dict) as a compact readout string.
+	function formatIndicatorValue(value: IndicatorResult['value']): string {
+		if (value === null || value === undefined) return '—';
+		if (typeof value === 'number') {
+			return Number.isInteger(value) ? String(value) : value.toFixed(2);
+		}
+		return Object.entries(value)
+			.map(([k, v]) => `${k}:${typeof v === 'number' ? v.toFixed(1) : v}`)
+			.join(' ');
+	}
+
+	// Tally bullish/bearish verdicts for the hero gauge breakdown.
+	const bullCount = $derived((analysis?.overall?.breakdown || []).filter((i) => ['buy', 'strong_buy'].includes(i.verdict)).length);
+	const bearCount = $derived((analysis?.overall?.breakdown || []).filter((i) => ['sell', 'strong_sell'].includes(i.verdict)).length);
+	const neutralCount = $derived((analysis?.overall?.breakdown || []).length - bullCount - bearCount);
 </script>
 
 <svelte:head>
@@ -124,96 +164,155 @@
 
 <!-- Success state -->
 {:else if analysis}
-	<!-- 1. Overall Verdict Hero -->
-	<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
-		<div class="flex flex-wrap items-center justify-between gap-4">
-			<div class="flex items-center gap-4">
-				<div>
-					<p class="label mb-1">OVERALL VERDICT</p>
-					<p
-						class="brand"
-						style="font-size: 2rem; color: {VERDICT_COLORS[analysis.overall.overall_verdict]}"
-					>
-						{VERDICT_LABELS[analysis.overall.overall_verdict]} {VERDICT_ICONS[analysis.overall.overall_verdict]}
-					</p>
-				</div>
-			</div>
-			<div class="text-right">
-				<p class="label mb-1">{symbol}</p>
-				<p class="data" style="color: var(--foreground); font-size: 1.25rem">
-					{formatPrice(analysis.current_price)}
-				</p>
-			</div>
+	<!-- 1. Hero: overall verdict + score gauge + price chart -->
+<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
+	<div class="flex flex-wrap items-center justify-between gap-4">
+		<div>
+			<p class="label mb-1">OVERALL VERDICT</p>
+			<p
+				class="brand"
+				style="font-size: 2rem; color: {VERDICT_COLORS[analysis.overall.overall_verdict]}"
+			>
+				{VERDICT_LABELS[analysis.overall.overall_verdict]} {VERDICT_ICONS[analysis.overall.overall_verdict]}
+			</p>
 		</div>
-		<div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4" style="border-color: var(--panel-border)">
-			<div class="flex items-center gap-3">
-				<span class="label">OVERALL SCORE</span>
-				<span class="data" style="color: var(--foreground)">{analysis.overall.score}</span>
-				<span class="label" style="color: var(--foreground-muted)">· {analysis.overall.indicator_count} INDICATORS</span>
-			</div>
+		<div class="text-right">
+			<p class="label mb-1">{symbol}</p>
+			<p class="data" style="color: var(--foreground); font-size: 1.25rem">
+				{formatPrice(analysis.current_price)}
+			</p>
 		</div>
 	</div>
-
-	<!-- 1c. News sentiment + headlines dropdown -->
-	{#if analysis.news_sentiment}
-		{@const ns = analysis.news_sentiment}
-		{@const color = ns.sentiment_score > 0.2 ? '#16a34a' : ns.sentiment_score < -0.2 ? '#dc2626' : '#ca8a04'}
-		<div class="panel mb-6 overflow-hidden" style="border-top: 2px solid var(--panel-border)">
-			<button
-				class="flex w-full flex-wrap items-center justify-between gap-3 p-4"
-				onclick={() => (newsOpen = !newsOpen)}
-			>
-				<span class="label">NEWS SENTIMENT</span>
-				<div class="flex items-center gap-4">
-					<span class="data" style="color: {color}">{ns.summary}</span>
-					<span class="label" style="color: var(--foreground-muted)">{ns.article_count} ARTICLES · SCORE {ns.sentiment_score}</span>
-					<span class="label" style="color: var(--accent-primary)">{newsOpen ? '▲ HIDE' : '▼ SHOW HEADLINES'}</span>
-				</div>
-			</button>
-			{#if newsOpen && (analysis.news_articles?.length ?? 0) > 0}
-				<div class="flex flex-col border-t" style="border-color: var(--panel-border)">
-					{#each analysis.news_articles as article}
-						<a
-							href={article.url || '#'}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="flex flex-col gap-1 px-4 py-3 transition-colors"
-							style="border-bottom: 1px solid var(--grid-line); text-decoration: none;"
-						>
-							<span class="data" style="color: var(--foreground); line-height: 1.4">{article.headline}</span>
-							<span class="label" style="color: var(--foreground-muted)">
-								{article.source || 'SOURCE'}{article.created_at ? ` · ${new Date(article.created_at).toLocaleDateString()}` : ''}
-							</span>
-						</a>
-					{/each}
+	<div
+		class="mt-5 grid grid-cols-1 gap-6 border-t pt-5 md:grid-cols-3"
+		style="border-color: var(--panel-border)"
+	>
+		<!-- Score gauge -->
+		<div>
+			<p class="label mb-2">OVERALL SCORE</p>
+			<div class="flex items-baseline gap-3">
+				<span
+					class="data"
+					style="font-size: 2.4rem; font-weight: 700; color: {VERDICT_COLORS[analysis.overall.overall_verdict]}"
+				>
+					{analysis.overall.score > 0 ? '+' : ''}{analysis.overall.score}
+				</span>
+				<span class="label" style="color: var(--foreground-muted)">
+					{bullCount} BULL · {neutralCount} NEUTRAL · {bearCount} BEAR
+				</span>
+			</div>
+			<div class="mt-2 flex gap-1">
+				{#each analysis.overall.breakdown as _, i}
+					{@const on = i < Math.max(0, analysis.overall.score + 5)}
+					<span
+						class="h-1.5 flex-1 rounded"
+						style="background-color: {on ? VERDICT_COLORS[analysis.overall.overall_verdict] : 'var(--surface-3)'};"
+					></span>
+				{/each}
+			</div>
+		</div>
+		<!-- Price chart (spans 2 cols) -->
+		<div class="md:col-span-2">
+			<p class="label mb-2">PRICE — LAST 120 DAYS</p>
+			{#if (analysis.price_series?.length ?? 0) > 0}
+				<IndicatorChart
+					series={{ name: 'PRICE', kind: 'overlay', points: [] }}
+					priceSeries={analysis.price_series}
+					height={180}
+				/>
+			{:else}
+				<div class="flex h-44 items-center justify-center rounded border border-dashed" style="border-color: var(--panel-border)">
+					<span class="label" style="color: var(--foreground-muted)">NO PRICE DATA</span>
 				</div>
 			{/if}
 		</div>
-	{/if}
-
-	<!-- 1b. Price chart (below verdict hero) -->
-	{#if (analysis.price_series?.length ?? 0) > 0}
-		<div class="panel mb-6 p-4" style="border-top: 2px solid var(--panel-border)">
-			<p class="label mb-2">PRICE — {symbol}</p>
-			<IndicatorChart
-				series={{ name: 'PRICE', kind: 'overlay', points: [] }}
-				priceSeries={analysis.price_series}
-			/>
-		</div>
-	{/if}
-
-	<!-- 2. Indicator Cards -->
-	<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-		{#each analysis.indicators as indicator}
-			{@const s = seriesFor(indicator.name)}
-			<div class="flex flex-col gap-3">
-				<IndicatorCard {indicator} />
-				{#if s && (s.points?.length ?? 0) > 0}
-					<IndicatorChart series={s} priceSeries={analysis.price_series} />
-				{/if}
-			</div>
-		{/each}
 	</div>
+</div>
+
+<!-- 1c. News sentiment + headlines dropdown -->
+{#if analysis.news_sentiment}
+	{@const ns = analysis.news_sentiment}
+	{@const color = ns.sentiment_score > 0.2 ? '#16a34a' : ns.sentiment_score < -0.2 ? '#dc2626' : '#ca8a04'}
+	<div class="panel mb-6 overflow-hidden" style="border-top: 2px solid var(--panel-border)">
+		<button
+			class="flex w-full flex-wrap items-center justify-between gap-3 p-4"
+			onclick={() => (newsOpen = !newsOpen)}
+		>
+			<span class="label">NEWS SENTIMENT</span>
+			<div class="flex items-center gap-4">
+				<span class="data" style="color: {color}">{ns.summary}</span>
+				<span class="label" style="color: var(--foreground-muted)">{ns.article_count} ARTICLES · SCORE {ns.sentiment_score}</span>
+				<span class="label" style="color: var(--accent-primary)">{newsOpen ? '▲ HIDE' : '▼ SHOW HEADLINES'}</span>
+			</div>
+		</button>
+		{#if newsOpen && (analysis.news_articles?.length ?? 0) > 0}
+			<div class="flex flex-col border-t" style="border-color: var(--panel-border)">
+				{#each analysis.news_articles as article}
+					<a
+						href={article.url || '#'}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="flex flex-col gap-1 px-4 py-3 transition-colors"
+						style="border-bottom: 1px solid var(--grid-line); text-decoration: none;"
+					>
+						<span class="data" style="color: var(--foreground); line-height: 1.4">{article.headline}</span>
+						<span class="label" style="color: var(--foreground-muted)">
+							{article.source || 'SOURCE'}{article.created_at ? ` · ${new Date(article.created_at).toLocaleDateString()}` : ''}
+						</span>
+					</a>
+				{/each}
+			</div>
+		{/if}
+	</div>
+{/if}
+
+<!-- 2. Technicals readout table -->
+<div class="panel mb-6 overflow-hidden" style="border-top: 2px solid var(--panel-border)">
+	<div class="flex items-center justify-between border-b px-4 py-3" style="border-color: var(--panel-border)">
+		<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">TECHNICALS</h2>
+		<span class="label" style="color: var(--foreground-muted)">{analysis.indicators.length} INDICATORS</span>
+	</div>
+	<div class="overflow-x-auto">
+		<table class="w-full text-left">
+			<thead>
+				<tr class="label" style="border-bottom: 1px solid var(--panel-border); color: var(--foreground-subtle)">
+					<th class="px-4 py-2.5">INDICATOR</th>
+					<th class="px-4 py-2.5">VALUE</th>
+					<th class="px-4 py-2.5">VERDICT</th>
+					<th class="px-4 py-2.5">SIGNAL</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each analysis.indicators as indicator}
+					{@const vc = VERDICT_COLORS[indicator.verdict] || '#9999a0'}
+					{@const vl = VERDICT_LABELS[indicator.verdict] || indicator.verdict.toUpperCase()}
+					<tr class="group transition-colors" style="border-bottom: 1px solid var(--grid-line);">
+						<td class="px-4 py-3">
+							<div class="flex items-center gap-2.5">
+								<span class="h-full w-1 self-stretch rounded" style="background-color: {vc};"></span>
+								<span class="label" style="color: var(--foreground); text-transform: none">{indicator.name}</span>
+							</div>
+						</td>
+						<td class="px-4 py-3 data" style="color: var(--foreground)">{formatIndicatorValue(indicator.value)}</td>
+						<td class="px-4 py-3">
+							<span
+								class="label rounded px-2 py-1"
+								style="background-color: {vc}22; color: {vc}; border: 1px solid {vc}44;"
+							>
+								{VERDICT_ICONS[indicator.verdict] || ''} {vl}
+							</span>
+						</td>
+						<td class="px-4 py-3">
+							<span class="label" style="color: var(--foreground-muted); text-transform: none">
+								{signalNote(indicator.name)}
+							</span>
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
+</div>
 
 	<!-- 3. AI Analysis panel (Pro-only) -->
 	<div class="panel mt-6 p-6" style="border-top: 2px solid var(--accent-primary)">

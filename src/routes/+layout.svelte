@@ -3,7 +3,7 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import AuthModal from '../components/AuthModal.svelte';
-	import { initAuth, getUser, getToken, logout } from '$lib/auth';
+	import { initAuth, getUser, getToken, logout } from '$lib/auth.svelte';
 
 	let { children } = $props();
 
