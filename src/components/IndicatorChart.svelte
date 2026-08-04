@@ -132,7 +132,7 @@
 	});
 </script>
 
-{#if (hasCandles() || hasPoints()) && container}
+{#if hasCandles() || hasPoints()}
 	<div bind:this={container} style="height: {height}px; width: 100%;"></div>
 {:else}
 	<div

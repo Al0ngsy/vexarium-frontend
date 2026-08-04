@@ -26,6 +26,13 @@ export interface AnalysisResponse {
   analyzed_at?: string | null;
   price_series?: PricePoint[];
   indicator_series?: IndicatorSeries[];
+  news_sentiment?: NewsSentiment | null;
+}
+
+export interface NewsSentiment {
+  sentiment_score: number;
+  article_count: number;
+  summary: string;
 }
 
 export interface PricePoint {

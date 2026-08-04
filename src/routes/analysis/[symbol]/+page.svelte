@@ -3,8 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
-	import { analyze, getAIAnalysis } from '$lib/api';
-	import type { AnalysisResponse, AssetType, IndicatorSeries } from '$lib/types';
+	import { analyze, analyzeExtended, getAIAnalysis } from '$lib/api';
+	import type { AnalysisResponse, AssetType, IndicatorSeries, NewsSentiment } from '$lib/types';
 	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
 	import { addRecentAnalysis } from '$lib/storage';
 
@@ -14,6 +14,7 @@
 
 	let symbol = $derived(String(page.params.symbol || '').toUpperCase());
 	let assetType = $state<AssetType>('stock');
+	let proMode = $state(false); // dev toggle: Free (5 indicators) vs Pro (10 indicators)
 
 	let analysis = $state<AnalysisResponse | null>(null);
 	let loading = $state(true);
@@ -36,7 +37,7 @@
 		aiModel = null;
 		aiAnalyzedAt = null;
 		try {
-			analysis = await analyze(symbol, assetType);
+			analysis = proMode ? await analyzeExtended(symbol, assetType) : await analyze(symbol, assetType);
 			// Record this analysis into local recent-analyses history so it shows on home.
 			if (analysis?.overall?.overall_verdict) {
 				addRecentAnalysis({
@@ -52,6 +53,11 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	function toggleTier() {
+		proMode = !proMode;
+		load();
 	}
 
 	async function runAI() {
@@ -145,10 +151,34 @@
 			</div>
 		</div>
 		<div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4" style="border-color: var(--panel-border)">
-			<span class="label">OVERALL SCORE</span>
-			<span class="data" style="color: var(--foreground)">{analysis.overall.score}</span>
+			<div class="flex items-center gap-3">
+				<span class="label">OVERALL SCORE</span>
+				<span class="data" style="color: var(--foreground)">{analysis.overall.score}</span>
+			</div>
+			<!-- Dev Free/Pro toggle -->
+			<button
+				class="label rounded px-3 py-1.5"
+				onclick={toggleTier}
+				title="Dev toggle: preview Free vs Pro (DEV_FORCE_PRO=true in backend .env)"
+				style="border: 1px solid {proMode ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {proMode ? 'var(--surface-active)' : 'var(--surface)'}; color: {proMode ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
+			>
+				{proMode ? 'PRO — 10 INDICATORS' : 'FREE — 5 INDICATORS'} ⇄
+			</button>
 		</div>
 	</div>
+
+	<!-- 1c. News sentiment -->
+	{#if analysis.news_sentiment}
+		{@const ns = analysis.news_sentiment}
+		{@const color = ns.sentiment_score > 0.2 ? '#16a34a' : ns.sentiment_score < -0.2 ? '#dc2626' : '#ca8a04'}
+		<div class="panel mb-6 flex flex-wrap items-center justify-between gap-3 p-4" style="border-top: 2px solid var(--panel-border)">
+			<span class="label">NEWS SENTIMENT</span>
+			<div class="flex items-center gap-4">
+				<span class="data" style="color: {color}">{ns.summary}</span>
+				<span class="label" style="color: var(--foreground-muted)">{ns.article_count} ARTICLES · SCORE {ns.sentiment_score}</span>
+			</div>
+		</div>
+	{/if}
 
 	<!-- 1b. Price chart (below verdict hero) -->
 	{#if (analysis.price_series?.length ?? 0) > 0}
