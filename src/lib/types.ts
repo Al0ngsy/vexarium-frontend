@@ -136,6 +136,31 @@ export interface OptionValueAtPrice {
 	pl_pct: number;
 }
 
+export interface MatrixCell {
+	expiry: string;
+	days_to_expiry: number;
+	option_value: number;
+	pl: number;
+	pl_pct: number;
+}
+
+export interface MatrixRow {
+	strike: number;
+	move_pct: number;
+	cells: MatrixCell[];
+}
+
+export interface OptionsMatrixResponse {
+	symbol: string;
+	contract_symbol: string;
+	current_price: number;
+	range_pct: number;
+	premium: number;
+	breakeven: number;
+	expiries: string[];
+	strikes: MatrixRow[];
+}
+
 export interface Warrant {
 	wkn: string;
 	isin: string;

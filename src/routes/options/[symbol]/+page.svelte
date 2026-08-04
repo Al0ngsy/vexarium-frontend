@@ -15,6 +15,7 @@
 	import VerdictBadge from '../../../components/VerdictBadge.svelte';
 	import ContractPicker from '../../../components/ContractPicker.svelte';
 	import PayoffExplorer from '../../../components/PayoffExplorer.svelte';
+	import OptionsMatrix from '../../../components/OptionsMatrix.svelte';
 	import StrategyCard from '../../../components/StrategyCard.svelte';
 	import InfoPopover from '../../../components/InfoPopover.svelte';
 	import SaveTradeModal from '../../../components/SaveTradeModal.svelte';
@@ -311,7 +312,16 @@
 		{/if}
 	</div>
 
-	<!-- 3. Strategy Cards -->
+	<!-- 3. P/L Matrix (OptionStrat-inspired) -->
+	<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
+		<h2 class="brand mb-4" style="border-bottom: 2px solid var(--accent-primary)">P/L MATRIX</h2>
+		<OptionsMatrix
+			{symbol}
+			contractSymbol={contractSymbol}
+		/>
+	</div>
+
+	<!-- 4. Strategy Cards -->
 	<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
 		<h2 class="brand mb-4" style="border-bottom: 2px solid var(--accent-primary)">STRATEGIES</h2>
 

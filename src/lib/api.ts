@@ -10,6 +10,7 @@ import type {
 	AssetInfo,
 	AssetSearchResponse,
 	OptionValueAtPrice,
+	OptionsMatrixResponse,
 	WarrantsResponse,
 	WarrantValue
 } from './types';
@@ -118,6 +119,21 @@ export async function getOptionValueAtPrice(
 	if (targetDate) url += `&target_date=${targetDate}`;
 	const resp = await fetch(url);
 	if (!resp.ok) throw new Error(`Options value failed: ${resp.status}`);
+	return resp.json();
+}
+
+export async function getOptionsMatrix(
+	symbol: string,
+	contractSymbol: string,
+	rangePct = 0.05,
+	quantity = 100
+): Promise<OptionsMatrixResponse> {
+	const resp = await fetch(`${BASE_URL}/api/v1/options/${symbol}/matrix`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ contract_symbol: contractSymbol, range_pct: rangePct, quantity })
+	});
+	if (!resp.ok) throw new Error(`Options matrix failed: ${resp.status}`);
 	return resp.json();
 }
 
