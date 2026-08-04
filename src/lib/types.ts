@@ -66,6 +66,15 @@ export interface AIAnalysisResponse {
   analysis: string;
   model: string;
   analyzed_at: string;
+  news_sentiment?: NewsSentiment | null;
+  news_articles?: NewsArticle[];
+}
+
+export interface NewsArticle {
+  headline: string;
+  source?: string;
+  url?: string;
+  summary?: string;
 }
 
 export interface AssetSearchResponse {
