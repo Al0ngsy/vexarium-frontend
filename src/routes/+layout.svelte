@@ -1,8 +1,32 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import AuthModal from '../components/AuthModal.svelte';
+	import { initAuth, getUser, getToken, logout } from '$lib/auth';
 
 	let { children } = $props();
+
+	let authOpen = $state(false);
+	let currentUser = $state<{ id: number; email: string; tier: string } | null>(null);
+	let authed = $state(false);
+
+	onMount(() => {
+		initAuth();
+		currentUser = getUser();
+		authed = !!getToken();
+	});
+
+	async function onAuthed() {
+		currentUser = getUser();
+		authed = !!getToken();
+	}
+
+	function doLogout() {
+		logout();
+		currentUser = null;
+		authed = false;
+	}
 </script>
 
 <svelte:head>
@@ -25,7 +49,14 @@
 			<nav class="flex items-center gap-6">
 				<a href="/" class="link-crimson">ANALYZE</a>
 				<a href="/portfolio" class="link-crimson">PORTFOLIO</a>
-				<a href="/pricing" class="link-crimson">PRICING</a>
+				{#if authed}
+					<span class="label" style="color: var(--foreground-muted)">
+						{currentUser?.tier === 'pro' ? 'PRO' : 'FREE'}
+					</span>
+					<button class="label link-crimson" onclick={doLogout}>LOGOUT</button>
+				{:else}
+					<button class="btn-primary px-4 py-2" onclick={() => (authOpen = true)}>LOGIN / SIGN UP</button>
+				{/if}
 			</nav>
 		</div>
 	</header>
@@ -50,3 +81,5 @@
 		</div>
 	</footer>
 </div>
+
+<AuthModal open={authOpen} onClose={() => (authOpen = false)} onSuccess={onAuthed} />

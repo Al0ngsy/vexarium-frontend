@@ -13,6 +13,40 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// --- Auth ---------------------------------------------------------------
+
+export interface AuthResponse {
+	access_token: string;
+	token_type: string;
+	tier: string;
+}
+
+export async function register(email: string, password: string): Promise<AuthResponse> {
+	const resp = await fetch(`${BASE_URL}/api/v1/auth/register`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ email, password })
+	});
+	if (!resp.ok) throw new Error(`Registration failed: ${resp.status}`);
+	return resp.json();
+}
+
+export async function login(email: string, password: string): Promise<AuthResponse> {
+	const resp = await fetch(`${BASE_URL}/api/v1/auth/login`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ email, password })
+	});
+	if (!resp.ok) throw new Error('Invalid credentials');
+	return resp.json();
+}
+
+export async function getMe(token: string): Promise<{ id: number; email: string; tier: string }> {
+	const resp = await fetch(`${BASE_URL}/api/v1/auth/me?token=${encodeURIComponent(token)}`);
+	if (!resp.ok) throw new Error('Session expired');
+	return resp.json();
+}
+
 export async function analyze(
 	symbol: string,
 	assetType: AssetType = 'stock',

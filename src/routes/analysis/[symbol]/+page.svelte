@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
-	import { analyze, analyzeExtended, getAIAnalysis } from '$lib/api';
-	import type { AnalysisResponse, AssetType, IndicatorSeries, NewsSentiment } from '$lib/types';
+	import { analyze, getAIAnalysis } from '$lib/api';
+	import type { AnalysisResponse, AssetType, IndicatorSeries } from '$lib/types';
 	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
 	import { addRecentAnalysis } from '$lib/storage';
+	import { getToken, getUser, initAuth } from '$lib/auth';
 
 	import IndicatorCard from '../../../components/IndicatorCard.svelte';
 	import IndicatorChart from '../../../components/IndicatorChart.svelte';
@@ -14,7 +14,6 @@
 
 	let symbol = $derived(String(page.params.symbol || '').toUpperCase());
 	let assetType = $state<AssetType>('stock');
-	let proMode = $state(false); // dev toggle: Free (5 indicators) vs Pro (10 indicators)
 
 	let analysis = $state<AnalysisResponse | null>(null);
 	let loading = $state(true);
@@ -25,7 +24,14 @@
 	let aiMessage = $state<string | null>(null);
 	let newsOpen = $state(false);
 
+	// AI analysis is a Pro feature. All indicators are free.
+	let authed = $state(false);
+	let proUser = $state(false);
+
 	onMount(() => {
+		initAuth();
+		authed = !!getToken();
+		proUser = getUser()?.tier === 'pro';
 		load();
 	});
 
@@ -34,7 +40,8 @@
 		error = null;
 		aiMessage = null;
 		try {
-			analysis = proMode ? await analyzeExtended(symbol, assetType) : await analyze(symbol, assetType);
+			// All indicators are free — single analysis path returns all 10.
+			analysis = await analyze(symbol, assetType);
 			// Record this analysis into local recent-analyses history so it shows on home.
 			if (analysis?.overall?.overall_verdict) {
 				addRecentAnalysis({
@@ -50,11 +57,6 @@
 		} finally {
 			loading = false;
 		}
-	}
-
-	function toggleTier() {
-		proMode = !proMode;
-		load();
 	}
 
 	async function runAI() {
@@ -147,16 +149,8 @@
 			<div class="flex items-center gap-3">
 				<span class="label">OVERALL SCORE</span>
 				<span class="data" style="color: var(--foreground)">{analysis.overall.score}</span>
+				<span class="label" style="color: var(--foreground-muted)">· {analysis.overall.indicator_count} INDICATORS</span>
 			</div>
-			<!-- Dev Free/Pro toggle -->
-			<button
-				class="label rounded px-3 py-1.5"
-				onclick={toggleTier}
-				title="Dev toggle: preview Free vs Pro (DEV_FORCE_PRO=true in backend .env)"
-				style="border: 1px solid {proMode ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {proMode ? 'var(--surface-active)' : 'var(--surface)'}; color: {proMode ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
-			>
-				{proMode ? 'PRO — 10 INDICATORS' : 'FREE — 5 INDICATORS'} ⇄
-			</button>
 		</div>
 	</div>
 
@@ -221,20 +215,35 @@
 		{/each}
 	</div>
 
-	<!-- 3. AI Analysis panel -->
+	<!-- 3. AI Analysis panel (Pro-only) -->
 	<div class="panel mt-6 p-6" style="border-top: 2px solid var(--accent-primary)">
 		<div class="flex items-center justify-between">
 			<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">AI ANALYSIS</h2>
-			<button class="btn-outline" onclick={runAI} disabled={aiLoading}>RUN AI ANALYSIS</button>
+			{#if proUser}
+				<button class="btn-outline" onclick={runAI} disabled={aiLoading}>RUN AI ANALYSIS</button>
+			{:else}
+				<span class="label rounded px-2 py-1" style="background-color: var(--accent-primary)22; color: var(--accent-primary); border: 1px solid var(--accent-primary)44;">🔒 PRO</span>
+			{/if}
 		</div>
-		{#if aiLoading}
-			<p class="mt-4 font-mono" style="color: var(--accent-primary); letter-spacing: 0.15em">ANALYZING...</p>
-		{:else if aiMessage}
-			<div class="mt-4">
-				<p class="label mt-2" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap;">
-					{aiMessage}
+		{#if proUser}
+			{#if aiLoading}
+				<p class="mt-4 font-mono" style="color: var(--accent-primary); letter-spacing: 0.15em">ANALYZING...</p>
+			{:else if aiMessage}
+				<div class="mt-4">
+					<p class="label mt-2" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap;">
+						{aiMessage}
+					</p>
+				</div>
+			{:else}
+				<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
+					Run AI to get a natural-language interpretation of the indicators and news.
 				</p>
-			</div>
+			{/if}
+		{:else}
+			<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
+				AI analysis summarizes the technical indicators and news sentiment. It's available to
+				Pro subscribers. Upgrade to unlock AI analysis.
+			</p>
 		{/if}
 	</div>
 
