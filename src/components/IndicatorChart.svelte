@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { createChart, ColorType, CandlestickSeries, LineSeries } from 'lightweight-charts';
-	import type { IChartApiBase, UTCTimestamp } from 'lightweight-charts';
+	import type { IChartApi, UTCTimestamp } from 'lightweight-charts';
 	import { CHART_THEME } from '$lib/chart-theme';
 	import type { IndicatorSeries, PricePoint } from '$lib/types';
 
@@ -15,18 +15,15 @@
 		height?: number;
 	} = $props();
 
-	let container: HTMLDivElement;
+	let container: HTMLDivElement = $state()!;
 
-	type Chart = IChartApiBase<UTCTimestamp>;
+	type Chart = IChartApi;
 	let chart: Chart | null = null;
-	let candleSeries: ReturnType<Chart['addSeries']> | null = null;
 	let lineSeries: ReturnType<Chart['addSeries']> | null = null;
 
-	// Parse a 'YYYY-MM-DD' string into a lightweight-charts business-day object.
+	// Parse a 'YYYY-MM-DD' string into a lightweight-charts unix timestamp (seconds).
 	function toTime(t: string): UTCTimestamp {
-		// lightweight-charts accepts a unix timestamp in seconds (UTCTimestamp).
-		const ms = new Date(t).getTime();
-		return Math.floor(ms / 1000) as UTCTimestamp;
+		return Math.floor(new Date(t).getTime() / 1000) as UTCTimestamp;
 	}
 
 	const hasCandles = () => Array.isArray(priceSeries) && priceSeries.length > 0;
@@ -58,9 +55,7 @@
 			},
 			rightPriceScale: {
 				...CHART_THEME.rightPriceScale,
-				scaleMargins: isOverlay()
-					? { top: 0.1, bottom: 0.2 }
-					: { top: 0.15, bottom: 0.25 }
+				scaleMargins: isOverlay() ? { top: 0.1, bottom: 0.2 } : { top: 0.15, bottom: 0.25 }
 			},
 			crosshair: { mode: 0, vertLine: { visible: false }, horzLine: { visible: false } },
 			handleScroll: false,
@@ -69,7 +64,7 @@
 
 		if (isOverlay()) {
 			// Candlestick price series + indicator line on the same price scale.
-			candleSeries = chart.addSeries(CandlestickSeries, {
+			chart.addSeries(CandlestickSeries, {
 				upColor: '#16a34a',
 				downColor: '#dc2626',
 				borderUpColor: '#16a34a',
@@ -78,15 +73,7 @@
 				wickDownColor: '#dc2626',
 				priceLineVisible: false,
 				lastValueVisible: false
-			});
-			lineSeries = chart.addSeries(LineSeries, {
-				color: INDICATOR_COLOR,
-				lineWidth: 2,
-				priceLineVisible: false,
-				lastValueVisible: false,
-				crosshairMarkerVisible: false
-			});
-			candleSeries.setData(
+			}).setData(
 				(priceSeries || []).map((p) => ({
 					time: toTime(p.t),
 					open: p.open,
@@ -95,6 +82,13 @@
 					close: p.close
 				}))
 			);
+			lineSeries = chart.addSeries(LineSeries, {
+				color: INDICATOR_COLOR,
+				lineWidth: 2,
+				priceLineVisible: false,
+				lastValueVisible: false,
+				crosshairMarkerVisible: false
+			});
 			lineSeries.setData(
 				series.points.map((p) => ({ time: toTime(p.t), value: p.v }))
 			);
@@ -111,17 +105,20 @@
 				series.points.map((p) => ({ time: toTime(p.t), value: p.v }))
 			);
 			// Reference threshold lines (RSI/Stochastic).
-			for (const rv of referenceLines()) {
-				chart.addSeries(LineSeries, {
-					color: refLineColor(rv),
-					lineWidth: 1,
-					lineStyle: 2,
-					priceLineVisible: false,
-					lastValueVisible: false,
-					crosshairMarkerVisible: false
-				}).setData(
-					series.points.map((p) => ({ time: toTime(p.t), value: rv }))
-				);
+			const refs = referenceLines();
+			if (refs.length > 0 && series.points.length > 0) {
+				for (const rv of refs) {
+					chart.addSeries(LineSeries, {
+						color: refLineColor(rv),
+						lineWidth: 1,
+						lineStyle: 2,
+						priceLineVisible: false,
+						lastValueVisible: false,
+						crosshairMarkerVisible: false
+					}).setData(
+						series.points.map((p) => ({ time: toTime(p.t), value: rv }))
+					);
+				}
 			}
 		}
 
@@ -131,7 +128,6 @@
 	onDestroy(() => {
 		chart?.remove();
 		chart = null;
-		candleSeries = null;
 		lineSeries = null;
 	});
 </script>

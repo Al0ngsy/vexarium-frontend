@@ -3,11 +3,13 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
-	import { analyze } from '$lib/api';
-	import type { AnalysisResponse, AssetType } from '$lib/types';
+	import { analyze, getAIAnalysis } from '$lib/api';
+	import type { AnalysisResponse, AssetType, IndicatorSeries } from '$lib/types';
 	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
+	import { addRecentAnalysis } from '$lib/storage';
 
 	import IndicatorCard from '../../../components/IndicatorCard.svelte';
+	import IndicatorChart from '../../../components/IndicatorChart.svelte';
 	import SaveTradeModal from '../../../components/SaveTradeModal.svelte';
 
 	let symbol = $derived(String(page.params.symbol || '').toUpperCase());
@@ -18,7 +20,10 @@
 	let error = $state<string | null>(null);
 
 	let showSave = $state(false);
+	let aiLoading = $state(false);
 	let aiMessage = $state<string | null>(null);
+	let aiModel = $state<string | null>(null);
+	let aiAnalyzedAt = $state<string | null>(null);
 
 	onMount(() => {
 		load();
@@ -28,8 +33,19 @@
 		loading = true;
 		error = null;
 		aiMessage = null;
+		aiModel = null;
+		aiAnalyzedAt = null;
 		try {
 			analysis = await analyze(symbol, assetType);
+			// Record this analysis into local recent-analyses history so it shows on home.
+			if (analysis?.overall?.overall_verdict) {
+				addRecentAnalysis({
+					symbol,
+					assetType,
+					analyzedAt: analysis.analyzed_at ?? new Date().toISOString(),
+					verdict: analysis.overall.overall_verdict
+				});
+			}
 		} catch (e) {
 			analysis = null;
 			error = e instanceof Error ? e.message : 'Analysis failed';
@@ -38,8 +54,28 @@
 		}
 	}
 
-	function runAI() {
-		aiMessage = 'AI analysis coming soon';
+	async function runAI() {
+		aiLoading = true;
+		aiMessage = null;
+		aiModel = null;
+		aiAnalyzedAt = null;
+		try {
+			const res = await getAIAnalysis(symbol, assetType);
+			aiMessage = res.analysis;
+			aiModel = res.model;
+			aiAnalyzedAt = res.analyzed_at;
+		} catch (e) {
+			aiMessage = `AI analysis failed: ${e instanceof Error ? e.message : 'unknown error'}`;
+		} finally {
+			aiLoading = false;
+		}
+	}
+
+	function seriesFor(name: string): IndicatorSeries | null {
+		const found = (analysis?.indicator_series || []).find(
+			(s) => s.name.toLowerCase() === name.toLowerCase()
+		);
+		return found ?? null;
 	}
 
 	function formatPrice(v: number | null): string {
@@ -114,10 +150,27 @@
 		</div>
 	</div>
 
+	<!-- 1b. Price chart (below verdict hero) -->
+	{#if (analysis.price_series?.length ?? 0) > 0}
+		<div class="panel mb-6 p-4" style="border-top: 2px solid var(--panel-border)">
+			<p class="label mb-2">PRICE — {symbol}</p>
+			<IndicatorChart
+				series={{ name: 'PRICE', kind: 'overlay', points: [] }}
+				priceSeries={analysis.price_series}
+			/>
+		</div>
+	{/if}
+
 	<!-- 2. Indicator Cards -->
 	<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 		{#each analysis.indicators as indicator}
-			<IndicatorCard {indicator} />
+			{@const s = seriesFor(indicator.name)}
+			<div class="flex flex-col gap-3">
+				<IndicatorCard {indicator} />
+				{#if s && (s.points?.length ?? 0) > 0}
+					<IndicatorChart series={s} priceSeries={analysis.price_series} />
+				{/if}
+			</div>
 		{/each}
 	</div>
 
@@ -125,10 +178,21 @@
 	<div class="panel mt-6 p-6" style="border-top: 2px solid var(--accent-primary)">
 		<div class="flex items-center justify-between">
 			<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">AI ANALYSIS</h2>
-			<button class="btn-outline" onclick={runAI}>RUN AI ANALYSIS</button>
+			<button class="btn-outline" onclick={runAI} disabled={aiLoading}>RUN AI ANALYSIS</button>
 		</div>
-		{#if aiMessage}
-			<p class="label mt-4" style="color: var(--foreground-muted)">{aiMessage}</p>
+		{#if aiLoading}
+			<p class="mt-4 font-mono" style="color: var(--accent-primary); letter-spacing: 0.15em">ANALYZING...</p>
+		{:else if aiMessage}
+			<div class="mt-4">
+				{#if aiModel && aiAnalyzedAt}
+					<p class="label" style="color: var(--foreground-subtle); font-size: 0.7rem">
+						{aiModel} · {aiAnalyzedAt}
+					</p>
+				{/if}
+				<p class="label mt-2" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap;">
+					{aiMessage}
+				</p>
+			</div>
 		{/if}
 	</div>
 
