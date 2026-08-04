@@ -14,6 +14,7 @@
 
 	import VerdictBadge from '../../../components/VerdictBadge.svelte';
 	import ContractPicker from '../../../components/ContractPicker.svelte';
+	import PayoffExplorer from '../../../components/PayoffExplorer.svelte';
 	import StrategyCard from '../../../components/StrategyCard.svelte';
 	import InfoPopover from '../../../components/InfoPopover.svelte';
 	import SaveTradeModal from '../../../components/SaveTradeModal.svelte';
@@ -189,6 +190,15 @@
 	let strategyLoading = $state(false);
 	let strategyError = $state<string | null>(null);
 	let strategyLoaded = $state(false);
+
+	// Selected contract details for the payoff explorer.
+	const selectedContract = $derived.by(() => {
+		if (!contractSymbol) return null;
+		return chain.find((c) => c.symbol === contractSymbol) ?? null;
+	});
+	const contractStrike = $derived(selectedContract?.strike_price ?? null);
+	const contractIsCall = $derived(selectedContract ? selectedContract.type.toLowerCase() === 'call' : null);
+	const contractExpiry = $derived(selectedContract?.expiration_date ?? null);
 </script>
 
 <svelte:head>
@@ -249,32 +259,66 @@
 		</div>
 	</div>
 
-	<!-- 2. Strategy Cards -->
+	<!-- 2. Build Contract + Payoff (split layout) -->
+	<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
+		<h2 class="brand mb-4" style="border-bottom: 2px solid var(--accent-primary)">BUILD CONTRACT</h2>
+
+		{#if chainLoading}
+			<div class="flex h-40 items-center justify-center">
+				<span class="label" style="color: var(--foreground-muted)">LOADING CONTRACTS…</span>
+			</div>
+		{:else if chainError}
+			<p class="label" style="color: var(--accent-primary)">{chainError}</p>
+		{:else if chain.length === 0}
+			<p class="label" style="color: var(--foreground-muted)">NO OPTIONS AVAILABLE FOR {symbol}.</p>
+		{:else}
+			<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+				<!-- LEFT: contract picker -->
+				<div>
+					<ContractPicker
+						contracts={chain}
+						currentPrice={analysis.current_price}
+						selected={contractSymbol}
+						onSelect={onContractSelected}
+					/>
+					{#if strategyError}
+						<p class="label mt-3" style="color: var(--accent-primary)">{strategyError}</p>
+					{/if}
+				</div>
+
+				<!-- RIGHT: payoff explorer -->
+				<div style="border-left: 1px solid var(--panel-border); padding-left: 20px;">
+					<span class="label block mb-3">PAYOFF EXPLORER</span>
+					{#if selectedContract}
+						<PayoffExplorer
+							{symbol}
+							contractSymbol={contractSymbol}
+							contract={contractSymbol}
+							currentPrice={analysis.current_price}
+							strike={contractStrike}
+							isCall={contractIsCall}
+							expiry={contractExpiry}
+							premium={payoff?.premium ?? selectedContract.last_price}
+							breakeven={payoff?.breakeven ?? null}
+						/>
+					{:else}
+						<p class="label" style="color: var(--foreground-subtle); text-transform: none">
+							Build a contract on the left to see what it's worth at any price.
+						</p>
+					{/if}
+				</div>
+			</div>
+		{/if}
+	</div>
+
+	<!-- 3. Strategy Cards -->
 	<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
 		<h2 class="brand mb-4" style="border-bottom: 2px solid var(--accent-primary)">STRATEGIES</h2>
 
 		{#if !strategyLoaded}
 			<p class="label mb-3" style="color: var(--foreground-muted); text-transform: none">
-				Build an option contract to see beginner-friendly strategy recommendations.
+				Select a contract above to see beginner-friendly strategy recommendations.
 			</p>
-
-			{#if chainLoading}
-				<div class="flex h-40 items-center justify-center">
-					<span class="label" style="color: var(--foreground-muted)">LOADING CONTRACTS…</span>
-				</div>
-			{:else if chainError}
-				<p class="label" style="color: var(--accent-primary)">{chainError}</p>
-			{:else if chain.length === 0}
-				<p class="label" style="color: var(--foreground-muted)">NO OPTIONS AVAILABLE FOR {symbol}.</p>
-			{:else}
-				<div class="mb-4">
-					<ContractPicker contracts={chain} onSelect={onContractSelected} />
-				</div>
-			{/if}
-
-			{#if strategyError}
-				<p class="label" style="color: var(--accent-primary)">{strategyError}</p>
-			{/if}
 		{:else if strategyData && strategyData.strategies.length > 0}
 			<div class="mb-3 flex items-center justify-between gap-3">
 				<p class="label" style="color: var(--foreground-muted)">
@@ -296,6 +340,10 @@
 					</div>
 				{/each}
 			</div>
+		{:else}
+			<p class="label" style="color: var(--foreground-muted)">
+				{strategyError ? strategyError : 'Select a contract to see strategies.'}
+			</p>
 		{/if}
 	</div>
 

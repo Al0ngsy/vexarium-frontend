@@ -8,7 +8,8 @@ import type {
 	AssetType,
 	AIAnalysisResponse,
 	AssetInfo,
-	AssetSearchResponse
+	AssetSearchResponse,
+	OptionValueAtPrice
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -102,6 +103,19 @@ export async function getOptionPayoff(
 		`${BASE_URL}/api/v1/options/${symbol}/payoff?contract_symbol=${contractSymbol}`
 	);
 	if (!resp.ok) throw new Error(`Options payoff failed: ${resp.status}`);
+	return resp.json();
+}
+
+export async function getOptionValueAtPrice(
+	symbol: string,
+	contractSymbol: string,
+	targetPrice: number,
+	targetDate?: string
+): Promise<OptionValueAtPrice> {
+	let url = `${BASE_URL}/api/v1/options/${symbol}/value?contract_symbol=${contractSymbol}&target_price=${targetPrice}`;
+	if (targetDate) url += `&target_date=${targetDate}`;
+	const resp = await fetch(url);
+	if (!resp.ok) throw new Error(`Options value failed: ${resp.status}`);
 	return resp.json();
 }
 

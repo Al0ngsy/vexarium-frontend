@@ -113,13 +113,27 @@ export interface PayoffRow {
 }
 
 export interface OptionsPayoffResponse {
-  symbol: string;
-  greeks: Greeks;
-  implied_volatility: number;
-  premium: number;
-  breakeven: number;
-  payoff_timeline: PayoffRow[];
-  is_estimate: boolean;
+	symbol: string;
+	greeks: Greeks;
+	implied_volatility: number;
+	premium: number;
+	breakeven: number;
+	payoff_timeline: PayoffRow[];
+	is_estimate: boolean;
+}
+
+export interface OptionValueAtPrice {
+	symbol: string;
+	contract_symbol: string;
+	strike: number;
+	premium: number;
+	is_call: boolean;
+	target_price: number;
+	target_date: string;
+	days_to_expiry: number;
+	estimated_option_price: number;
+	estimated_pl: number;
+	pl_pct: number;
 }
 
 export interface OptionContract {
