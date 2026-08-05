@@ -200,6 +200,9 @@
 				{formatPrice(analysis.current_price)}
 			</p>
 		</div>
+		<a href={`/options/${symbol}`} class="btn-outline">
+			VIEW OPTIONS →
+		</a>
 	</div>
 	<div
 		class="mt-5 grid grid-cols-1 gap-6 border-t pt-5 md:grid-cols-3"
