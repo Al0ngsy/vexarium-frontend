@@ -3,6 +3,7 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import AuthModal from '../components/AuthModal.svelte';
+	import ConsentBanner from '../components/ConsentBanner.svelte';
 	import { initAuth, getUser, getToken, logout } from '$lib/auth.svelte';
 
 	let { children } = $props();
@@ -85,6 +86,7 @@
 		<div class="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 			<span class="label">VEXARIUM — INFORMATIONAL ONLY, NOT FINANCIAL ADVICE</span>
 			<nav class="flex gap-4">
+				<a href="/legal/impressum" class="label" style="color: var(--foreground-muted)">IMPRESSUM</a>
 				<a href="/legal/disclaimer" class="label" style="color: var(--foreground-muted)">DISCLAIMER</a>
 				<a href="/legal/terms" class="label" style="color: var(--foreground-muted)">TERMS</a>
 				<a href="/legal/privacy" class="label" style="color: var(--foreground-muted)">PRIVACY</a>
@@ -94,3 +96,4 @@
 </div>
 
 <AuthModal open={authOpen} onClose={() => (authOpen = false)} onSuccess={onAuthed} />
+<ConsentBanner />
