@@ -162,47 +162,6 @@ export interface OptionsMatrixResponse {
 	strikes: MatrixRow[];
 }
 
-export interface Warrant {
-	wkn: string;
-	isin: string;
-	name: string;
-	underlying: string;
-	underlying_isin: string;
-	underlying_wkn: string;
-	exercise_right: string;
-	exercise_style: string;
-	strike: number | null;
-	strike_pct: number | null;
-	maturity: string | null;
-	cover_ratio: number | null;
-	leverage: number | null;
-	omega: number | null;
-	implied_volatility: number | null;
-	spread_pct: number | null;
-	issuer: string;
-	bid: number | null;
-	ask: number | null;
-	premium: number | null;
-}
-
-export interface WarrantsResponse {
-	underlying: string | null;
-	total: number;
-	warrants: Warrant[];
-}
-
-export interface WarrantValue {
-	wkn: string;
-	isin: string;
-	exercise_right: string;
-	strike: number;
-	cover_ratio: number;
-	target_price: number;
-	estimated_option_price: number;
-	estimated_pl: number;
-	pl_pct: number;
-}
-
 export interface OptionContract {
   symbol: string;
   strike_price: number;

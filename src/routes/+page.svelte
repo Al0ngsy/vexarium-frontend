@@ -9,7 +9,7 @@
 
 	let symbol = $state('');
 	let assetType = $state<AssetType>('stock');
-	let mode = $state<'standard' | 'options' | 'warrants'>('standard');
+	let mode = $state<'standard' | 'options'>('standard');
 
 	let suggestions = $state<AssetInfo[]>([]);
 	let recent = $state<RecentAnalysis[]>([]);
@@ -137,8 +137,6 @@
 		// so a failed analysis (e.g. an index like SPX with no bar data) is never added.
 		if (mode === 'options') {
 			goto(`/options/${sym}`);
-		} else if (mode === 'warrants') {
-			goto(`/warrants?underlying=${encodeURIComponent(sym)}`);
 		} else {
 			goto(`/analysis/${sym}`);
 		}
@@ -224,13 +222,6 @@
 					style="border: 1px solid {mode === 'options' ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {mode === 'options' ? 'var(--surface-active)' : 'var(--surface)'}; color: {mode === 'options' ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
 				>
 					OPTIONS
-				</button>
-				<button
-					onclick={() => (mode = 'warrants')}
-					class="flex-1 rounded px-3 py-2 label"
-					style="border: 1px solid {mode === 'warrants' ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {mode === 'warrants' ? 'var(--surface-active)' : 'var(--surface)'}; color: {mode === 'warrants' ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
-				>
-					WARRANTS
 				</button>
 			</div>
 		</div>
