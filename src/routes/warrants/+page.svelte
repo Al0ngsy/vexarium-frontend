@@ -5,10 +5,12 @@
 	import { getWarrants, getWarrantValue } from '$lib/api';
 	import type { Warrant, WarrantValue } from '$lib/types';
 
-	import WarrantPicker from '../../../components/WarrantPicker.svelte';
-	import WarrantPayoffExplorer from '../../../components/WarrantPayoffExplorer.svelte';
+	import WarrantPicker from '../../components/WarrantPicker.svelte';
+	import WarrantPayoffExplorer from '../../components/WarrantPayoffExplorer.svelte';
 
-	let underlying = $derived(String(page.params.underlying || '').toUpperCase());
+	// Underlying comes from the query string (?underlying=...) so currency pairs
+	// like "EUR/USD" (which contain a slash) survive URL encoding.
+	let underlying = $derived(String(page.url.searchParams.get('underlying') || '').toUpperCase());
 
 	let warrants = $state<Warrant[]>([]);
 	let loading = $state(true);
@@ -43,7 +45,7 @@
 	<div class="flex flex-wrap items-center justify-between gap-4">
 		<div>
 			<p class="label mb-1">WARRANTS · OPTIONSSCHEINE</p>
-			<p class="brand" style="font-size: 2rem">{underlying}</p>
+			<p class="brand" style="font-size: 2rem">{underlying || '—'}</p>
 		</div>
 	</div>
 </div>

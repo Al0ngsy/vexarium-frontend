@@ -138,7 +138,7 @@
 		if (mode === 'options') {
 			goto(`/options/${sym}`);
 		} else if (mode === 'warrants') {
-			goto(`/warrants/${sym}`);
+			goto(`/warrants?underlying=${encodeURIComponent(sym)}`);
 		} else {
 			goto(`/analysis/${sym}`);
 		}
