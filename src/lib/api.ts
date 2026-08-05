@@ -89,10 +89,11 @@ export async function analyzeExtended(
 export async function getOptionChain(
 	symbol: string,
 	expirationGte: string,
-	expirationLte: string
+	expirationLte: string,
+	maxExpiries = 10
 ): Promise<OptionsChainResponse> {
 	const resp = await fetch(
-		`${BASE_URL}/api/v1/options/${symbol}/chain?expiration_gte=${expirationGte}&expiration_lte=${expirationLte}`
+		`${BASE_URL}/api/v1/options/${symbol}/chain?expiration_gte=${expirationGte}&expiration_lte=${expirationLte}&max_expiries=${maxExpiries}`
 	);
 	if (!resp.ok) throw new Error(`Options chain failed: ${resp.status}`);
 	return resp.json();

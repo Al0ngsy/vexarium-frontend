@@ -22,7 +22,7 @@
 
 	const DAY_MS = 86400000;
 
-	// Unique, sorted expiries.
+	// Unique, sorted expiries (chronological; default-select the nearest).
 	const expiries = $derived.by(() => {
 		const set = new Set(contracts.map((c) => c.expiration_date).filter(Boolean));
 		return [...set].sort();
@@ -47,6 +47,25 @@
 		return [...new Set(list.map((c) => c.strike_price))].sort((a, b) => a - b);
 	});
 
+	// Strike closest to the current price (the "ATM" strike to default to).
+	const nearestStrike = $derived.by(() => {
+		if (!strikes.length || !currentPrice) return null;
+		return strikes.reduce((best, s) =>
+			Math.abs(s - currentPrice) < Math.abs(best - currentPrice) ? s : best
+		);
+	});
+
+	// Default the expiry to the nearest future one once the chain loads.
+	$effect(() => {
+		if (!expiry && expiries.length) expiry = expiries[0];
+	});
+
+	// Auto-select + center on the ATM strike when expiry/type/price changes.
+	$effect(() => {
+		const n = nearestStrike;
+		if (n != null) strike = n;
+	});
+
 	// The selected contract (full OCC symbol) given the current parts.
 	const matchedContract = $derived.by(() =>
 		contracts.find(
@@ -56,6 +75,13 @@
 				c.strike_price === strike
 		) ?? null
 	);
+
+	// Keep the parent informed of the default-selected contract.
+	$effect(() => {
+		if (matchedContract && matchedContract.symbol !== selected) {
+			onSelect(matchedContract.symbol);
+		}
+	});
 
 	function onStrikeChosen(s: number) {
 		strike = s;
@@ -72,7 +98,9 @@
 		const c = contracts.find(
 			(x) => x.expiration_date === expiry && x.type.toLowerCase() === ctype && x.strike_price === s
 		);
-		return c ? c.last_price : null;
+		// Alpaca often reports last_price = 0 for less-liquid strikes; hide those.
+		const p = c ? c.last_price : null;
+		return p && p > 0 ? p : null;
 	}
 </script>
 
@@ -129,22 +157,27 @@
 		{#if strikes.length > 0}
 			<div class="flex max-h-80 flex-col gap-1 overflow-y-auto pr-1">
 				{#each strikes as s}
+					{@const pct = pctFromCurrent(s)}
+					{@const nearATM = Math.abs(pct) < 0.5}
+					{@const prem = premiumFor(s)}
 					<button
 						type="button"
 						onclick={() => onStrikeChosen(s)}
 						class="flex items-center justify-between px-3 py-2"
 						style="border: 1px solid {strike === s ? 'var(--accent-primary)' : 'var(--panel-border)'}; background-color: {strike === s ? 'rgba(200,30,30,0.1)' : 'var(--surface)'}; box-shadow: {strike === s ? 'inset 0 0 0 1px var(--accent-primary)' : 'none'};"
 					>
-						<span class="data" style="color: {Math.abs(pctFromCurrent(s)) < 0.5 ? 'var(--foreground)' : 'var(--foreground-muted)'}">
+						<span class="data" style="color: {nearATM ? '#16a34a' : pct > 0 ? '#22c55e' : '#f97316'}">
 							{s.toFixed(0)}
 						</span>
-						<span class="data" style="font-size: 11px; color: var(--foreground-muted)">
-							{pctFromCurrent(s) >= 0 ? '+' : '−'}{Math.abs(pctFromCurrent(s)).toFixed(1)}%
+						<span class="data" style="font-size: 11px; color: {pct === 0 ? 'var(--foreground-muted)' : pct > 0 ? '#22c55e' : '#f97316'}">
+							{pct >= 0 ? '+' : '−'}{Math.abs(pct).toFixed(1)}%
 						</span>
-						{#if premiumFor(s) !== null}
+						{#if prem !== null}
 							<span class="data" style="font-size: 12px; color: var(--foreground)">
-								${premiumFor(s)!.toFixed(2)}
+								${prem.toFixed(2)}
 							</span>
+						{:else}
+							<span class="label" style="font-size: 10px; color: var(--foreground-subtle)">N/A</span>
 						{/if}
 					</button>
 				{/each}

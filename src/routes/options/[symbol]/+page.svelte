@@ -57,14 +57,14 @@
 		}
 	}
 
-	// Load a forward-looking option chain (next ~4 months) for the picker.
+	// Load a forward-looking option chain (next ~12 months) for the picker.
 	async function loadChain() {
 		chainLoading = true;
 		chainError = null;
 		try {
 			const gte = new Date().toISOString().slice(0, 10);
-			const lte = new Date(Date.now() + 120 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-			const resp = await getOptionChain(symbol, gte, lte);
+			const lte = new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+			const resp = await getOptionChain(symbol, gte, lte, 14);
 			chain = resp.contracts || [];
 		} catch (e) {
 			chain = [];
@@ -232,31 +232,26 @@
 	</div>
 
 {:else if analysis}
-	<!-- 1. Symbol summary panel -->
-	<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
-		<div class="flex flex-wrap items-center justify-between gap-4">
-			<div>
-				<p class="label mb-1">OPTIONS ANALYSIS</p>
-				<p class="brand" style="font-size: 2rem">{symbol}</p>
-			</div>
-			<div class="flex items-center gap-4">
-				<VerdictBadge verdict={analysis.overall.overall_verdict} />
-				<div class="text-right">
-					<p class="label mb-1">CURRENT PRICE</p>
-					<p class="data" style="color: var(--foreground); font-size: 1.25rem">
-						{formatPrice(analysis.current_price)}
-					</p>
-				</div>
-			</div>
+	<!-- 1. Symbol summary strip (compact — keeps P/L Matrix & Greeks above the fold) -->
+	<div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded px-4 py-3" style="border: 1px solid var(--panel-border); border-top: 2px solid var(--accent-primary); background: var(--surface)">
+		<div class="flex items-center gap-3">
+			<p class="label mb-0" style="color: var(--foreground-subtle)">OPTIONS</p>
+			<p class="brand" style="font-size: 1.5rem">{symbol}</p>
+			<VerdictBadge verdict={analysis.overall.overall_verdict} />
 		</div>
-		<div
-			class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4"
-			style="border-color: var(--panel-border)"
-		>
-			<span class="label">SENTIMENT</span>
-			<span class="data" style="color: {VERDICT_COLORS[analysis.overall.overall_verdict]}">
-				{analysis.overall.overall_verdict.replace('_', ' ').toUpperCase()}
-			</span>
+		<div class="flex items-center gap-6">
+			<div class="text-right">
+				<p class="label mb-0" style="font-size: 9px">CURRENT PRICE</p>
+				<p class="data" style="color: var(--foreground); font-size: 1.1rem">
+					{formatPrice(analysis.current_price)}
+				</p>
+			</div>
+			<div class="text-right">
+				<p class="label mb-0" style="font-size: 9px">SENTIMENT</p>
+				<p class="data" style="color: {VERDICT_COLORS[analysis.overall.overall_verdict]}">
+					{analysis.overall.overall_verdict.replace('_', ' ').toUpperCase()}
+				</p>
+			</div>
 		</div>
 	</div>
 
@@ -291,6 +286,7 @@
 				<div style="border-left: 1px solid var(--panel-border); padding-left: 20px;">
 					<span class="label block mb-3">PAYOFF EXPLORER</span>
 					{#if selectedContract}
+						{#key contractSymbol}
 						<PayoffExplorer
 							{symbol}
 							contractSymbol={contractSymbol}
@@ -302,6 +298,7 @@
 							premium={payoff?.premium ?? selectedContract.last_price}
 							breakeven={payoff?.breakeven ?? null}
 						/>
+						{/key}
 					{:else}
 						<p class="label" style="color: var(--foreground-subtle); text-transform: none">
 							Build a contract on the left to see what it's worth at any price.
@@ -319,42 +316,6 @@
 			{symbol}
 			contractSymbol={contractSymbol}
 		/>
-	</div>
-
-	<!-- 4. Strategy Cards -->
-	<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
-		<h2 class="brand mb-4" style="border-bottom: 2px solid var(--accent-primary)">STRATEGIES</h2>
-
-		{#if !strategyLoaded}
-			<p class="label mb-3" style="color: var(--foreground-muted); text-transform: none">
-				Select a contract above to see beginner-friendly strategy recommendations.
-			</p>
-		{:else if strategyData && strategyData.strategies.length > 0}
-			<div class="mb-3 flex items-center justify-between gap-3">
-				<p class="label" style="color: var(--foreground-muted)">
-					CONTRACT {contractSymbol.toUpperCase()} — {strategyData.sentiment.toUpperCase()}
-				</p>
-				<button class="link-crimson" onclick={() => (strategyLoaded = false)}>CHANGE CONTRACT</button>
-			</div>
-			<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-				{#each strategyData.strategies as strategy}
-					<StrategyCard {strategy} />
-				{/each}
-			</div>
-		{:else if strategyLoading}
-			<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-				{#each Array(3) as _}
-					<div class="panel p-4">
-						<div class="mb-3 h-3 w-24 rounded" style="background-color: var(--surface-3)"></div>
-						<div class="h-24 rounded" style="background-color: var(--surface-3)"></div>
-					</div>
-				{/each}
-			</div>
-		{:else}
-			<p class="label" style="color: var(--foreground-muted)">
-				{strategyError ? strategyError : 'Select a contract to see strategies.'}
-			</p>
-		{/if}
 	</div>
 
 	<!-- 3. Greeks panel -->
@@ -442,9 +403,45 @@
 				Load a contract to see the projected payoff over time.
 			</p>
 		{/if}
-	</div>
+		</div>
 
-	<!-- 5. Save to portfolio -->
+		<!-- 4. Strategy Cards -->
+		<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
+		<h2 class="brand mb-4" style="border-bottom: 2px solid var(--accent-primary)">STRATEGIES</h2>
+
+		{#if !strategyLoaded}
+			<p class="label mb-3" style="color: var(--foreground-muted); text-transform: none">
+				Select a contract above to see beginner-friendly strategy recommendations.
+			</p>
+		{:else if strategyData && strategyData.strategies.length > 0}
+			<div class="mb-3 flex items-center justify-between gap-3">
+				<p class="label" style="color: var(--foreground-muted)">
+					CONTRACT {contractSymbol.toUpperCase()} — {strategyData.sentiment.toUpperCase()}
+				</p>
+				<button class="link-crimson" onclick={() => (strategyLoaded = false)}>CHANGE CONTRACT</button>
+			</div>
+			<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+				{#each strategyData.strategies as strategy}
+					<StrategyCard {strategy} />
+				{/each}
+			</div>
+		{:else if strategyLoading}
+			<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+				{#each Array(3) as _}
+					<div class="panel p-4">
+						<div class="mb-3 h-3 w-24 rounded" style="background-color: var(--surface-3)"></div>
+						<div class="h-24 rounded" style="background-color: var(--surface-3)"></div>
+					</div>
+				{/each}
+			</div>
+		{:else}
+			<p class="label" style="color: var(--foreground-muted)">
+				{strategyError ? strategyError : 'Select a contract to see strategies.'}
+			</p>
+		{/if}
+		</div>
+
+		<!-- 5. Save to portfolio -->
 	<div class="mt-6 flex justify-end">
 		<button
 			class="btn-outline"

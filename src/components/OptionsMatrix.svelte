@@ -41,7 +41,8 @@
 		}
 	}
 
-	function onRange() {
+	// Recompute only when the slider is released (onchange), not on every tick.
+	function handleRange() {
 		onRangeChange?.(range / 100);
 		loadMatrix();
 	}
@@ -138,16 +139,64 @@
 				</table>
 			</div>
 		{:else}
-			<p class="label" style="color: var(--foreground-subtle); text-transform: none">
-				GRAPH VIEW — SELECT A CONTRACT TO SEE THE PAYOFF CURVE BELOW.
-			</p>
+			<!-- GRAPH VIEW: payoff curve for the ATM strike across expiries -->
+			{@const m = matrix!}
+			<div class="relative" style="height: 240px; background: var(--surface); border: 1px solid var(--panel-border)">
+				{#if m.strikes.length > 0}
+					{@const maxAbs = Math.max(
+						1,
+						...m.strikes.flatMap((r) => r.cells.map((c) => Math.abs(c.pl)))
+					)}
+					{@const X = (i: number, n: number) => (n === 1 ? 50 : (i / (n - 1)) * 100)}
+					{@const Y = (pl: number) => 30 - (pl / maxAbs) * 25}
+					<!-- zero line -->
+					<svg viewBox="0 0 100 60" preserveAspectRatio="none" class="h-full w-full">
+						<line x1="0" y1="30" x2="100" y2="30" stroke="var(--panel-border)" stroke-dasharray="2 2" />
+						{#each m.expiries as exp, i}
+							{@const atm = m.strikes.reduce((a, b) =>
+								Math.abs(b.strike - m.current_price) < Math.abs(a.strike - m.current_price) ? b : a
+							)}
+							{@const cell = atm.cells.find((c) => c.expiry === exp)}
+							<circle
+								cx={X(i, m.expiries.length)}
+								cy={Y(cell ? cell.pl : 0)}
+								r="1.6"
+								fill={(cell ? cell.pl : 0) >= 0 ? '#16a34a' : '#dc2626'}
+							/>
+						{/each}
+						{#if m.expiries.length > 1}
+							<path
+								d={m.expiries
+									.map((exp, i) => {
+										const atm = m.strikes.reduce((a, b) =>
+											Math.abs(b.strike - m.current_price) < Math.abs(a.strike - m.current_price) ? b : a
+										);
+										const cell = atm.cells.find((c) => c.expiry === exp);
+										const x = X(i, m.expiries.length);
+										const y = Y(cell ? cell.pl : 0);
+										return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+									})
+									.join(' ')}
+								fill="none" stroke="var(--accent-primary)" stroke-width="1.5" vector-effect="non-scaling-stroke"
+							/>
+						{/if}
+					</svg>
+					<div class="absolute inset-x-4 bottom-1 flex justify-between label" style="font-size: 9px; color: var(--foreground-subtle)">
+						{#each m.expiries as exp}<span>{fmtExpiry(exp)}</span>{/each}
+					</div>
+				{:else}
+					<p class="label" style="color: var(--foreground-subtle); text-transform: none">
+						Select a contract to see the payoff curve.
+					</p>
+				{/if}
+			</div>
 		{/if}
 
 		<!-- Range + metric mode -->
 		<div class="mt-2 flex flex-wrap items-center gap-4">
 			<div class="flex items-center gap-2">
 				<span class="label" style="white-space: nowrap">RANGE</span>
-				<input type="range" min="1" max="15" step="1" bind:value={range} oninput={onRange} style="accent-color: var(--accent-primary); width: 140px;" />
+				<input type="range" min="1" max="15" step="1" bind:value={range} onchange={handleRange} style="accent-color: var(--accent-primary); width: 140px;" />
 				<span class="data" style="font-size: 11px;">±{range}%</span>
 			</div>
 			<div class="flex gap-1">

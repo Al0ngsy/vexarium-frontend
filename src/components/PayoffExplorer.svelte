@@ -38,10 +38,17 @@
 	let value = $state<OptionValueAtPrice | null>(null);
 	let loading = $state(false);
 
+	// Initialize the slider only when the contract changes (not on every premium
+	// update). Keeping a stable key in the parent is the primary fix, but this
+	// guards against re-init on unrelated prop churn (e.g. premium arriving late).
+	let lastContract = $state('');
 	$effect(() => {
-		if (currentPrice) {
-			price = Math.round(currentPrice);
-			loadValue(price);
+		if (contractSymbol && contractSymbol !== lastContract) {
+			lastContract = contractSymbol;
+			if (currentPrice) {
+				price = Math.round(currentPrice);
+				loadValue(price);
+			}
 		}
 	});
 
