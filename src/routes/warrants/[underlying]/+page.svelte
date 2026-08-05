@@ -45,10 +45,6 @@
 			<p class="label mb-1">WARRANTS · OPTIONSSCHEINE</p>
 			<p class="brand" style="font-size: 2rem">{underlying}</p>
 		</div>
-		<div class="text-right">
-			<p class="label mb-1">SOURCE</p>
-			<p class="data" style="color: var(--foreground-muted)">ONVISTA</p>
-		</div>
 	</div>
 </div>
 
@@ -60,12 +56,18 @@
 	<div class="panel p-6" style="border-top: 2px solid var(--accent-primary)">
 		<p class="label" style="color: var(--accent-primary)">{error}</p>
 		<p class="label mt-2" style="color: var(--foreground-subtle); text-transform: none">
-			Warrant data comes from onvista (unofficial feed). If unavailable, try a different underlying or retry later.
+			Warrant data is currently unavailable. Try a different underlying or retry later.
 		</p>
 	</div>
 {:else if warrants.length === 0}
 	<div class="panel p-6" style="border-top: 2px solid var(--accent-primary)">
 		<p class="label" style="color: var(--foreground-muted)">NO WARRANTS FOUND FOR {underlying}.</p>
+		<p class="label mt-3" style="color: var(--foreground-subtle); text-transform: none; line-height: 1.7">
+			Warrant coverage is currently limited to a small set of underlyings. Try a currency pair
+			(e.g. <span class="data" style="color: var(--foreground)">EUR/USD</span>,
+			<span class="data" style="color: var(--foreground)">GBP/USD</span>,
+			<span class="data" style="color: var(--foreground)">USD/CAD</span>) or a different symbol.
+		</p>
 	</div>
 {:else}
 	<!-- Split layout: picker left, payoff explorer right -->

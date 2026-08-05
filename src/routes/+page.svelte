@@ -9,7 +9,7 @@
 
 	let symbol = $state('');
 	let assetType = $state<AssetType>('stock');
-	let optionsMode = $state(false);
+	let mode = $state<'standard' | 'options' | 'warrants'>('standard');
 
 	let suggestions = $state<AssetInfo[]>([]);
 	let recent = $state<RecentAnalysis[]>([]);
@@ -135,8 +135,10 @@
 		dropdownOpen = false;
 		// NOTE: recent-analyses history is recorded by the analysis page on SUCCESS only,
 		// so a failed analysis (e.g. an index like SPX with no bar data) is never added.
-		if (optionsMode) {
+		if (mode === 'options') {
 			goto(`/options/${sym}`);
+		} else if (mode === 'warrants') {
+			goto(`/warrants/${sym}`);
 		} else {
 			goto(`/analysis/${sym}`);
 		}
@@ -210,18 +212,25 @@
 			<span class="label block mb-2">MODE</span>
 			<div class="flex gap-2">
 				<button
-					onclick={() => (optionsMode = false)}
+					onclick={() => (mode = 'standard')}
 					class="flex-1 rounded px-3 py-2 label"
-					style="border: 1px solid {!optionsMode ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {!optionsMode ? 'var(--surface-active)' : 'var(--surface)'}; color: {!optionsMode ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
+					style="border: 1px solid {mode === 'standard' ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {mode === 'standard' ? 'var(--surface-active)' : 'var(--surface)'}; color: {mode === 'standard' ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
 				>
 					STANDARD
 				</button>
 				<button
-					onclick={() => (optionsMode = true)}
+					onclick={() => (mode = 'options')}
 					class="flex-1 rounded px-3 py-2 label"
-					style="border: 1px solid {optionsMode ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {optionsMode ? 'var(--surface-active)' : 'var(--surface)'}; color: {optionsMode ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
+					style="border: 1px solid {mode === 'options' ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {mode === 'options' ? 'var(--surface-active)' : 'var(--surface)'}; color: {mode === 'options' ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
 				>
 					OPTIONS
+				</button>
+				<button
+					onclick={() => (mode = 'warrants')}
+					class="flex-1 rounded px-3 py-2 label"
+					style="border: 1px solid {mode === 'warrants' ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {mode === 'warrants' ? 'var(--surface-active)' : 'var(--surface)'}; color: {mode === 'warrants' ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
+				>
+					WARRANTS
 				</button>
 			</div>
 		</div>
