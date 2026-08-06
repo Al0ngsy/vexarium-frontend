@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { fly } from 'svelte/transition';
+	import type { TransitionConfig } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { AssetInfo, AssetType, AnalysisResponse, IndicatorSeries, IndicatorResult } from '$lib/types';
@@ -13,6 +13,7 @@
 	import IndicatorChart from '../components/IndicatorChart.svelte';
 	import SaveTradeModal from '../components/SaveTradeModal.svelte';
 	import CompanyProfile from '../components/CompanyProfile.svelte';
+	import OptionsWorkspace from '../components/OptionsWorkspace.svelte';
 
 	// ---- search state -------------------------------------------------------
 	let symbol = $state('');
@@ -42,9 +43,21 @@
 	let authed = $state(false);
 	let proUser = $state(false);
 
-	// Rotating hero word: "buy" ↔ "sell".
+	// Rotating hero word: "buy" ↔ "sell" (vertical fade in/out).
 	let heroWord = $state<'buy' | 'sell'>('buy');
 	let heroTimer: ReturnType<typeof setInterval> | null = null;
+
+	// Custom transition: fade + vertical slide (Svelte allows only one transition: per element).
+	function fadeSlide(node: Element, { y = 10, duration = 350 }: { y?: number; duration?: number } = {}): TransitionConfig {
+		return {
+			duration,
+			css: (t) => {
+				const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+				const offset = (1 - eased) * y;
+				return `opacity: ${t}; transform: translateY(${offset}px);`;
+			}
+		};
+	}
 
 	// Group suggestions by asset type, preserving order: stock, etf, index.
 	const grouped = $derived.by(() => {
@@ -82,11 +95,16 @@
 				heroWord = heroWord === 'buy' ? 'sell' : 'buy';
 			}, 3000);
 		}
-		// Deep-link: /?symbol=AAPL auto-runs the health check.
+		// Deep-link: /?symbol=AAPL auto-runs the health check; mode from query.
 		const q = page.url.searchParams.get('symbol');
 		if (q) {
 			symbol = q.toUpperCase();
-			runAnalysis();
+			const m = page.url.searchParams.get('mode');
+			if (m === 'options') {
+				mode = 'options';
+			} else {
+				runAnalysis();
+			}
 		}
 	});
 
@@ -164,7 +182,10 @@
 		const sym = symbol.trim().toUpperCase();
 		dropdownOpen = false;
 		if (mode === 'options') {
-			goto(`/options/${sym}`);
+			// SPA: options workspace renders below the search on the same page.
+			goto(`/?symbol=${sym}&mode=options`, { replaceState: true });
+			analysis = null;
+			error = null;
 		} else {
 			// Single-page: run the check and show results below the search.
 			goto(`/?symbol=${sym}`, { replaceState: true });
@@ -352,7 +373,7 @@
 		<h1 class="brand" style="font-size: 2.6rem; letter-spacing: 0.02em; text-transform: none; line-height: 1.1;">
 			Check before you <span style="color: var(--accent-primary); display: inline-block;">
 				{#key heroWord}
-					<span class="inline-block" transition:fly={{ y: 14, duration: 400 }}>{heroWord}.</span>
+					<span class="inline-block" transition:fadeSlide={{ y: 10, duration: 350 }}>{heroWord}.</span>
 				{/key}
 			</span>
 		</h1>
@@ -437,7 +458,10 @@
 
 	<!-- ============================ RESULTS BELOW ============================ -->
 	<div class="mt-10 w-full max-w-5xl">
-		{#if loading}
+		{#if mode === 'options' && symbol}
+			<!-- Options SPA: full options workspace below the search -->
+			<OptionsWorkspace {symbol} />
+		{:else if loading}
 			<div class="panel mb-6 p-6">
 				<div class="mb-4 h-6 w-40 rounded" style="background-color: var(--surface-3)"></div>
 				<div class="mb-2 h-4 w-64 rounded" style="background-color: var(--surface-3)"></div>
