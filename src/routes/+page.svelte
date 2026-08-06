@@ -259,7 +259,7 @@
         });
         recent = getRecentAnalyses();
       }
-      // Auto-run the AI second opinion for every symbol (free tier).
+      // Auto-run the AI analysis for every symbol (free tier).
       runAI();
     } catch (e) {
       analysis = null;
@@ -425,11 +425,6 @@
         class="h-2 w-2 rounded-full"
         style="background-color: var(--verdict-strong-buy); box-shadow: 0 0 8px var(--verdict-strong-buy);"
       ></span>
-      <span
-        class="label"
-        style="color: var(--foreground-muted); letter-spacing: 0.06em;"
-        >10 FREE CHECKS · AI SECOND OPINION ON PRO</span
-      >
     </div>
     <h1
       class="brand"
@@ -698,8 +693,8 @@
               : analysis.overall.score < 0
                 ? "The overall bias is negative."
                 : "The overall bias is neutral."}
-            Use the checks below to understand why, and the AI second opinion for
-            a plain-language read.
+            Use the checks below to understand why, and the AI analysis for a plain-language
+            read.
           </p>
         </div>
 
@@ -937,7 +932,7 @@
           </div>
         {/if}
       </div>
-      <!-- 3. AI second opinion (free for everyone) -->
+      <!-- 3. AI analysis (free for everyone) -->
       <div
         class="panel mt-6 overflow-hidden"
         style="border-top: 2px solid var(--accent-primary)"
@@ -950,7 +945,7 @@
             class="brand"
             style="border-bottom: 2px solid var(--accent-primary)"
           >
-            AI SECOND OPINION
+            AI ANALYSIS
           </h2>
           <span class="label" style="color: var(--accent-primary)"
             >{aiOpen ? "▲ HIDE" : "▼ SHOW"}</span

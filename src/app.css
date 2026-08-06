@@ -1,6 +1,6 @@
-@import '@fontsource/space-grotesk';
-@import '@fontsource/inter';
-@import '@fontsource/jetbrains-mono';
+@import "@fontsource/space-grotesk";
+@import "@fontsource/inter";
+@import "@fontsource/jetbrains-mono";
 @import "tailwindcss";
 
 :root {
@@ -40,9 +40,9 @@
 }
 
 @theme {
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 
   --color-background: #0b0e13;
   --color-surface: #151a24;
@@ -65,9 +65,21 @@ body {
   margin: 0;
   /* Soft amber glow — keeps the dark theme from feeling flat */
   background-image:
-    radial-gradient(55% 40% at 12% 0%, rgba(245, 158, 11, 0.08), transparent 60%),
-    radial-gradient(45% 35% at 88% 8%, rgba(245, 158, 11, 0.05), transparent 60%),
-    radial-gradient(40% 40% at 50% 100%, rgba(52, 211, 153, 0.04), transparent 60%);
+    radial-gradient(
+      55% 40% at 12% 0%,
+      rgba(245, 158, 11, 0.08),
+      transparent 60%
+    ),
+    radial-gradient(
+      45% 35% at 88% 8%,
+      rgba(245, 158, 11, 0.05),
+      transparent 60%
+    ),
+    radial-gradient(
+      40% 40% at 50% 100%,
+      rgba(52, 211, 153, 0.04),
+      transparent 60%
+    );
   background-attachment: fixed;
 }
 
@@ -233,16 +245,36 @@ body {
 }
 
 @keyframes caret-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-caret { animation: none; opacity: 0; }
+  .hero-caret {
+    animation: none;
+    opacity: 0;
+  }
 }
-.chip-pass { background: rgba(52, 211, 153, 0.12); color: var(--verdict-strong-buy); border: 1px solid rgba(52, 211, 153, 0.35); }
-.chip-watch { background: rgba(251, 191, 36, 0.12); color: var(--verdict-hold); border: 1px solid rgba(251, 191, 36, 0.35); }
-.chip-fail { background: rgba(248, 113, 113, 0.12); color: var(--verdict-strong-sell); border: 1px solid rgba(248, 113, 113, 0.35); }
+.chip-pass {
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--verdict-strong-buy);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+.chip-watch {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--verdict-hold);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+.chip-fail {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--verdict-strong-sell);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
 
 /* Vitals tile */
 .vital {
@@ -299,7 +331,9 @@ body {
   height: 92px;
   flex-shrink: 0;
 }
-.grade-ring svg { transform: rotate(-90deg); }
+.grade-ring svg {
+  transform: rotate(-90deg);
+}
 .grade-ring .grade {
   position: absolute;
   inset: 0;
@@ -349,7 +383,7 @@ body {
   margin-top: 4px;
 }
 
-/* AI SECOND OPINION — rendered markdown body */
+/* AI ANALYSIS — rendered markdown body */
 .ai-body {
   color: var(--foreground);
   font-size: 0.875rem;
