@@ -697,7 +697,7 @@
               : analysis.overall.score < 0
                 ? "The overall bias is negative."
                 : "The overall bias is neutral."}
-            Use the checks below to understand why, and the AI analysis for a plain-language
+            Use the technicals below to understand why, and the AI analysis for a plain-language
             read.
           </p>
         </div>
@@ -797,10 +797,11 @@
               : "var(--verdict-hold)"}
         <div class="panel mb-6 overflow-hidden">
           <button
-            class="flex w-full flex-wrap items-center justify-between gap-3 p-4"
+            class="flex w-full flex-wrap items-center justify-between gap-3 border-b px-4 py-3"
+            style="border-color: var(--panel-border)"
             onclick={() => (newsOpen = !newsOpen)}
           >
-            <span class="label">NEWS SENTIMENT</span>
+            <h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">NEWS SENTIMENT</h2>
             <div class="flex items-center gap-4">
               <span class="data" style="color: {color}">{ns.summary}</span>
               <span class="label" style="color: var(--foreground-muted)"
@@ -852,7 +853,7 @@
             class="brand"
             style="border-bottom: 2px solid var(--accent-primary)"
           >
-            THE CHECKS
+            TECHNICALS
           </h2>
           <span class="flex items-center gap-3">
             <span class="label" style="color: var(--foreground-muted)"
