@@ -212,6 +212,34 @@ body {
   font-weight: 600;
   letter-spacing: 0.04em;
 }
+
+/* Hero typewriter: fixed slot width so the headline never shifts */
+.hero-type {
+  display: inline-block;
+  min-width: 3.2ch;
+  text-align: left;
+  vertical-align: baseline;
+}
+
+/* Blinking typewriter caret */
+.hero-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 3px;
+  vertical-align: -0.1em;
+  background-color: var(--accent-primary);
+  animation: caret-blink 1s step-end infinite;
+}
+
+@keyframes caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-caret { animation: none; opacity: 0; }
+}
 .chip-pass { background: rgba(52, 211, 153, 0.12); color: var(--verdict-strong-buy); border: 1px solid rgba(52, 211, 153, 0.35); }
 .chip-watch { background: rgba(251, 191, 36, 0.12); color: var(--verdict-hold); border: 1px solid rgba(251, 191, 36, 0.35); }
 .chip-fail { background: rgba(248, 113, 113, 0.12); color: var(--verdict-strong-sell); border: 1px solid rgba(248, 113, 113, 0.35); }

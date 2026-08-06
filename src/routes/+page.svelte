@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { AssetInfo, AssetType, AnalysisResponse, IndicatorSeries, IndicatorResult } from '$lib/types';
@@ -44,6 +44,31 @@
 	let authed = $state(false);
 	let proUser = $state(false);
 
+	// Typewriter hero: types "buy", deletes it, types "sell", deletes it, loops.
+	const HERO_WORDS = ['buy', 'sell'];
+	let heroWordIdx = 0;
+	let typed = $state('');
+	let heroTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function heroType() {
+		const word = HERO_WORDS[heroWordIdx];
+		if (typed.length < word.length) {
+			typed = word.slice(0, typed.length + 1);
+			heroTimer = setTimeout(heroType, 120);
+		} else {
+			heroTimer = setTimeout(heroDelete, 1600); // hold the full word
+		}
+	}
+
+	function heroDelete() {
+		if (typed.length > 0) {
+			typed = typed.slice(0, -1);
+			heroTimer = setTimeout(heroDelete, 60);
+		} else {
+			heroWordIdx = (heroWordIdx + 1) % HERO_WORDS.length;
+			heroTimer = setTimeout(heroType, 400);
+		}
+	}
 	// Group suggestions by asset type, preserving order: stock, etf, index.
 	const grouped = $derived.by(() => {
 		const order: AssetType[] = ['stock', 'etf', 'index'];
@@ -74,6 +99,12 @@
 		proUser = getUser()?.tier === 'pro';
 		recent = getRecentAnalyses();
 		document.addEventListener('click', handleOutsideClick);
+		// Typewriter hero: respect reduced motion (static "buy or sell" instead).
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			typed = 'buy or sell';
+		} else {
+			heroTimer = setTimeout(heroType, 400);
+		}
 		// Deep-link: /?symbol=AAPL auto-runs the health check; mode from query.
 		const q = page.url.searchParams.get('symbol');
 		if (q) {
@@ -85,6 +116,10 @@
 				runAnalysis();
 			}
 		}
+	});
+
+	onDestroy(() => {
+		if (heroTimer) clearTimeout(heroTimer);
 	});
 
 	function handleOutsideClick(e: MouseEvent) {
@@ -303,7 +338,7 @@
 			<span class="label" style="color: var(--foreground-muted); letter-spacing: 0.06em;">10 FREE CHECKS · AI SECOND OPINION ON PRO</span>
 		</div>
 		<h1 class="brand" style="font-size: 2.6rem; letter-spacing: 0.02em; text-transform: none; line-height: 1.1;">
-			Check before you <span style="color: var(--accent-primary)">buy or sell</span>.
+			Check before you <span class="hero-type" style="color: var(--accent-primary)">{typed}<span class="hero-caret" aria-hidden="true"></span></span>.
 		</h1>
 		<p class="label mt-4 mb-8" style="color: var(--foreground-muted); text-transform: none; font-weight: 400; font-size: 1rem; max-width: 560px; line-height: 1.6;">
 			A plain-language health check for any stock, ETF or option. Built for beginners, deep enough for pros.
