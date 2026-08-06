@@ -211,6 +211,10 @@
 				});
 				recent = getRecentAnalyses();
 			}
+			// Auto-run the AI second opinion for featured symbols (free preview).
+			if (FEATURED_SYMBOLS.includes(sym)) {
+				runAI();
+			}
 		} catch (e) {
 			analysis = null;
 			error = e instanceof Error ? e.message : 'Analysis failed';
