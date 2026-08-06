@@ -14,6 +14,7 @@
 	import SaveTradeModal from '../components/SaveTradeModal.svelte';
 	import CompanyProfile from '../components/CompanyProfile.svelte';
 	import OptionsWorkspace from '../components/OptionsWorkspace.svelte';
+	import DisclaimerBanner from '../components/DisclaimerBanner.svelte';
 
 	// ---- search state -------------------------------------------------------
 	let symbol = $state('');
@@ -457,6 +458,12 @@
 	</div>
 
 	<!-- ============================ RESULTS BELOW ============================ -->
+	{#if mode === 'options' && symbol || loading || error || analysis}
+		<!-- Disclaimer: only shown when content is displayed, between search and results -->
+		<div class="mt-10 w-full max-w-5xl">
+			<DisclaimerBanner />
+		</div>
+	{/if}
 	<div class="mt-10 w-full max-w-5xl">
 		{#if mode === 'options' && symbol}
 			<!-- Options SPA: full options workspace below the search -->

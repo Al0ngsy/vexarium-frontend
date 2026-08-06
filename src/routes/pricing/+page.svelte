@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { createCheckoutSession } from '$lib/api';
 	import { initAuth, getToken, getUser } from '$lib/auth.svelte';
+	import DisclaimerBanner from '../../components/DisclaimerBanner.svelte';
 
 	let authed = $state(false);
 	let tier = $state('free');
@@ -38,6 +39,8 @@
 </svelte:head>
 
 <div class="mx-auto max-w-5xl">
+	<DisclaimerBanner />
+
 	<div class="mb-10 text-center">
 		<h1 class="brand mb-2" style="font-size: 2rem; border-bottom: 2px solid var(--accent-primary); display: inline-block">
 			PRICING

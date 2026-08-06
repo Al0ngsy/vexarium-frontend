@@ -6,6 +6,7 @@
 	import { getStance } from '$lib/api';
 
 	import TradeCard from '../../components/TradeCard.svelte';
+	import DisclaimerBanner from '../../components/DisclaimerBanner.svelte';
 
 	interface StanceState {
 		loading: boolean;
@@ -77,6 +78,7 @@
 		<a href="/" class="link-crimson">GO TO ANALYSIS →</a>
 	</div>
 {:else if loaded}
+	<DisclaimerBanner />
 	<!-- Anonymous sync banner -->
 	<div class="panel mb-6 px-5 py-3" style="border-top: 2px solid var(--accent-primary)">
 		<p class="label" style="color: var(--foreground-muted)">SIGN UP TO SYNC ACROSS DEVICES</p>
