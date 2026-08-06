@@ -10,7 +10,8 @@ import type {
 	AssetInfo,
 	AssetSearchResponse,
 	OptionValueAtPrice,
-	OptionsMatrixResponse
+	OptionsMatrixResponse,
+	OptionChanceResponse
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -133,6 +134,19 @@ export async function getOptionsMatrix(
 		body: JSON.stringify({ contract_symbol: contractSymbol, range_pct: rangePct, quantity })
 	});
 	if (!resp.ok) throw new Error(`Options matrix failed: ${resp.status}`);
+	return resp.json();
+}
+
+export async function getOptionChance(
+	symbol: string,
+	contractSymbol: string,
+	token?: string
+): Promise<OptionChanceResponse> {
+	let url = `${BASE_URL}/api/v1/options/${symbol}/chance?contract_symbol=${contractSymbol}`;
+	if (token) url += `&token=${encodeURIComponent(token)}`;
+	const resp = await fetch(url);
+	if (resp.status === 403) throw new Error('PRO_FEATURE');
+	if (!resp.ok) throw new Error(`Options chance failed: ${resp.status}`);
 	return resp.json();
 }
 
