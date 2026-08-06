@@ -739,7 +739,7 @@
 	</div>
 
 	<!-- ==================== RECENT ANALYSES (idle state) ==================== -->
-	{#if !analysis && !loading}
+	{#if !analysis && !loading && !(mode === 'options' && symbol)}
 		<div class="mt-10 w-full max-w-xl">
 			<div class="section-title" style="margin-top: 0;">RECENT ANALYSES <span class="line"></span></div>
 			{#if recent.length === 0}
