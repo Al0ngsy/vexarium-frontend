@@ -348,7 +348,7 @@
 					{analysis.overall.overall_verdict.replace('_', ' ').toUpperCase()}
 				</p>
 			</div>
-			<a href={`/analysis/${symbol}`} class="btn-outline" style="white-space: nowrap">VIEW ANALYSIS →</a>
+			<a href={`/?symbol=${symbol}`} class="btn-outline" style="white-space: nowrap">VIEW ANALYSIS →</a>
 		</div>
 	</div>
 

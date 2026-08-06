@@ -84,7 +84,7 @@
 
 	<div class="mt-4 flex items-center justify-between border-t pt-3" style="border-color: var(--panel-border)">
 		<div class="flex items-center gap-4">
-			<a href={`/analysis/${trade.symbol}`} class="link-crimson">VIEW ANALYSIS →</a>
+			<a href={`/?symbol=${trade.symbol}`} class="link-crimson">VIEW ANALYSIS →</a>
 			<button
 				class="label"
 				style="background: none; border: none; cursor: pointer; color: var(--foreground-subtle)"
