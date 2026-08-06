@@ -77,7 +77,7 @@
 
 	function seriesFor(name: string): IndicatorSeries | null {
 		const found = (analysis?.indicator_series || []).find(
-			(s) => s.name.toLowerCase() === name.toLowerCase()
+			(s) => s.name.toLowerCase().includes(name.toLowerCase())
 		);
 		return found ?? null;
 	}
