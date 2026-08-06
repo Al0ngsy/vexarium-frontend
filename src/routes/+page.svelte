@@ -8,6 +8,7 @@
 	import { getRecentAnalyses, addRecentAnalysis, type RecentAnalysis } from '$lib/storage';
 	import { formatTimeAgo } from '$lib/format';
 	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
+	import { explainIndicator, STATUS_ICON, STATUS_LABEL } from '$lib/indicator-explain';
 	import { getToken, getUser, initAuth } from '$lib/auth.svelte';
 
 	import IndicatorChart from '../components/IndicatorChart.svelte';
@@ -251,51 +252,6 @@
 		return found ?? null;
 	}
 
-	const SIGNALS: Record<string, string> = {
-		RSI: 'Momentum oscillator',
-		MACD: 'Trend momentum',
-		'SMA(50)/EMA(200)': 'Price vs long-term trend',
-		BOLLINGER: 'Volatility bands',
-		STOCHASTIC: 'Oscillator momentum',
-		ATR: 'Volatility magnitude',
-		ADX: 'Trend strength',
-		OBV: 'Volume flow',
-		VWAP: 'Volume-weighted average',
-		ICHIMOKU: 'Cloud trend structure'
-	};
-	function signalNote(name: string): string {
-		const n = name.toUpperCase();
-		for (const k of Object.keys(SIGNALS)) {
-			if (n.includes(k.toUpperCase())) return SIGNALS[k];
-		}
-		return '';
-	}
-
-	const VALUE_LABELS: Record<string, string> = {
-		sma50: 'SMA50', ema200: 'EMA200', ema20: 'EMA20', ema50: 'EMA50',
-		current_price: 'Price',
-		macd: 'MACD', histogram: 'Hist', signal: 'Signal',
-		pct_b: '%B', lower: 'Lower', upper: 'Upper', middle: 'Mid',
-		atr: 'ATR', close: 'Close',
-		obv: 'OBV', trend: 'Trend',
-		vwap: 'VWAP',
-		conversion: 'Conv', base: 'Base', cloud_top: 'Cloud↑', cloud_bottom: 'Cloud↓',
-		direction: 'Dir', crossover: 'Cross',
-	};
-	function formatIndicatorValue(value: IndicatorResult['value']): string {
-		if (value === null || value === undefined) return '—';
-		if (typeof value === 'number') {
-			return Number.isInteger(value) ? String(value) : value.toFixed(2);
-		}
-		return Object.entries(value)
-			.map(([k, v]) => {
-				const label = VALUE_LABELS[k] || k;
-				const val = typeof v === 'number' ? v.toFixed(2) : String(v);
-				return `${label}:${val}`;
-			})
-			.join('  ');
-	}
-
 	const FEATURED_SYMBOLS = ['AAPL', 'MSFT', 'TSLA', 'SPY', 'NVDA', 'AMZN', 'GOOGL', 'META'];
 
 	const bullCount = $derived((analysis?.overall?.breakdown || []).filter((i) => ['buy', 'strong_buy'].includes(i.verdict)).length);
@@ -307,8 +263,6 @@
 		if (['sell', 'strong_sell'].includes(v)) return 'fail';
 		return 'watch';
 	};
-	const statusIcon = (s: 'pass' | 'watch' | 'fail') => (s === 'pass' ? '✓' : s === 'watch' ? '△' : '✗');
-	const statusLabel = (s: 'pass' | 'watch' | 'fail') => (s === 'pass' ? 'PASS' : s === 'watch' ? 'WATCH' : 'FAIL');
 
 	const passCount = $derived((analysis?.overall?.breakdown || []).filter((i) => verdictStatus(i.verdict) === 'pass').length);
 	const watchCount = $derived((analysis?.overall?.breakdown || []).filter((i) => verdictStatus(i.verdict) === 'watch').length);
@@ -663,24 +617,27 @@
 						<tbody>
 							{#each analysis.indicators as indicator}
 								{@const vc = VERDICT_COLORS[indicator.verdict] || '#8b96a8'}
-								{@const st = verdictStatus(indicator.verdict)}
+								{@const ex = explainIndicator(indicator)}
 								<tr class="group transition-colors" style="border-bottom: 1px solid var(--grid-line);">
-									<td class="px-4 py-3">
+									<td class="px-4 py-3 align-top">
 										<div class="flex items-center gap-2.5">
 											<span class="h-full w-1 self-stretch rounded" style="background-color: {vc};"></span>
 											<span class="label" style="color: var(--foreground); text-transform: none">{indicator.name}</span>
 										</div>
 									</td>
-									<td class="px-4 py-3 data" style="color: var(--foreground)">{formatIndicatorValue(indicator.value)}</td>
-									<td class="px-4 py-3">
-										<span class="chip chip-{st}">
-											{statusIcon(st)} {statusLabel(st)}
+									<td class="px-4 py-3 align-top data" style="color: var(--foreground); white-space: nowrap">{ex.reading}</td>
+									<td class="px-4 py-3 align-top">
+										<span class="chip chip-{ex.status}" style="white-space: nowrap">
+											{STATUS_ICON[ex.status]} {STATUS_LABEL[ex.status]}
 										</span>
 									</td>
-									<td class="px-4 py-3">
-										<span class="label" style="color: var(--foreground-muted); text-transform: none">
-											{signalNote(indicator.name)}
-										</span>
+									<td class="px-4 py-3 align-top">
+										<div class="max-w-md">
+											<p class="label" style="color: var(--foreground); text-transform: none; line-height: 1.55">{ex.what}</p>
+											<p class="label mt-1.5" style="color: {vc}; text-transform: none; line-height: 1.5">
+												{STATUS_LABEL[ex.status]}: {ex.reason}
+											</p>
+										</div>
 									</td>
 								</tr>
 							{/each}
