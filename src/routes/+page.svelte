@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import type { TransitionConfig } from 'svelte/transition';
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { AssetInfo, AssetType, AnalysisResponse, IndicatorSeries, IndicatorResult } from '$lib/types';
@@ -45,22 +44,6 @@
 	let authed = $state(false);
 	let proUser = $state(false);
 
-	// Rotating hero word: "buy" ↔ "sell" (vertical fade in/out).
-	let heroWord = $state<'buy' | 'sell'>('buy');
-	let heroTimer: ReturnType<typeof setInterval> | null = null;
-
-	// Custom transition: fade + vertical slide (Svelte allows only one transition: per element).
-	function fadeSlide(node: Element, { y = 10, duration = 350 }: { y?: number; duration?: number } = {}): TransitionConfig {
-		return {
-			duration,
-			css: (t) => {
-				const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-				const offset = (1 - eased) * y;
-				return `opacity: ${t}; transform: translateY(${offset}px);`;
-			}
-		};
-	}
-
 	// Group suggestions by asset type, preserving order: stock, etf, index.
 	const grouped = $derived.by(() => {
 		const order: AssetType[] = ['stock', 'etf', 'index'];
@@ -91,12 +74,6 @@
 		proUser = getUser()?.tier === 'pro';
 		recent = getRecentAnalyses();
 		document.addEventListener('click', handleOutsideClick);
-		// Rotate the hero word periodically (respect reduced motion).
-		if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-			heroTimer = setInterval(() => {
-				heroWord = heroWord === 'buy' ? 'sell' : 'buy';
-			}, 3000);
-		}
 		// Deep-link: /?symbol=AAPL auto-runs the health check; mode from query.
 		const q = page.url.searchParams.get('symbol');
 		if (q) {
@@ -108,10 +85,6 @@
 				runAnalysis();
 			}
 		}
-	});
-
-	onDestroy(() => {
-		if (heroTimer) clearInterval(heroTimer);
 	});
 
 	function handleOutsideClick(e: MouseEvent) {
@@ -330,11 +303,7 @@
 			<span class="label" style="color: var(--foreground-muted); letter-spacing: 0.06em;">10 FREE CHECKS · AI SECOND OPINION ON PRO</span>
 		</div>
 		<h1 class="brand" style="font-size: 2.6rem; letter-spacing: 0.02em; text-transform: none; line-height: 1.1;">
-			Check before you <span style="color: var(--accent-primary); display: inline-block;">
-				{#key heroWord}
-					<span class="inline-block" transition:fadeSlide={{ y: 10, duration: 350 }}>{heroWord}.</span>
-				{/key}
-			</span>
+			Check before you <span style="color: var(--accent-primary)">buy or sell</span>.
 		</h1>
 		<p class="label mt-4 mb-8" style="color: var(--foreground-muted); text-transform: none; font-weight: 400; font-size: 1rem; max-width: 560px; line-height: 1.6;">
 			A plain-language health check for any stock, ETF or option. Built for beginners, deep enough for pros.
