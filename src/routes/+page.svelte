@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { analyze, streamAIAnalysis, searchAssets } from "$lib/api";
+  import { analyze, searchAssets, streamAIAnalysis } from "$lib/api";
   import { getToken, initAuth } from "$lib/auth.svelte";
   import { formatTimeAgo } from "$lib/format";
   import {
@@ -421,15 +421,6 @@
 <div class="flex flex-col items-center">
   <!-- ============================ HERO + SEARCH ============================ -->
   <div class="flex w-full flex-col items-center pt-14 text-center">
-    <div
-      class="mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-1.5"
-      style="border-color: var(--panel-border); background-color: var(--surface);"
-    >
-      <span
-        class="h-2 w-2 rounded-full"
-        style="background-color: var(--verdict-strong-buy); box-shadow: 0 0 8px var(--verdict-strong-buy);"
-      ></span>
-    </div>
     <h1
       class="brand"
       style="font-size: 2.6rem; letter-spacing: 0.02em; text-transform: none; line-height: 1.1;"
@@ -444,8 +435,8 @@
       class="label mt-4 mb-8"
       style="color: var(--foreground-muted); text-transform: none; font-weight: 400; font-size: 1rem; max-width: 560px; line-height: 1.6;"
     >
-      A plain-language health check for any stock, ETF or option. Built for
-      beginners, deep enough for pros.
+      A health check for any stock, ETF or option. Built for beginners, deep
+      enough for pros.
     </p>
 
     <!-- Symbol input with grouped autocomplete -->
@@ -697,8 +688,8 @@
               : analysis.overall.score < 0
                 ? "The overall bias is negative."
                 : "The overall bias is neutral."}
-            Use the technicals below to understand why, and the AI analysis for a plain-language
-            read.
+            Use the technicals below to understand why, and the AI analysis for a
+            plain-language read.
           </p>
         </div>
 
@@ -801,7 +792,12 @@
             style="border-color: var(--panel-border)"
             onclick={() => (newsOpen = !newsOpen)}
           >
-            <h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">NEWS SENTIMENT</h2>
+            <h2
+              class="brand"
+              style="border-bottom: 2px solid var(--accent-primary)"
+            >
+              NEWS SENTIMENT
+            </h2>
             <div class="flex items-center gap-4">
               <span class="data" style="color: {color}">{ns.summary}</span>
               <span class="label" style="color: var(--foreground-muted)"
