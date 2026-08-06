@@ -9,6 +9,7 @@
     STATUS_ICON,
     STATUS_LABEL,
   } from "$lib/indicator-explain";
+  import { renderAIMarkdown } from "$lib/markdown";
   import {
     addRecentAnalysis,
     getRecentAnalyses,
@@ -966,13 +967,8 @@
                 ANALYZING...
               </p>
             {:else if aiMessage}
-              <div class="mt-4">
-                <p
-                  class="label"
-                  style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap; text-transform: none;"
-                >
-                  {aiMessage}
-                </p>
+              <div class="mt-4 ai-body">
+                {@html renderAIMarkdown(aiMessage)}
               </div>
             {:else}
               <p
