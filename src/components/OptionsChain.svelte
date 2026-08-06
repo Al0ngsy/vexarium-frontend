@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { OptionContract } from '$lib/types';
 
-	// Two-sided TradingView-style options chain, in Arasaka style.
+	// Two-sided TradingView-style options chain.
 	// Groups contracts by expiration; each group is a mirrored
 	//   CALLS | STRIKE + IV | PUTS
 	// table with bid/ask, last, theoretical, intrinsic, time value, spread,

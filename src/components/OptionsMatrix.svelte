@@ -2,7 +2,7 @@
 	import { getOptionsMatrix } from '$lib/api';
 	import type { OptionsMatrixResponse } from '$lib/types';
 
-	// OptionStrat-inspired P/L matrix rendered in Arasaka style: rows = strikes
+	// OptionStrat-inspired P/L matrix: rows = strikes
 	// (centered on current price, each with % move), columns = expiry dates,
 	// cells = projected P/L colored by magnitude. Supports range + metric modes.
 

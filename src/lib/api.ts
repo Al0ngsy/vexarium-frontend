@@ -72,19 +72,6 @@ export async function analyze(
 	return resp.json();
 }
 
-export async function analyzeExtended(
-	symbol: string,
-	assetType: AssetType = 'stock'
-): Promise<AnalysisResponse> {
-	const resp = await fetch(`${BASE_URL}/api/v1/analysis/extended`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ symbol, asset_type: assetType })
-	});
-	if (!resp.ok) throw new Error(`Pro analysis failed: ${resp.status}`);
-	return resp.json();
-}
-
 export async function getOptionChain(
 	symbol: string,
 	expirationGte: string,
