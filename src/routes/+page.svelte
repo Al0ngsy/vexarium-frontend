@@ -962,7 +962,7 @@
                 >RUN AI ANALYSIS</button
               >
             </div>
-            {#if aiLoading}
+            {#if aiLoading && !aiMessage}
               <p
                 class="mt-4 font-mono"
                 style="color: var(--accent-primary); letter-spacing: 0.15em"
