@@ -193,8 +193,11 @@
 			out.push({ k: '52-WEEK RANGE', v: `$${co.low_52w.toFixed(0)}–$${co.high_52w.toFixed(0)}`, d: 'yearly low–high' });
 		}
 		const atr = analysis.indicators.find((i) => i.name.toUpperCase().includes('ATR'));
-		if (atr && typeof atr.value === 'number') {
-			out.push({ k: 'VOLATILITY', v: `ATR ${atr.value.toFixed(1)}`, d: 'avg daily move' });
+		if (atr) {
+			const atrVal = typeof atr.value === 'number' ? atr.value : (atr.value as Record<string, number> | null | undefined)?.atr;
+			if (typeof atrVal === 'number') {
+				out.push({ k: 'VOLATILITY', v: `ATR ${atrVal.toFixed(1)}`, d: 'avg daily move' });
+			}
 		}
 		const rsi = analysis.indicators.find((i) => i.name.toUpperCase().includes('RSI'));
 		if (rsi && typeof rsi.value === 'number') {
