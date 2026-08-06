@@ -8,7 +8,7 @@
 	import { formatTimeAgo } from '$lib/format';
 	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
 	import { explainIndicator, STATUS_ICON, STATUS_LABEL } from '$lib/indicator-explain';
-	import { getToken, getUser, initAuth } from '$lib/auth.svelte';
+	import { getToken, initAuth } from '$lib/auth.svelte';
 
 	import IndicatorChart from '../components/IndicatorChart.svelte';
 	import SaveTradeModal from '../components/SaveTradeModal.svelte';
@@ -38,11 +38,15 @@
 	let showSave = $state(false);
 	let aiLoading = $state(false);
 	let aiMessage = $state<string | null>(null);
-	let aiPreview = $state(false);
 	let newsOpen = $state(false);
 
+	// Collapsible report sections (HEALTH CHECK stays always visible).
+	// Default: all open, so first-time users see everything.
+	let aboutOpen = $state(true);
+	let checksOpen = $state(true);
+	let aiOpen = $state(true);
+
 	let authed = $state(false);
-	let proUser = $state(false);
 
 	// Typewriter hero: types "buy", deletes it, types "sell", deletes it, loops.
 	const HERO_WORDS = ['buy', 'sell'];
@@ -96,7 +100,6 @@
 	onMount(() => {
 		initAuth();
 		authed = !!getToken();
-		proUser = getUser()?.tier === 'pro';
 		recent = getRecentAnalyses();
 		document.addEventListener('click', handleOutsideClick);
 		// Typewriter hero: respect reduced motion (static "buy or sell" instead).
@@ -236,10 +239,8 @@
 				});
 				recent = getRecentAnalyses();
 			}
-			// Auto-run the AI second opinion for featured symbols (free preview).
-			if (FEATURED_SYMBOLS.includes(sym)) {
-				runAI();
-			}
+			// Auto-run the AI second opinion for every symbol (free tier).
+			runAI();
 		} catch (e) {
 			analysis = null;
 			error = e instanceof Error ? e.message : 'Analysis failed';
@@ -251,11 +252,9 @@
 	async function runAI() {
 		aiLoading = true;
 		aiMessage = null;
-		aiPreview = false;
 		try {
 			const res = await getAIAnalysis(symbol, assetType, getToken() ?? undefined);
 			aiMessage = res.analysis;
-			aiPreview = !!res.is_preview;
 		} catch (e) {
 			aiMessage = `AI analysis failed: ${e instanceof Error ? e.message : 'unknown error'}`;
 		} finally {
@@ -275,8 +274,6 @@
 		);
 		return found ?? null;
 	}
-
-	const FEATURED_SYMBOLS = ['AAPL', 'MSFT', 'TSLA', 'SPY', 'NVDA', 'AMZN', 'GOOGL', 'META'];
 
 	const bullCount = $derived((analysis?.overall?.breakdown || []).filter((i) => ['buy', 'strong_buy'].includes(i.verdict)).length);
 	const bearCount = $derived((analysis?.overall?.breakdown || []).filter((i) => ['sell', 'strong_sell'].includes(i.verdict)).length);
@@ -569,15 +566,24 @@
 				{@const range = (co.high_52w ?? 0) - (co.low_52w ?? 0)}
 				{@const pos = range > 0 && analysis.current_price ? Math.min(100, Math.max(0, ((analysis.current_price - (co.low_52w ?? 0)) / range) * 100)) : 0}
 				<div class="panel mb-6 overflow-hidden">
-					<div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style="border-color: var(--panel-border)">
+					<button
+						class="flex w-full flex-wrap items-center justify-between gap-2 border-b px-4 py-3"
+						style="border-color: var(--panel-border)"
+						onclick={() => (aboutOpen = !aboutOpen)}
+					>
 						<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">ABOUT {symbol}</h2>
-						<span class="label" style="color: var(--foreground-muted)">
-							{co.name || symbol}{co.exchange ? ` · ${co.exchange}` : ''}{co.currency ? ` · ${co.currency}` : ''}
+						<span class="flex items-center gap-3">
+							<span class="label" style="color: var(--foreground-muted)">
+								{co.name || symbol}{co.exchange ? ` · ${co.exchange}` : ''}{co.currency ? ` · ${co.currency}` : ''}
+							</span>
+							<span class="label" style="color: var(--accent-primary)">{aboutOpen ? '▲ HIDE' : '▼ SHOW'}</span>
 						</span>
-					</div>
-					<div class="p-4">
-						<CompanyProfile company={co} {symbol} {pos} />
-					</div>
+					</button>
+					{#if aboutOpen}
+						<div class="p-4">
+							<CompanyProfile company={co} {symbol} {pos} />
+						</div>
+					{/if}
 				</div>
 			{/if}
 
@@ -620,12 +626,20 @@
 
 			<!-- 2. The checks (technicals readout table) -->
 			<div class="panel mb-6 overflow-hidden">
-				<div class="flex items-center justify-between border-b px-4 py-3" style="border-color: var(--panel-border)">
+				<button
+					class="flex w-full items-center justify-between border-b px-4 py-3"
+					style="border-color: var(--panel-border)"
+					onclick={() => (checksOpen = !checksOpen)}
+				>
 					<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">THE CHECKS</h2>
-					<span class="label" style="color: var(--foreground-muted)">{analysis.indicators.length} INDICATORS · {passCount} PASS · {watchCount} WATCH · {failCount} FAIL</span>
-				</div>
-				<div class="overflow-x-auto">
-					<table class="w-full text-left">
+					<span class="flex items-center gap-3">
+						<span class="label" style="color: var(--foreground-muted)">{analysis.indicators.length} INDICATORS · {passCount} PASS · {watchCount} WATCH · {failCount} FAIL</span>
+						<span class="label" style="color: var(--accent-primary)">{checksOpen ? '▲ HIDE' : '▼ SHOW'}</span>
+					</span>
+				</button>
+				{#if checksOpen}
+					<div class="overflow-x-auto">
+						<table class="w-full text-left">
 						<thead>
 							<tr class="label" style="border-bottom: 1px solid var(--panel-border); color: var(--foreground-subtle)">
 								<th class="px-4 py-2.5">CHECK</th>
@@ -661,54 +675,39 @@
 									</td>
 								</tr>
 							{/each}
-						</tbody>
-					</table>
-				</div>
-			</div>
-
-			<!-- 3. AI second opinion (Pro-only, with free preview for featured symbols) -->
-			{@const isFeatured = FEATURED_SYMBOLS.includes(symbol.toUpperCase())}
-			<div class="panel mt-6 p-6" style="border-top: 2px solid var(--accent-primary)">
-				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-3">
-						<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">AI SECOND OPINION</h2>
-						{#if !proUser && isFeatured}
-							<span class="label rounded-full px-2 py-1" style="background-color: rgba(52, 211, 153, 0.12); color: var(--verdict-strong-buy); border: 1px solid rgba(52, 211, 153, 0.35);">FREE PREVIEW</span>
+							</tbody>
+						</table>
+						</div>
 						{/if}
-					</div>
-					{#if proUser || isFeatured}
-						<button class="btn-outline" onclick={runAI} disabled={aiLoading}>RUN AI ANALYSIS</button>
-					{:else}
-						<span class="label rounded-full px-2 py-1" style="background-color: rgba(245, 158, 11, 0.12); color: var(--accent-primary); border: 1px solid rgba(245, 158, 11, 0.35);">🔒 PRO</span>
-					{/if}
-				</div>
-				{#if aiLoading}
-					<p class="mt-4 font-mono" style="color: var(--accent-primary); letter-spacing: 0.15em">ANALYZING...</p>
-				{:else if aiMessage}
-					<div class="mt-4">
-						{#if aiPreview}
-							<div class="mb-3 flex items-center justify-between rounded-lg px-3 py-2" style="background-color: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.35);">
-								<span class="label" style="color: var(--verdict-strong-buy)">FREE PREVIEW — UNLOCK AI FOR ALL SYMBOLS</span>
-								<a class="label link-crimson" href="/pricing">UPGRADE →</a>
+						</div>
+			<!-- 3. AI second opinion (free for everyone) -->
+			<div class="panel mt-6 overflow-hidden" style="border-top: 2px solid var(--accent-primary)">
+				<button
+					class="flex w-full items-center justify-between p-6"
+					onclick={() => (aiOpen = !aiOpen)}
+				>
+					<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">AI SECOND OPINION</h2>
+					<span class="label" style="color: var(--accent-primary)">{aiOpen ? '▲ HIDE' : '▼ SHOW'}</span>
+				</button>
+				{#if aiOpen}
+					<div class="px-6 pb-6">
+						<div class="flex items-center justify-end">
+							<button class="btn-outline" onclick={runAI} disabled={aiLoading}>RUN AI ANALYSIS</button>
+						</div>
+						{#if aiLoading}
+							<p class="mt-4 font-mono" style="color: var(--accent-primary); letter-spacing: 0.15em">ANALYZING...</p>
+						{:else if aiMessage}
+							<div class="mt-4">
+								<p class="label" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap; text-transform: none;">
+									{aiMessage}
+								</p>
 							</div>
+						{:else}
+							<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
+								Run AI to get a natural-language interpretation of the indicators, news and fundamentals.
+							</p>
 						{/if}
-						<p class="label mt-2" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap; text-transform: none;">
-							{aiMessage}
-						</p>
 					</div>
-				{:else if proUser}
-					<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
-						Run AI to get a natural-language interpretation of the indicators and news.
-					</p>
-				{:else if isFeatured}
-					<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
-						{symbol} is a featured symbol — get a free preview of the AI analysis. Unlock AI for every symbol with Pro.
-					</p>
-				{:else}
-					<p class="mt-4 label" style="color: var(--foreground-muted); text-transform: none">
-						AI analysis summarizes the technical indicators and news sentiment. It's available to
-						Pro subscribers. Upgrade to unlock AI analysis.
-					</p>
 				{/if}
 			</div>
 
