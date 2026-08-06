@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { analyze, getAIAnalysis, searchAssets } from "$lib/api";
+  import { analyze, streamAIAnalysis, searchAssets } from "$lib/api";
   import { getToken, initAuth } from "$lib/auth.svelte";
   import { formatTimeAgo } from "$lib/format";
   import {
@@ -273,12 +273,16 @@
     aiLoading = true;
     aiMessage = null;
     try {
-      const res = await getAIAnalysis(
+      // Stream the analysis: chunks arrive progressively (live LLM tokens, or
+      // the cached answer replayed chunk-by-chunk for the same effect).
+      await streamAIAnalysis(
         activeSymbol,
         assetType,
+        (chunk) => {
+          aiMessage = (aiMessage ?? "") + chunk;
+        },
         getToken() ?? undefined,
       );
-      aiMessage = res.analysis;
     } catch (e) {
       aiMessage = `AI analysis failed: ${e instanceof Error ? e.message : "unknown error"}`;
     } finally {

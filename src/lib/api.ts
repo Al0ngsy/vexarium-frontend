@@ -184,6 +184,65 @@ export async function getAIAnalysis(
 	return resp.json();
 }
 
+/**
+ * Stream the AI SECOND OPINION over SSE. `onChunk` is called with each
+ * progressive piece of the answer as it arrives (or is replayed from cache);
+ * the promise resolves with the full text when the stream completes.
+ */
+export async function streamAIAnalysis(
+	symbol: string,
+	assetType: AssetType = 'stock',
+	onChunk: (text: string) => void,
+	token?: string,
+	signal?: AbortSignal
+): Promise<string> {
+	const url = token
+		? `${BASE_URL}/api/v1/analysis/ai/stream?token=${encodeURIComponent(token)}`
+		: `${BASE_URL}/api/v1/analysis/ai/stream`;
+	const resp = await fetch(url, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ symbol, asset_type: assetType }),
+		signal
+	});
+	if (!resp.ok) throw new Error(`AI analysis failed: ${resp.status}`);
+	if (!resp.body) return getAIAnalysis(symbol, assetType, token).then((r) => r.analysis);
+
+	const reader = resp.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = '';
+	let full = '';
+
+	const processEvent = (line: string) => {
+		if (!line.startsWith('data: ')) return;
+		const payload = line.slice(6).trim();
+		if (!payload) return;
+		try {
+			const ev = JSON.parse(payload);
+			if (typeof ev.chunk === 'string' && ev.chunk) {
+				full += ev.chunk;
+				onChunk(ev.chunk);
+			}
+		} catch {
+			// ignore malformed events
+		}
+	};
+
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		buffer += decoder.decode(value, { stream: true });
+		// SSE events are separated by a blank line.
+		let idx: number;
+		while ((idx = buffer.indexOf('\n\n')) !== -1) {
+			const raw = buffer.slice(0, idx);
+			buffer = buffer.slice(idx + 2);
+			for (const line of raw.split('\n')) processEvent(line);
+		}
+	}
+	return full;
+}
+
 export async function searchAssets(q: string): Promise<AssetInfo[]> {
 	const resp = await fetch(`${BASE_URL}/api/v1/assets/search?q=${encodeURIComponent(q)}`);
 	if (!resp.ok) return [];
