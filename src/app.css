@@ -419,6 +419,20 @@ body {
 .ai-body li {
   color: var(--foreground);
 }
+/* Nested lists (the LLM indents sub-bullets with 2 spaces) get deeper
+   indentation and a subtler marker so the hierarchy reads clearly. */
+.ai-body li > ul,
+.ai-body li > ol {
+  margin: 0.3em 0 0.1em;
+  padding-left: 1.1em;
+  gap: 0.25em;
+}
+.ai-body li > ul {
+  list-style: circle;
+}
+.ai-body li > ul li > ul {
+  list-style: square;
+}
 .ai-body strong {
   color: var(--foreground);
   font-weight: 700;

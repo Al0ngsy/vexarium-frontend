@@ -32,60 +32,121 @@ function renderInline(raw: string): string {
 function renderBlock(text: string): string {
   const lines = text.replace(/\r\n/g, "\n").split("\n");
   const out: string[] = [];
-  let inUl = false;
-  let inOl = false;
+  // List-nesting stack: { tag: "ul"|"ol", depth } entries for open lists.
+  const stack: { tag: "ul" | "ol"; depth: number }[] = [];
+  // Depths of currently open <li> elements (innermost last). Lets nested
+  // <ul>/<ol> live INSIDE their parent <li> while still closing siblings.
+  const liDepths: number[] = [];
+  let lastItemDepth = -1; // depth of the most recently opened (unclosed) <li>
 
-  const closeList = () => {
-    if (inUl) {
-      out.push("</ul>");
-      inUl = false;
+  const closeLi = () => {
+    if (liDepths.length) {
+      out.push("</li>");
+      liDepths.pop();
+      lastItemDepth = liDepths.length ? liDepths[liDepths.length - 1] : -1;
     }
-    if (inOl) {
-      out.push("</ol>");
-      inOl = false;
+  };
+  const closeAllLists = () => {
+    closeLi();
+    while (stack.length) {
+      const top = stack.pop()!;
+      out.push(`</${top.tag}>`);
+      closeLi(); // the parent <li> that contained this list ends here
     }
+  };
+  const openList = (tag: "ul" | "ol", depth: number) => {
+    if (depth > 0 && !liDepths.length) {
+      // Malformed input (nested list without a parent item) — synthesize one.
+      out.push("<li>");
+      liDepths.push(Math.max(depth - 1, 0));
+    }
+    out.push(`<${tag}>`);
+    stack.push({ tag, depth });
+  };
+  // openItem(html, depth, isFirstInNested): isFirstInNested=true when the item
+  // is the FIRST of a nested list — the parent <li> must stay open.
+  const openItem = (html: string, depth: number, isFirstInNested = false) => {
+    if (!isFirstInNested && lastItemDepth === depth) closeLi();
+    out.push(`<li>${html}`);
+    liDepths.push(depth);
+    lastItemDepth = depth;
   };
 
   for (const raw of lines) {
     const line = raw.trimEnd();
     if (!line.trim()) {
-      closeList();
+      closeAllLists();
       continue;
     }
     // Headings: ## -> h3, ### -> h4 (the prompt uses ## and ###).
     const h = line.match(/^(#{2,4})\s+(.+)$/);
     if (h) {
-      closeList();
+      closeAllLists();
       const level = Math.min(h[1].length, 4);
       out.push(`<h${level}>${renderInline(h[2])}</h${level}>`);
       continue;
     }
-    // Bullet list: "- item" or "* item".
-    const ul = line.match(/^[-*]\s+(.+)$/);
-    if (ul) {
-      if (inOl) closeList();
-      if (!inUl) {
-        out.push("<ul>");
-        inUl = true;
+    // Bullet list: "- item", "* item", or indented "  - nested item".
+    // Indentation depth is measured in 2-space units (the LLM's nesting).
+    const indentMatch = line.match(/^(\s*)([-*])\s+(.+)$/);
+    if (indentMatch) {
+      const depth = Math.floor(indentMatch[1].length / 2);
+      let isFirstInNested = false;
+      if (!stack.length) {
+        openList("ul", depth);
+      } else {
+        const top = stack[stack.length - 1];
+        if (depth > top.depth) {
+          openList("ul", depth); // nested <ul> inside the open parent <li>
+          isFirstInNested = true;
+        } else if (depth < top.depth) {
+          closeLi(); // close the innermost item
+          while (stack.length && stack[stack.length - 1].depth > depth) {
+            const closed = stack.pop()!;
+            out.push(`</${closed.tag}>`);
+            closeLi(); // the item that contained this list ends here
+          }
+          if (stack.length && stack[stack.length - 1].depth < depth) {
+            openList("ul", depth);
+            isFirstInNested = true;
+          }
+        }
       }
-      out.push(`<li>${renderInline(ul[1])}</li>`);
+      openItem(renderInline(indentMatch[3]), depth, isFirstInNested);
       continue;
     }
-    // Numbered list: "1. item".
-    const ol = line.match(/^\d+[.)]\s+(.+)$/);
+    // Numbered list: "1. item" (also allows indented nesting).
+    const ol = line.match(/^(\s*)\d+[.)]\s+(.+)$/);
     if (ol) {
-      if (inUl) closeList();
-      if (!inOl) {
-        out.push("<ol>");
-        inOl = true;
+      const depth = Math.floor(ol[1].length / 2);
+      let isFirstInNested = false;
+      if (!stack.length) {
+        openList("ol", depth);
+      } else {
+        const top = stack[stack.length - 1];
+        if (depth > top.depth) {
+          openList("ol", depth);
+          isFirstInNested = true;
+        } else if (depth < top.depth) {
+          closeLi();
+          while (stack.length && stack[stack.length - 1].depth > depth) {
+            const closed = stack.pop()!;
+            out.push(`</${closed.tag}>`);
+            closeLi();
+          }
+          if (stack.length && stack[stack.length - 1].depth < depth) {
+            openList("ol", depth);
+            isFirstInNested = true;
+          }
+        }
       }
-      out.push(`<li>${renderInline(ol[1])}</li>`);
+      openItem(renderInline(ol[2]), depth, isFirstInNested);
       continue;
     }
-    closeList();
+    closeAllLists();
     out.push(`<p>${renderInline(line)}</p>`);
   }
-  closeList();
+  closeAllLists();
   return out.join("\n");
 }
 
