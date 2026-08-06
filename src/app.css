@@ -355,6 +355,7 @@ body {
   font-size: 0.875rem;
   line-height: 1.65;
 }
+.ai-body h2,
 .ai-body h3,
 .ai-body h4 {
   margin: 1.1em 0 0.4em;
@@ -364,6 +365,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.03em;
 }
+.ai-body h2:first-child,
 .ai-body h3:first-child,
 .ai-body h4:first-child {
   margin-top: 0;
