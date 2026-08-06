@@ -2,7 +2,7 @@
 
 SvelteKit + Tailwind CSS v4 client for the VEXARIUM trading signal & options analysis tool — **informational only, not financial advice.**
 
-Arasaka-corporate visual identity (Cyberpunk 2077): near-black surfaces, crimson accents, stark white, angular 4px radii, UPPERCASE labels, JetBrains Mono for prices/Greeks.
+Amber Health Check visual identity: cockpit-dark surfaces, amber instrument-light accents, near-white text, 14px card radius, UPPERCASE micro labels, JetBrains Mono for prices/Greeks.
 
 ## Features
 
@@ -10,7 +10,7 @@ Arasaka-corporate visual identity (Cyberpunk 2077): near-black surfaces, crimson
 - **Options view** (`/options/[symbol]`) — beginner-friendly strategy cards (OptionStrat-inspired) with mini P/L charts, plain-language subtitles + info popovers, Greeks grid, and payoff timeline. Each strategy explains *why* in simple terms.
 - **Portfolio view** (`/portfolio`) — saved trades with live HOLD / TAKE PROFIT / CUT LOSS stance badges, P/L tracking, localStorage persistence (DB sync for authed users via the trades API).
 - **Legal pages** — disclaimer, terms, privacy (GDPR).
-- **Arasaka design system** — design tokens in `src/app.css`, shared components, chart theming for TradingView Lightweight Charts.
+- **Amber Health Check design system** — design tokens in `src/app.css`, shared components, chart theming for TradingView Lightweight Charts.
 
 ## Tech Stack
 
@@ -21,14 +21,14 @@ SvelteKit 2 (runes) · Svelte 5 · Tailwind CSS v4 · TypeScript · TradingView 
 ```
 frontend/
 ├── src/
-│   ├── app.css              # Arasaka design tokens + utility classes
+│   ├── app.css              # Amber Health Check design tokens + utility classes
 │   ├── app.d.ts
 │   ├── lib/
 │   │   ├── api.ts           # typed client for the VEXARIUM backend
 │   │   ├── types.ts         # shared TS types mirroring backend schemas
 │   │   ├── verdict.ts       # verdict/stance → color/icon/label maps
 │   │   ├── storage.ts       # localStorage CRUD for saved trades
-│   │   └── chart-theme.ts   # Lightweight Charts Arasaka theme
+│   │   └── chart-theme.ts   # Lightweight Charts Amber Health Check theme
 │   ├── components/          # IndicatorCard, VerdictBadge, StrategyCard, PayoffChart,
 │   │                        #   InfoPopover, SaveTradeModal, TradeCard, LegalLayout
 │   └── routes/
@@ -93,15 +93,18 @@ The app is pre-configured for **Cloudflare Pages** via `@sveltejs/adapter-cloudf
 
 | Token | Value | Use |
 |---|---|---|
-| `--background` | `#0a0a0c` | Page background |
-| `--surface` / `--panel-bg` | `#121215` | Panels / cards |
-| `--accent-primary` | `#c81e1e` | Crimson — actions, focus, active states |
-| `--foreground` | `#f5f5f7` | Primary text |
-| `--foreground-muted` | `#9999a0` | Secondary text |
+| `--background` | `#0b0e13` | Page background (cockpit dark + amber glow) |
+| `--surface` / `--panel-bg` | `#151a24` | Panels / cards |
+| `--accent-primary` | `#f59e0b` | Amber — actions, focus, active states |
+| `--foreground` | `#e8edf5` | Primary text |
+| `--foreground-muted` | `#8b96a8` | Secondary text |
 | Verdict colors | green → amber → red | strong_buy → strong_sell |
 | Stance colors | green / blue / red | TAKE PROFIT / HOLD / CUT LOSS |
 
-Rules: opaque panels (no glassmorphism), 4px radius, thin `#2a2a30` borders, UPPERCASE labels with `0.08em` tracking, JetBrains Mono for numeric data, crimson (not neon) as the single accent.
+Rules: dark cards with 14px radius, thin `#232b3a` borders, UPPERCASE micro
+labels with `0.08em` tracking, JetBrains Mono for numeric data, amber (not
+neon) as the single accent. Health-check vocabulary: grade ring, vitals row,
+plain-language box, pass/watch/fail chips.
 
 ---
 

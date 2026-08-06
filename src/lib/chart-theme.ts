@@ -1,27 +1,27 @@
-// Arasaka-themed lightweight-charts shared options.
+// Amber health-check themed lightweight-charts shared options (theme-8).
 // Reuse across all mini payoff charts for a consistent look.
 
 export const CHART_THEME = {
 	layout: {
-		background: { color: '#121215' },
-		textColor: '#9999a0',
+		background: { color: '#151a24' },
+		textColor: '#8b96a8',
 		attributionLogo: false
 	},
 	grid: {
-		vertLines: { color: '#1a1a1f' },
-		horzLines: { color: '#1a1a1f' }
+		vertLines: { color: '#1c2230' },
+		horzLines: { color: '#1c2230' }
 	},
 	crosshair: {
 		mode: 0
 	},
 	rightPriceScale: {
-		borderColor: '#2a2a30'
+		borderColor: '#232b3a'
 	},
 	timeScale: {
-		borderColor: '#2a2a30'
+		borderColor: '#232b3a'
 	}
 };
 
-export const PROFIT_COLOR = '#16a34a';
-export const LOSS_COLOR = '#dc2626';
-export const BREAKEVEN_COLOR = '#f5f5f7';
+export const PROFIT_COLOR = '#34d399';
+export const LOSS_COLOR = '#f87171';
+export const BREAKEVEN_COLOR = '#e8edf5';

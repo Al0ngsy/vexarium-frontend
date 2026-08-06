@@ -4,39 +4,39 @@
 @import "tailwindcss";
 
 :root {
-  /* Base surfaces — near-black with cold blue undertone */
-  --background: #0a0a0c;
-  --surface: #121215;
-  --surface-2: #1a1a1f;
-  --surface-3: #2a2a30;
-  --surface-active: #33333a;
-  --foreground: #f5f5f7;
-  --foreground-muted: #9999a0;
-  --foreground-subtle: #666670;
+  /* Base surfaces — cockpit dark (theme-8: nr5 structure × nr7 amber palette) */
+  --background: #0b0e13;
+  --surface: #151a24;
+  --surface-2: #1c2230;
+  --surface-3: #232b3a;
+  --surface-active: #2a3448;
+  --foreground: #e8edf5;
+  --foreground-muted: #8b96a8;
+  --foreground-subtle: #5c6678;
 
-  /* Arasaka brand red */
-  --accent-primary: #c81e1e;
-  --accent-primary-hover: #e02626;
-  --accent-primary-dim: #8a1414;
-  --accent-white: #ffffff;
+  /* Amber instrument-light accent (replaces Arasaka crimson) */
+  --accent-primary: #f59e0b;
+  --accent-primary-hover: #fbbf24;
+  --accent-primary-dim: #b45309;
+  --accent-white: #1a1205;
 
   /* Verdict colors */
-  --verdict-strong-buy: #16a34a;
-  --verdict-buy: #65a30d;
-  --verdict-hold: #ca8a04;
-  --verdict-sell: #ea580c;
-  --verdict-strong-sell: #dc2626;
+  --verdict-strong-buy: #34d399;
+  --verdict-buy: #4ade80;
+  --verdict-hold: #fbbf24;
+  --verdict-sell: #fb923c;
+  --verdict-strong-sell: #f87171;
 
   /* Stance colors */
-  --stance-take-profit: #16a34a;
-  --stance-hold: #2563eb;
-  --stance-cut-loss: #dc2626;
+  --stance-take-profit: #34d399;
+  --stance-hold: #60a5fa;
+  --stance-cut-loss: #f87171;
 
   /* Panels */
-  --panel-bg: #121215;
-  --panel-border: #2a2a30;
-  --panel-border-active: #c81e1e55;
-  --grid-line: #1a1a1f;
+  --panel-bg: #151a24;
+  --panel-border: #232b3a;
+  --panel-border-active: #f59e0b55;
+  --grid-line: #1c2230;
 }
 
 @theme {
@@ -44,17 +44,17 @@
   --font-body: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --color-background: #0a0a0c;
-  --color-surface: #121215;
-  --color-surface-2: #1a1a1f;
-  --color-surface-3: #2a2a30;
-  --color-surface-active: #33333a;
-  --color-foreground: #f5f5f7;
-  --color-muted: #9999a0;
-  --color-subtle: #666670;
-  --color-accent: #c81e1e;
-  --color-accent-hover: #e02626;
-  --color-accent-dim: #8a1414;
+  --color-background: #0b0e13;
+  --color-surface: #151a24;
+  --color-surface-2: #1c2230;
+  --color-surface-3: #232b3a;
+  --color-surface-active: #2a3448;
+  --color-foreground: #e8edf5;
+  --color-muted: #8b96a8;
+  --color-subtle: #5c6678;
+  --color-accent: #f59e0b;
+  --color-accent-hover: #fbbf24;
+  --color-accent-dim: #b45309;
 }
 
 body {
@@ -63,20 +63,26 @@ body {
   font-family: var(--font-body);
   min-height: 100vh;
   margin: 0;
+  /* Soft amber glow — keeps the dark theme from feeling flat */
+  background-image:
+    radial-gradient(55% 40% at 12% 0%, rgba(245, 158, 11, 0.08), transparent 60%),
+    radial-gradient(45% 35% at 88% 8%, rgba(245, 158, 11, 0.05), transparent 60%),
+    radial-gradient(40% 40% at 50% 100%, rgba(52, 211, 153, 0.04), transparent 60%);
+  background-attachment: fixed;
 }
 
-/* Arasaka panel treatment — opaque, sharp, 4px radius, no shadows */
+/* Panel treatment — dark card, 14px radius, subtle border */
 .panel {
   background-color: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 4px;
+  border-radius: 14px;
 }
 
 .panel-active {
   border: 1px solid var(--panel-border-active);
 }
 
-/* UPPERCASE military stencil label */
+/* UPPERCASE micro label */
 .label {
   font-family: var(--font-body);
   font-size: 0.75rem;
@@ -86,12 +92,12 @@ body {
   color: var(--foreground-muted);
 }
 
-/* Brand text — very wide tracking */
+/* Brand text */
 .brand {
   font-family: var(--font-display);
   font-size: 1.125rem;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--foreground);
 }
@@ -103,54 +109,56 @@ body {
   font-weight: 500;
 }
 
-/* Verdict badge — 2px radius, 3px left border in verdict color */
+/* Verdict badge — pill, colored */
 .verdict-badge {
   font-family: var(--font-display);
   font-size: 0.875rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-radius: 2px;
-  padding: 2px 8px;
-  border-left: 3px solid;
+  border-radius: 999px;
+  padding: 3px 12px;
+  border: 1px solid;
+  background-color: color-mix(in srgb, currentColor 12%, transparent);
 }
 
-/* Crimson focus indicator — Arasaka targeting */
+/* Amber focus indicator */
 *:focus-visible {
   outline: 1px solid var(--accent-primary);
   outline-offset: 2px;
 }
 
-/* Crimson primary button */
+/* Amber primary button */
 .btn-primary {
   background-color: var(--accent-primary);
   color: var(--accent-white);
   border: none;
-  border-radius: 4px;
+  border-radius: 9px;
   font-family: var(--font-body);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 8px 16px;
+  padding: 9px 18px;
   cursor: pointer;
+  box-shadow: 0 2px 14px rgba(245, 158, 11, 0.22);
 }
 .btn-primary:hover {
   background-color: var(--accent-primary-hover);
 }
 
-/* Crimson outline button */
+/* Amber outline button */
 .btn-outline {
   background-color: transparent;
   color: var(--foreground);
   border: 1px solid var(--accent-primary);
-  border-radius: 4px;
+  border-radius: 9px;
   font-family: var(--font-body);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 8px 16px;
+  padding: 9px 18px;
   cursor: pointer;
 }
 .btn-outline:hover {
@@ -158,7 +166,7 @@ body {
   color: var(--accent-primary-hover);
 }
 
-/* Text link with crimson underline */
+/* Text link with amber underline (class name kept for compatibility) */
 .link-crimson {
   color: var(--foreground);
   text-decoration: none;
@@ -172,4 +180,143 @@ body {
 }
 .link-crimson:hover {
   color: var(--accent-primary-hover);
+}
+
+/* ---- Health-check design system (theme-8) ---- */
+
+/* Section title with trailing rule */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 28px 0 14px;
+}
+.section-title .line {
+  flex: 1;
+  height: 1px;
+  background: var(--panel-border);
+}
+
+/* Status chip (pass / watch / fail) */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.chip-pass { background: rgba(52, 211, 153, 0.12); color: var(--verdict-strong-buy); border: 1px solid rgba(52, 211, 153, 0.35); }
+.chip-watch { background: rgba(251, 191, 36, 0.12); color: var(--verdict-hold); border: 1px solid rgba(251, 191, 36, 0.35); }
+.chip-fail { background: rgba(248, 113, 113, 0.12); color: var(--verdict-strong-sell); border: 1px solid rgba(248, 113, 113, 0.35); }
+
+/* Vitals tile */
+.vital {
+  background: var(--surface-2);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 14px;
+}
+.vital .k {
+  font-size: 0.68rem;
+  color: var(--foreground-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 6px;
+}
+.vital .v {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+.vital .d {
+  font-size: 0.72rem;
+  color: var(--foreground-muted);
+  margin-top: 3px;
+}
+
+/* Plain-language explanation box */
+.plainbox {
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-left: 4px solid var(--accent-primary);
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+.plainbox .k {
+  font-size: 0.72rem;
+  color: var(--accent-primary-hover);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.plainbox p {
+  font-size: 0.9rem;
+  color: var(--foreground);
+  line-height: 1.65;
+}
+
+/* Grade ring */
+.grade-ring {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  flex-shrink: 0;
+}
+.grade-ring svg { transform: rotate(-90deg); }
+.grade-ring .grade {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.grade-ring .grade b {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1;
+}
+.grade-ring .grade span {
+  font-size: 0.62rem;
+  color: var(--foreground-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+/* Market stat card */
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 20px;
+}
+.stat-card .k {
+  font-size: 0.75rem;
+  color: var(--foreground-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+.stat-card .v {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.stat-card .d {
+  font-size: 0.8rem;
+  color: var(--foreground-muted);
+  margin-top: 4px;
 }

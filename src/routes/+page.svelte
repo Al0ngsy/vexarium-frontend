@@ -143,102 +143,110 @@
 	}
 </script>
 
-<div class="flex flex-col items-center justify-center py-24">
-	<!-- Brand -->
-	<h1
-		class="brand mb-2 text-3xl"
-		style="font-size: 2rem; border-bottom: 2px solid var(--accent-primary)"
-	>
-		<span style="color: var(--foreground)">VEX</span><span style="color: var(--accent-primary)">ARIUM</span>
-	</h1>
-	<p class="label mb-12">ENTER SYMBOL — TECHNICAL &amp; OPTIONS ANALYSIS</p>
+<div class="flex flex-col items-center">
+	<!-- Hero -->
+	<div class="flex flex-col items-center py-16 text-center">
+		<div
+			class="mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-1.5"
+			style="border-color: var(--panel-border); background-color: var(--surface);"
+		>
+			<span class="h-2 w-2 rounded-full" style="background-color: var(--verdict-strong-buy); box-shadow: 0 0 8px var(--verdict-strong-buy);"></span>
+			<span class="label" style="color: var(--foreground-muted); letter-spacing: 0.06em;">10 FREE CHECKS · AI SECOND OPINION ON PRO</span>
+		</div>
+		<h1 class="brand" style="font-size: 2.6rem; letter-spacing: 0.02em; text-transform: none; line-height: 1.1;">
+			Check before you <span style="color: var(--accent-primary)">buy.</span>
+		</h1>
+		<p class="label mt-4 mb-8" style="color: var(--foreground-muted); text-transform: none; font-weight: 400; font-size: 1rem; max-width: 560px; line-height: 1.6;">
+			A plain-language health check for any stock, ETF or option. Built for beginners, deep enough for pros.
+		</p>
 
-	<!-- Symbol input with grouped autocomplete -->
-	<div class="panel flex w-full max-w-xl flex-col gap-6 p-6">
-		<label class="label" for="symbol">SYMBOL</label>
-		<div class="relative" bind:this={containerEl}>
-			<input
-				id="symbol"
-				bind:this={inputEl}
-				autocomplete="off"
-				placeholder="ENTER SYMBOL"
-				bind:value={symbol}
-				oninput={onInput}
-				onkeydown={onKeydown}
-				onfocus={() => {
-					if (hasSuggestions) dropdownOpen = true;
-				}}
-				class="w-full rounded border px-4 py-3 text-lg font-mono uppercase"
-				style="border-color: var(--panel-border); background-color: var(--surface-2); color: var(--foreground); text-transform: uppercase;"
-			/>
+		<!-- Symbol input with grouped autocomplete -->
+		<div class="panel flex w-full max-w-xl flex-col gap-6 p-6" style="box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);">
+			<label class="label" for="symbol">SYMBOL</label>
+			<div class="relative" bind:this={containerEl}>
+				<input
+					id="symbol"
+					bind:this={inputEl}
+					autocomplete="off"
+					placeholder="Enter symbol — e.g. AAPL, SPY, NVDA"
+					bind:value={symbol}
+					oninput={onInput}
+					onkeydown={onKeydown}
+					onfocus={() => {
+						if (hasSuggestions) dropdownOpen = true;
+					}}
+					class="w-full rounded-lg border px-4 py-3 font-mono"
+					style="border-color: var(--panel-border); background-color: var(--surface-2); color: var(--foreground); text-transform: uppercase;"
+				/>
 
-			<!-- Grouped dropdown -->
-			{#if dropdownOpen && grouped.length > 0}
-				<div
-					class="absolute z-30 mt-1 w-full overflow-hidden rounded"
-					style="background-color: var(--surface); border: 1px solid var(--panel-border); max-height: 320px; overflow-y: auto;"
-				>
-					{#each grouped as group, gi}
-						{@const groupOffset = flatRows.findIndex((r) => r.label === group.label)}
-						<!-- Section header -->
-						<div
-							class="px-3 py-1.5 label"
-							style="background-color: var(--surface-3); color: var(--accent-primary); border-bottom: 1px solid var(--panel-border);"
-						>
-							{group.label} — {group.items.length}
-						</div>
-						{#each group.items as asset, ai}
-							{@const rowIndex = groupOffset + 1 + ai}
-							<button
-								type="button"
-								onclick={() => selectAsset(asset)}
-								onmouseenter={() => (activeIndex = rowIndex)}
-								class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
-								style="background-color: {activeIndex === rowIndex ? 'var(--surface-active)' : 'transparent'}; border-bottom: 1px solid var(--grid-line);"
+				<!-- Grouped dropdown -->
+				{#if dropdownOpen && grouped.length > 0}
+					<div
+						class="absolute z-30 mt-1 w-full overflow-hidden rounded-lg"
+						style="background-color: var(--surface); border: 1px solid var(--panel-border); max-height: 320px; overflow-y: auto; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);"
+					>
+						{#each grouped as group, gi}
+							{@const groupOffset = flatRows.findIndex((r) => r.label === group.label)}
+							<!-- Section header -->
+							<div
+								class="px-3 py-1.5 label"
+								style="background-color: var(--surface-3); color: var(--accent-primary); border-bottom: 1px solid var(--panel-border);"
 							>
-								<span class="data" style="color: var(--foreground)">{asset.symbol}</span>
-								<span class="label truncate" style="color: var(--foreground-muted)">{asset.name}</span>
-							</button>
+								{group.label} — {group.items.length}
+							</div>
+							{#each group.items as asset, ai}
+								{@const rowIndex = groupOffset + 1 + ai}
+								<button
+									type="button"
+									onclick={() => selectAsset(asset)}
+									onmouseenter={() => (activeIndex = rowIndex)}
+									class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+									style="background-color: {activeIndex === rowIndex ? 'var(--surface-active)' : 'transparent'}; border-bottom: 1px solid var(--grid-line);"
+								>
+									<span class="data" style="color: var(--foreground)">{asset.symbol}</span>
+									<span class="label truncate" style="color: var(--foreground-muted)">{asset.name}</span>
+								</button>
+							{/each}
 						{/each}
-					{/each}
-				</div>
-			{/if}
-		</div>
-
-		<!-- Mode toggle -->
-		<div>
-			<span class="label block mb-2">MODE</span>
-			<div class="flex gap-2">
-				<button
-					onclick={() => (mode = 'standard')}
-					class="flex-1 rounded px-3 py-2 label"
-					style="border: 1px solid {mode === 'standard' ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {mode === 'standard' ? 'var(--surface-active)' : 'var(--surface)'}; color: {mode === 'standard' ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
-				>
-					STANDARD
-				</button>
-				<button
-					onclick={() => (mode = 'options')}
-					class="flex-1 rounded px-3 py-2 label"
-					style="border: 1px solid {mode === 'options' ? 'var(--panel-border-active)' : 'var(--panel-border)'}; background-color: {mode === 'options' ? 'var(--surface-active)' : 'var(--surface)'}; color: {mode === 'options' ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
-				>
-					OPTIONS
-				</button>
+					</div>
+				{/if}
 			</div>
-		</div>
 
-		<!-- Analyze button -->
-		<button class="btn-primary w-full" onclick={onAnalyze}>ANALYZE</button>
+			<!-- Mode toggle -->
+			<div>
+				<span class="label block mb-2">MODE</span>
+				<div class="flex gap-2">
+					<button
+						onclick={() => (mode = 'standard')}
+						class="flex-1 rounded-lg px-3 py-2 label"
+						style="border: 1px solid {mode === 'standard' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background-color: {mode === 'standard' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {mode === 'standard' ? 'var(--accent-white)' : 'var(--foreground-muted)'}; font-weight: {mode === 'standard' ? 700 : 600};"
+					>
+						STOCK / ETF
+					</button>
+					<button
+						onclick={() => (mode = 'options')}
+						class="flex-1 rounded-lg px-3 py-2 label"
+						style="border: 1px solid {mode === 'options' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background-color: {mode === 'options' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {mode === 'options' ? 'var(--accent-white)' : 'var(--foreground-muted)'}; font-weight: {mode === 'options' ? 700 : 600};"
+					>
+						OPTIONS
+					</button>
+				</div>
+			</div>
+
+			<!-- Analyze button -->
+			<button class="btn-primary w-full" onclick={onAnalyze}>RUN CHECK</button>
+		</div>
 	</div>
 
 	<!-- Recent analyses (local-only history). Daily auto-update is a future Pro feature. -->
-	<div class="mt-10 w-full max-w-xl">
-		<h2 class="brand mb-4" style="border-bottom: 2px solid var(--panel-border)">RECENT ANALYSES</h2>
+	<div class="mt-4 w-full max-w-xl">
+		<div class="section-title" style="margin-top: 0;">RECENT ANALYSES <span class="line"></span></div>
 		{#if recent.length === 0}
 			<p class="label" style="color: var(--foreground-muted)">NO RECENT ANALYSES.</p>
 		{:else}
 			<div class="flex flex-col gap-2">
 				{#each recent as r}
-					{@const color = r.verdict !== 'pending' ? (VERDICT_COLORS[r.verdict as keyof typeof VERDICT_COLORS] ?? '#9999a0') : '#9999a0'}
+					{@const color = r.verdict !== 'pending' ? (VERDICT_COLORS[r.verdict as keyof typeof VERDICT_COLORS] ?? '#8b96a8') : '#8b96a8'}
 					{@const label = r.verdict !== 'pending' ? (VERDICT_LABELS[r.verdict as keyof typeof VERDICT_LABELS] ?? 'PENDING') : 'PENDING'}
 					<a
 						href={`/analysis/${r.symbol}`}

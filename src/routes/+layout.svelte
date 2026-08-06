@@ -35,7 +35,7 @@
 	<title>VEXARIUM</title>
 	<meta
 		name="description"
-		content="VEXARIUM — technical indicator and options analysis. Informational only, not financial advice."
+		content="VEXARIUM — check before you buy or sell. Technical indicator and options analysis. Informational only, not financial advice."
 	/>
 </svelte:head>
 
@@ -43,7 +43,7 @@
 	<!-- Header -->
 	<header
 		class="border-b px-6 py-4"
-		style="border-color: var(--panel-border); background-color: var(--surface)"
+		style="border-color: var(--panel-border); background-color: rgba(11, 14, 19, 0.88); backdrop-filter: blur(14px);"
 	>
 		<div class="mx-auto flex max-w-7xl items-center justify-between">
 			<a href="/" class="brand" style="border-bottom: 2px solid var(--accent-primary)">
@@ -69,7 +69,7 @@
 	<main class="flex-1 px-6 py-6">
 		<div class="mx-auto max-w-7xl">
 			<!-- Persistent disclaimer: visible on every page, just below the header -->
-			<div class="mb-4 rounded px-3 py-1.5 text-center" style="background-color: #c81e1e10; border: 1px solid #c81e1e33;">
+			<div class="mb-4 rounded-xl px-3 py-1.5 text-center" style="background-color: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25);">
 				<span class="label" style="color: var(--accent-primary); letter-spacing: 0.08em;">
 					⚠ THIS IS NOT FINANCIAL ADVICE — ALL SIGNALS &amp; DATA ARE FOR INFORMATION ONLY. SEE <a href="/legal/disclaimer" class="link-crimson">DISCLAIMER</a>.
 				</span>

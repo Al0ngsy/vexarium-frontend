@@ -142,22 +142,75 @@
 	const bullCount = $derived((analysis?.overall?.breakdown || []).filter((i) => ['buy', 'strong_buy'].includes(i.verdict)).length);
 	const bearCount = $derived((analysis?.overall?.breakdown || []).filter((i) => ['sell', 'strong_sell'].includes(i.verdict)).length);
 	const neutralCount = $derived((analysis?.overall?.breakdown || []).length - bullCount - bearCount);
+
+	// Health-check helpers: pass/watch/fail per verdict + plain-language summary.
+	const verdictStatus = (v: string): 'pass' | 'watch' | 'fail' => {
+		if (['buy', 'strong_buy'].includes(v)) return 'pass';
+		if (['sell', 'strong_sell'].includes(v)) return 'fail';
+		return 'watch';
+	};
+	const statusIcon = (s: 'pass' | 'watch' | 'fail') => (s === 'pass' ? '✓' : s === 'watch' ? '△' : '✗');
+	const statusLabel = (s: 'pass' | 'watch' | 'fail') => (s === 'pass' ? 'PASS' : s === 'watch' ? 'WATCH' : 'FAIL');
+
+	const passCount = $derived((analysis?.overall?.breakdown || []).filter((i) => verdictStatus(i.verdict) === 'pass').length);
+	const watchCount = $derived((analysis?.overall?.breakdown || []).filter((i) => verdictStatus(i.verdict) === 'watch').length);
+	const failCount = $derived((analysis?.overall?.breakdown || []).filter((i) => verdictStatus(i.verdict) === 'fail').length);
+	const totalChecks = $derived((analysis?.overall?.breakdown || []).length);
+
+	// Grade letter from score (-10..+10).
+	const gradeLetter = $derived.by(() => {
+		const s = analysis?.overall?.score ?? 0;
+		if (s >= 7) return 'A';
+		if (s >= 4) return 'B+';
+		if (s >= 1) return 'B';
+		if (s >= -1) return 'C';
+		if (s >= -4) return 'D';
+		return 'F';
+	});
+
+	// Plain-language summary of the verdict mix.
+	const plainSummary = $derived.by(() => {
+		if (!analysis?.overall) return '';
+		const v = analysis.overall.overall_verdict;
+		const label = VERDICT_LABELS[v] || v.toUpperCase();
+		if (['strong_buy', 'buy'].includes(v)) {
+			return `${passCount} of ${totalChecks} checks pass. Trend and momentum are green${watchCount > 0 ? `, with ${watchCount} to watch` : ''}${failCount > 0 ? ` and ${failCount} flagging caution` : ''}.`;
+		}
+		if (['strong_sell', 'sell'].includes(v)) {
+			return `${failCount} of ${totalChecks} checks are failing. The picture is bearish${passCount > 0 ? `, though ${passCount} still pass` : ''}.`;
+		}
+		return `Mixed picture: ${passCount} pass, ${watchCount} watch, ${failCount} fail. No strong edge either way.`;
+	});
+
+	// Vitals for the health-check row.
+	const vitals = $derived.by(() => {
+		if (!analysis) return [];
+		const co = analysis.company;
+		const out: { k: string; v: string; d: string }[] = [
+			{ k: 'PRICE', v: formatPrice(analysis.current_price), d: `${symbol} · ${analysis.asset_type?.toUpperCase() ?? 'STOCK'}` }
+		];
+		if (co && co.low_52w != null && co.high_52w != null) {
+			out.push({ k: '52-WEEK RANGE', v: `$${co.low_52w.toFixed(0)}–$${co.high_52w.toFixed(0)}`, d: 'yearly low–high' });
+		}
+		const atr = analysis.indicators.find((i) => i.name.toUpperCase().includes('ATR'));
+		if (atr && typeof atr.value === 'number') {
+			out.push({ k: 'VOLATILITY', v: `ATR ${atr.value.toFixed(1)}`, d: 'avg daily move' });
+		}
+		const rsi = analysis.indicators.find((i) => i.name.toUpperCase().includes('RSI'));
+		if (rsi && typeof rsi.value === 'number') {
+			out.push({ k: 'MOMENTUM', v: `RSI ${rsi.value.toFixed(0)}`, d: rsi.value > 70 ? 'overbought' : rsi.value < 30 ? 'oversold' : 'neutral' });
+		}
+		return out;
+	});
 </script>
 
 <svelte:head>
 	<title>VEXARIUM — {symbol}</title>
 </svelte:head>
 
-<!-- Disclaimer banner -->
-<div class="mb-6">
-	<p class="caption" style="font-size: 0.7rem; letter-spacing: 0.12em; color: var(--foreground-subtle)">
-		⚠ THIS IS NOT FINANCIAL ADVICE. SEE DISCLAIMER.
-	</p>
-</div>
-
 <!-- Loading state: static gray panels, no pulse -->
 {#if loading}
-	<div class="panel mb-6 p-6" style="border-top: 2px solid var(--panel-border)">
+	<div class="panel mb-6 p-6">
 		<div class="mb-4 h-6 w-40 rounded" style="background-color: var(--surface-3)"></div>
 		<div class="mb-2 h-4 w-64 rounded" style="background-color: var(--surface-3)"></div>
 		<div class="h-4 w-32 rounded" style="background-color: var(--surface-3)"></div>
@@ -183,191 +236,213 @@
 
 <!-- Success state -->
 {:else if analysis}
-	<!-- 1. Hero: overall verdict + score gauge + price chart -->
-<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
-	<div class="flex flex-wrap items-center justify-between gap-4">
-		<div>
-			<p class="label mb-1">OVERALL VERDICT</p>
-			<p
-				class="brand"
-				style="font-size: 2rem; color: {VERDICT_COLORS[analysis.overall.overall_verdict]}"
-			>
-				{VERDICT_LABELS[analysis.overall.overall_verdict]} {VERDICT_ICONS[analysis.overall.overall_verdict]}
-			</p>
-		</div>
-		<div class="text-right">
-			<p class="label mb-1">{symbol}</p>
-			<p class="data" style="color: var(--foreground); font-size: 1.25rem">
-				{formatPrice(analysis.current_price)}
-			</p>
-		</div>
-		<a href={`/options/${symbol}`} class="btn-outline">
-			VIEW OPTIONS →
-		</a>
-	</div>
-	<div
-		class="mt-5 grid grid-cols-1 gap-6 border-t pt-5 md:grid-cols-3"
-		style="border-color: var(--panel-border)"
-	>
-		<!-- Score gauge -->
-		<div>
-			<p class="label mb-2">OVERALL SCORE</p>
-			<div class="flex items-baseline gap-3">
-				<span
-					class="data"
-					style="font-size: 2.4rem; font-weight: 700; color: {VERDICT_COLORS[analysis.overall.overall_verdict]}"
+	<!-- 1. Health-check hero: verdict + grade ring + vitals + plain-language + charts -->
+	<div class="panel mb-6 p-6">
+		<div class="flex flex-wrap items-center justify-between gap-4">
+			<div>
+				<p class="label mb-1">HEALTH CHECK — {symbol}</p>
+				<p
+					class="brand"
+					style="font-size: 1.6rem; color: {VERDICT_COLORS[analysis.overall.overall_verdict]}"
 				>
-					{analysis.overall.score > 0 ? '+' : ''}{analysis.overall.score}
-				</span>
-				<span class="label" style="color: var(--foreground-muted)">
-					{bullCount} BULL · {neutralCount} NEUTRAL · {bearCount} BEAR
-				</span>
+					{VERDICT_LABELS[analysis.overall.overall_verdict]} {VERDICT_ICONS[analysis.overall.overall_verdict]}
+				</p>
+				<p class="label mt-2" style="color: var(--foreground-muted); text-transform: none; max-width: 360px; line-height: 1.5;">
+					{plainSummary}
+				</p>
 			</div>
-			<div class="mt-2 flex gap-1">
-				{#each analysis.overall.breakdown as _, i}
-					{@const on = i < Math.max(0, analysis.overall.score + 5)}
-					<span
-						class="h-1.5 flex-1 rounded"
-						style="background-color: {on ? VERDICT_COLORS[analysis.overall.overall_verdict] : 'var(--surface-3)'};"
-					></span>
-				{/each}
+			<div class="flex items-center gap-5">
+				<div class="text-right">
+					<p class="label mb-1">{symbol}</p>
+					<p class="data" style="color: var(--foreground); font-size: 1.25rem">
+						{formatPrice(analysis.current_price)}
+					</p>
+					<a href={`/options/${symbol}`} class="btn-outline mt-3 inline-block">
+						VIEW OPTIONS →
+					</a>
+				</div>
+				<!-- Grade ring -->
+				<div class="grade-ring">
+					<svg width="92" height="92" viewBox="0 0 92 92">
+						<circle cx="46" cy="46" r="38" fill="none" stroke="var(--panel-border)" stroke-width="8"/>
+						<circle
+							cx="46" cy="46" r="38" fill="none"
+							stroke="{VERDICT_COLORS[analysis.overall.overall_verdict]}"
+							stroke-width="8" stroke-linecap="round"
+							stroke-dasharray="238.8"
+							stroke-dashoffset="{238.8 * (1 - Math.max(0, Math.min(1, (analysis.overall.score + 10) / 20)))}"
+						/>
+					</svg>
+					<div class="grade"><b>{gradeLetter}</b><span>{passCount}/{totalChecks}</span></div>
+				</div>
 			</div>
 		</div>
-		<!-- Price chart (spans 2 cols) -->
-		<div class="md:col-span-2">
-			<p class="label mb-2">PRICE — LAST 120 DAYS</p>
-			{#if (analysis.price_series?.length ?? 0) > 0}
-				<IndicatorChart
-					series={{ name: 'PRICE', kind: 'overlay', points: [] }}
-					priceSeries={analysis.price_series}
-					height={180}
-				/>
-			{:else}
-				<div class="flex h-44 items-center justify-center rounded border border-dashed" style="border-color: var(--panel-border)">
-					<span class="label" style="color: var(--foreground-muted)">NO PRICE DATA</span>
+
+		<!-- Vitals -->
+		<div class="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+			{#each vitals as v}
+				<div class="vital">
+					<div class="k">{v.k}</div>
+					<div class="v">{v.v}</div>
+					<div class="d">{v.d}</div>
+				</div>
+			{/each}
+		</div>
+
+		<!-- Plain-language box -->
+		<div class="plainbox mt-4">
+			<div class="k">What this means for you</div>
+			<p>
+				{VERDICT_LABELS[analysis.overall.overall_verdict]} — {bullCount} of {totalChecks} checks are bullish, {neutralCount} neutral, {bearCount} bearish.
+				{analysis.overall.score > 0 ? 'The overall bias is positive.' : analysis.overall.score < 0 ? 'The overall bias is negative.' : 'The overall bias is neutral.'}
+				Use the checks below to understand why, and the AI second opinion for a plain-language read.
+			</p>
+		</div>
+
+		<!-- Charts -->
+		<div class="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2">
+			<div>
+				<p class="label mb-2">PRICE — LAST 120 DAYS</p>
+				{#if (analysis.price_series?.length ?? 0) > 0}
+					<IndicatorChart
+						series={{ name: 'PRICE', kind: 'overlay', points: [] }}
+						priceSeries={analysis.price_series}
+						height={180}
+					/>
+				{:else}
+					<div class="flex h-44 items-center justify-center rounded-lg border border-dashed" style="border-color: var(--panel-border)">
+						<span class="label" style="color: var(--foreground-muted)">NO PRICE DATA</span>
+					</div>
+				{/if}
+			</div>
+			<div>
+				<p class="label mb-2">RSI — MOMENTUM</p>
+				{#if seriesFor('RSI') && seriesFor('RSI')!.points.length > 0}
+					<IndicatorChart series={seriesFor('RSI')!} height={180} />
+				{:else}
+					<div class="flex h-44 items-center justify-center rounded-lg border border-dashed" style="border-color: var(--panel-border)">
+						<span class="label" style="color: var(--foreground-muted)">NO RSI DATA</span>
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+
+	<!-- 1c. Company / ETF profile + fundamentals (free, keyless: Yahoo + Wikipedia) -->
+	{#if analysis.company && (analysis.company.name || analysis.company.description || analysis.company.market_cap !== null)}
+		{@const co = analysis.company}
+		{@const range = (co.high_52w ?? 0) - (co.low_52w ?? 0)}
+		{@const pos = range > 0 && analysis.current_price ? Math.min(100, Math.max(0, ((analysis.current_price - (co.low_52w ?? 0)) / range) * 100)) : 0}
+		<div class="panel mb-6 overflow-hidden">
+			<div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style="border-color: var(--panel-border)">
+				<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">ABOUT {symbol}</h2>
+				<span class="label" style="color: var(--foreground-muted)">
+					{co.name || symbol}{co.exchange ? ` · ${co.exchange}` : ''}{co.currency ? ` · ${co.currency}` : ''}
+				</span>
+			</div>
+			<div class="p-4">
+				<CompanyProfile company={co} {symbol} {pos} />
+			</div>
+		</div>
+	{/if}
+
+	<!-- 1d. News sentiment + headlines dropdown -->
+	{#if analysis.news_sentiment}
+		{@const ns = analysis.news_sentiment}
+		{@const color = ns.sentiment_score > 0.2 ? 'var(--verdict-strong-buy)' : ns.sentiment_score < -0.2 ? 'var(--verdict-strong-sell)' : 'var(--verdict-hold)'}
+		<div class="panel mb-6 overflow-hidden">
+			<button
+				class="flex w-full flex-wrap items-center justify-between gap-3 p-4"
+				onclick={() => (newsOpen = !newsOpen)}
+			>
+				<span class="label">NEWS SENTIMENT</span>
+				<div class="flex items-center gap-4">
+					<span class="data" style="color: {color}">{ns.summary}</span>
+					<span class="label" style="color: var(--foreground-muted)">{ns.article_count} ARTICLES · SCORE {ns.sentiment_score}</span>
+					<span class="label" style="color: var(--accent-primary)">{newsOpen ? '▲ HIDE' : '▼ SHOW HEADLINES'}</span>
+				</div>
+			</button>
+			{#if newsOpen && (analysis.news_articles?.length ?? 0) > 0}
+				<div class="flex flex-col border-t" style="border-color: var(--panel-border)">
+					{#each analysis.news_articles as article}
+						<a
+							href={article.url || '#'}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="flex flex-col gap-1 px-4 py-3 transition-colors"
+							style="border-bottom: 1px solid var(--grid-line); text-decoration: none;"
+						>
+							<span class="data" style="color: var(--foreground); line-height: 1.4">{article.headline}</span>
+							<span class="label" style="color: var(--foreground-muted)">
+								{article.source || 'SOURCE'}{article.created_at ? ` · ${new Date(article.created_at).toLocaleDateString()}` : ''}
+							</span>
+						</a>
+					{/each}
 				</div>
 			{/if}
 		</div>
-	</div>
-</div>
+	{/if}
 
-<!-- 1c. Company / ETF profile + fundamentals (free, keyless: Yahoo + Wikipedia) -->
-{#if analysis.company && (analysis.company.name || analysis.company.description || analysis.company.market_cap !== null)}
-	{@const co = analysis.company}
-	{@const range = (co.high_52w ?? 0) - (co.low_52w ?? 0)}
-	{@const pos = range > 0 && analysis.current_price ? Math.min(100, Math.max(0, ((analysis.current_price - (co.low_52w ?? 0)) / range) * 100)) : 0}
-	<div class="panel mb-6 overflow-hidden" style="border-top: 2px solid var(--panel-border)">
-		<div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style="border-color: var(--panel-border)">
-			<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">ABOUT {symbol}</h2>
-			<span class="label" style="color: var(--foreground-muted)">
-				{co.name || symbol}{co.exchange ? ` · ${co.exchange}` : ''}{co.currency ? ` · ${co.currency}` : ''}
-			</span>
+	<!-- 2. The checks (technicals readout table) -->
+	<div class="panel mb-6 overflow-hidden">
+		<div class="flex items-center justify-between border-b px-4 py-3" style="border-color: var(--panel-border)">
+			<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">THE CHECKS</h2>
+			<span class="label" style="color: var(--foreground-muted)">{analysis.indicators.length} INDICATORS · {passCount} PASS · {watchCount} WATCH · {failCount} FAIL</span>
 		</div>
-		<div class="p-4">
-			<CompanyProfile company={co} {symbol} {pos} />
-		</div>
-	</div>
-{/if}
-
-<!-- 1d. News sentiment + headlines dropdown -->
-{#if analysis.news_sentiment}
-	{@const ns = analysis.news_sentiment}
-	{@const color = ns.sentiment_score > 0.2 ? '#16a34a' : ns.sentiment_score < -0.2 ? '#dc2626' : '#ca8a04'}
-	<div class="panel mb-6 overflow-hidden" style="border-top: 2px solid var(--panel-border)">
-		<button
-			class="flex w-full flex-wrap items-center justify-between gap-3 p-4"
-			onclick={() => (newsOpen = !newsOpen)}
-		>
-			<span class="label">NEWS SENTIMENT</span>
-			<div class="flex items-center gap-4">
-				<span class="data" style="color: {color}">{ns.summary}</span>
-				<span class="label" style="color: var(--foreground-muted)">{ns.article_count} ARTICLES · SCORE {ns.sentiment_score}</span>
-				<span class="label" style="color: var(--accent-primary)">{newsOpen ? '▲ HIDE' : '▼ SHOW HEADLINES'}</span>
-			</div>
-		</button>
-		{#if newsOpen && (analysis.news_articles?.length ?? 0) > 0}
-			<div class="flex flex-col border-t" style="border-color: var(--panel-border)">
-				{#each analysis.news_articles as article}
-					<a
-						href={article.url || '#'}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="flex flex-col gap-1 px-4 py-3 transition-colors"
-						style="border-bottom: 1px solid var(--grid-line); text-decoration: none;"
-					>
-						<span class="data" style="color: var(--foreground); line-height: 1.4">{article.headline}</span>
-						<span class="label" style="color: var(--foreground-muted)">
-							{article.source || 'SOURCE'}{article.created_at ? ` · ${new Date(article.created_at).toLocaleDateString()}` : ''}
-						</span>
-					</a>
-				{/each}
-			</div>
-		{/if}
-	</div>
-{/if}
-
-<!-- 2. Technicals readout table -->
-<div class="panel mb-6 overflow-hidden" style="border-top: 2px solid var(--panel-border)">
-	<div class="flex items-center justify-between border-b px-4 py-3" style="border-color: var(--panel-border)">
-		<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">TECHNICALS</h2>
-		<span class="label" style="color: var(--foreground-muted)">{analysis.indicators.length} INDICATORS</span>
-	</div>
-	<div class="overflow-x-auto">
-		<table class="w-full text-left">
-			<thead>
-				<tr class="label" style="border-bottom: 1px solid var(--panel-border); color: var(--foreground-subtle)">
-					<th class="px-4 py-2.5">INDICATOR</th>
-					<th class="px-4 py-2.5">VALUE</th>
-					<th class="px-4 py-2.5">VERDICT</th>
-					<th class="px-4 py-2.5">SIGNAL</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each analysis.indicators as indicator}
-					{@const vc = VERDICT_COLORS[indicator.verdict] || '#9999a0'}
-					{@const vl = VERDICT_LABELS[indicator.verdict] || indicator.verdict.toUpperCase()}
-					<tr class="group transition-colors" style="border-bottom: 1px solid var(--grid-line);">
-						<td class="px-4 py-3">
-							<div class="flex items-center gap-2.5">
-								<span class="h-full w-1 self-stretch rounded" style="background-color: {vc};"></span>
-								<span class="label" style="color: var(--foreground); text-transform: none">{indicator.name}</span>
-							</div>
-						</td>
-						<td class="px-4 py-3 data" style="color: var(--foreground)">{formatIndicatorValue(indicator.value)}</td>
-						<td class="px-4 py-3">
-							<span
-								class="label rounded px-2 py-1"
-								style="background-color: {vc}22; color: {vc}; border: 1px solid {vc}44;"
-							>
-								{VERDICT_ICONS[indicator.verdict] || ''} {vl}
-							</span>
-						</td>
-						<td class="px-4 py-3">
-							<span class="label" style="color: var(--foreground-muted); text-transform: none">
-								{signalNote(indicator.name)}
-							</span>
-						</td>
+		<div class="overflow-x-auto">
+			<table class="w-full text-left">
+				<thead>
+					<tr class="label" style="border-bottom: 1px solid var(--panel-border); color: var(--foreground-subtle)">
+						<th class="px-4 py-2.5">CHECK</th>
+						<th class="px-4 py-2.5">READING</th>
+						<th class="px-4 py-2.5">STATUS</th>
+						<th class="px-4 py-2.5">WHAT IT TELLS YOU</th>
 					</tr>
-				{/each}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{#each analysis.indicators as indicator}
+						{@const vc = VERDICT_COLORS[indicator.verdict] || '#8b96a8'}
+						{@const vl = VERDICT_LABELS[indicator.verdict] || indicator.verdict.toUpperCase()}
+						{@const st = verdictStatus(indicator.verdict)}
+						<tr class="group transition-colors" style="border-bottom: 1px solid var(--grid-line);">
+							<td class="px-4 py-3">
+								<div class="flex items-center gap-2.5">
+									<span class="h-full w-1 self-stretch rounded" style="background-color: {vc};"></span>
+									<span class="label" style="color: var(--foreground); text-transform: none">{indicator.name}</span>
+								</div>
+							</td>
+							<td class="px-4 py-3 data" style="color: var(--foreground)">{formatIndicatorValue(indicator.value)}</td>
+							<td class="px-4 py-3">
+								<span class="chip chip-{st}">
+									{statusIcon(st)} {statusLabel(st)}
+								</span>
+							</td>
+							<td class="px-4 py-3">
+								<span class="label" style="color: var(--foreground-muted); text-transform: none">
+									{signalNote(indicator.name)}
+								</span>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
 	</div>
-</div>
 
-	<!-- 3. AI Analysis panel (Pro-only, with free preview for featured symbols) -->
+	<!-- 3. AI second opinion (Pro-only, with free preview for featured symbols) -->
 	{@const isFeatured = FEATURED_SYMBOLS.includes(symbol.toUpperCase())}
 	<div class="panel mt-6 p-6" style="border-top: 2px solid var(--accent-primary)">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-3">
-				<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">AI ANALYSIS</h2>
+				<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">AI SECOND OPINION</h2>
 				{#if !proUser && isFeatured}
-					<span class="label rounded px-2 py-1" style="background-color: #16a34a22; color: #16a34a; border: 1px solid #16a34a44;">FREE PREVIEW</span>
+					<span class="label rounded-full px-2 py-1" style="background-color: rgba(52, 211, 153, 0.12); color: var(--verdict-strong-buy); border: 1px solid rgba(52, 211, 153, 0.35);">FREE PREVIEW</span>
 				{/if}
 			</div>
 			{#if proUser || isFeatured}
 				<button class="btn-outline" onclick={runAI} disabled={aiLoading}>RUN AI ANALYSIS</button>
 			{:else}
-				<span class="label rounded px-2 py-1" style="background-color: var(--accent-primary)22; color: var(--accent-primary); border: 1px solid var(--accent-primary)44;">🔒 PRO</span>
+				<span class="label rounded-full px-2 py-1" style="background-color: rgba(245, 158, 11, 0.12); color: var(--accent-primary); border: 1px solid rgba(245, 158, 11, 0.35);">🔒 PRO</span>
 			{/if}
 		</div>
 		{#if aiLoading}
@@ -375,12 +450,12 @@
 		{:else if aiMessage}
 			<div class="mt-4">
 				{#if aiPreview}
-					<div class="mb-3 flex items-center justify-between rounded px-3 py-2" style="background-color: #16a34a15; border: 1px solid #16a34a44;">
-						<span class="label" style="color: #16a34a">FREE PREVIEW — UNLOCK AI FOR ALL SYMBOLS</span>
+					<div class="mb-3 flex items-center justify-between rounded-lg px-3 py-2" style="background-color: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.35);">
+						<span class="label" style="color: var(--verdict-strong-buy)">FREE PREVIEW — UNLOCK AI FOR ALL SYMBOLS</span>
 						<a class="label link-crimson" href="/pricing">UPGRADE →</a>
 					</div>
 				{/if}
-				<p class="label mt-2" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap;">
+				<p class="label mt-2" style="color: var(--foreground); line-height: 1.6; white-space: pre-wrap; text-transform: none;">
 					{aiMessage}
 				</p>
 			</div>

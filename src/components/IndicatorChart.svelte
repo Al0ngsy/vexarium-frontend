@@ -30,7 +30,7 @@
 	const hasPoints = () => Array.isArray(series.points) && series.points.length > 0;
 	const isOverlay = () => series.kind === 'overlay' && hasCandles();
 
-	const INDICATOR_COLOR = '#f5f5f7';
+	const INDICATOR_COLOR = '#e8edf5';
 
 	function referenceLines(): number[] {
 		const name = series.name.toUpperCase();
@@ -51,7 +51,7 @@
 			autoSize: true,
 			layout: {
 				...CHART_THEME.layout,
-				background: { type: ColorType.Solid, color: '#121215' }
+				background: { type: ColorType.Solid, color: '#151a24' }
 			},
 			rightPriceScale: {
 				...CHART_THEME.rightPriceScale,
