@@ -105,16 +105,29 @@
 		} else {
 			heroTimer = setTimeout(heroType, 400);
 		}
-		// Deep-link: /?symbol=AAPL auto-runs the health check; mode from query.
+	});
+
+	// Deep-link: /?symbol=X auto-runs the health check; mode from query.
+	// Uses an $effect (not onMount) so client-side navigation — e.g. clicking a
+	// recent-analysis link — also triggers the check, not just a fresh page load.
+	let lastHandledKey = ''; // "$mode:$symbol" already processed — guards double-runs
+	$effect(() => {
 		const q = page.url.searchParams.get('symbol');
-		if (q) {
-			symbol = q.toUpperCase();
-			const m = page.url.searchParams.get('mode');
-			if (m === 'options') {
-				mode = 'options';
-			} else {
-				runAnalysis();
-			}
+		if (!q) {
+			lastHandledKey = ''; // back to idle: allow re-triggering the same symbol later
+			return;
+		}
+		const sym = q.toUpperCase();
+		const m = page.url.searchParams.get('mode');
+		const key = `${m === 'options' ? 'options' : 'standard'}:${sym}`;
+		if (key === lastHandledKey) return;
+		lastHandledKey = key;
+		symbol = sym;
+		if (m === 'options') {
+			mode = 'options';
+		} else {
+			mode = 'standard';
+			runAnalysis();
 		}
 	});
 
@@ -191,6 +204,9 @@
 		if (!symbol.trim()) return;
 		const sym = symbol.trim().toUpperCase();
 		dropdownOpen = false;
+		// Mark this URL as already handled so the deep-link $effect skips it
+		// (onAnalyze runs the analysis itself).
+		lastHandledKey = `${mode === 'options' ? 'options' : 'standard'}:${sym}`;
 		if (mode === 'options') {
 			// SPA: options workspace renders below the search on the same page.
 			goto(`/?symbol=${sym}&mode=options`, { replaceState: true });
