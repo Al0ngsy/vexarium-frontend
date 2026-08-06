@@ -3,13 +3,14 @@
 	import { page } from '$app/state';
 
 	import { analyze, getAIAnalysis } from '$lib/api';
-	import type { AnalysisResponse, AssetType, IndicatorSeries, IndicatorResult, CompanyInfo } from '$lib/types';
+	import type { AnalysisResponse, AssetType, IndicatorSeries, IndicatorResult } from '$lib/types';
 	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
 	import { addRecentAnalysis } from '$lib/storage';
 	import { getToken, getUser, initAuth } from '$lib/auth.svelte';
 
 	import IndicatorChart from '../../../components/IndicatorChart.svelte';
 	import SaveTradeModal from '../../../components/SaveTradeModal.svelte';
+	import CompanyProfile from '../../../components/CompanyProfile.svelte';
 
 	let symbol = $derived(String(page.params.symbol || '').toUpperCase());
 	let assetType = $state<AssetType>('stock');
@@ -84,15 +85,6 @@
 	function formatPrice(v: number | null): string {
 		if (v === null || v === undefined) return '—';
 		return `$${v.toFixed(2)}`;
-	}
-
-	// Position of the current price within the 52-week range (0-100%).
-	function rangePos(co: CompanyInfo): number {
-		if (co.low_52w === null || co.low_52w === undefined || co.high_52w === null || co.high_52w === undefined) return 0;
-		const range = co.high_52w - co.low_52w;
-		if (range <= 0 || analysis?.current_price === null || analysis?.current_price === undefined) return 0;
-		const pct = ((analysis.current_price - co.low_52w) / range) * 100;
-		return Math.min(100, Math.max(0, pct));
 	}
 
 	// Short one-line signal note per indicator (mirrors IndicatorCard's explanations).
@@ -259,43 +251,20 @@
 	</div>
 </div>
 
-<!-- 1c. Company / ETF profile (free, keyless: Yahoo meta + Wikipedia summary) -->
-{#if analysis.company && (analysis.company.name || analysis.company.description)}
+<!-- 1c. Company / ETF profile + fundamentals (free, keyless: Yahoo + Wikipedia) -->
+{#if analysis.company && (analysis.company.name || analysis.company.description || analysis.company.market_cap !== null)}
 	{@const co = analysis.company}
+	{@const range = (co.high_52w ?? 0) - (co.low_52w ?? 0)}
+	{@const pos = range > 0 && analysis.current_price ? Math.min(100, Math.max(0, ((analysis.current_price - (co.low_52w ?? 0)) / range) * 100)) : 0}
 	<div class="panel mb-6 overflow-hidden" style="border-top: 2px solid var(--panel-border)">
-		<div class="flex items-center justify-between border-b px-4 py-3" style="border-color: var(--panel-border)">
+		<div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style="border-color: var(--panel-border)">
 			<h2 class="brand" style="border-bottom: 2px solid var(--accent-primary)">ABOUT {symbol}</h2>
 			<span class="label" style="color: var(--foreground-muted)">
-				{co.exchange || ''}{co.currency ? ` · ${co.currency}` : ''}
+				{co.name || symbol}{co.exchange ? ` · ${co.exchange}` : ''}{co.currency ? ` · ${co.currency}` : ''}
 			</span>
 		</div>
 		<div class="p-4">
-			{#if co.name}
-				<p class="data mb-2" style="color: var(--foreground); font-size: 1.1rem">{co.name}</p>
-			{/if}
-			{#if co.description}
-				<p class="label" style="color: var(--foreground-muted); line-height: 1.7; text-transform: none">
-					{co.description}
-				</p>
-			{/if}
-			{#if co.low_52w !== null && co.low_52w !== undefined && co.high_52w !== null && co.high_52w !== undefined}
-				<div class="mt-3 flex flex-wrap items-center gap-4 border-t pt-3" style="border-color: var(--panel-border)">
-					<div>
-						<span class="label block" style="font-size: 9px">52-WEEK LOW</span>
-						<span class="data" style="color: var(--foreground)">${co.low_52w.toFixed(2)}</span>
-					</div>
-					<div class="relative h-1.5 flex-1 rounded" style="background-color: var(--surface-3); min-width: 120px">
-						<div class="absolute inset-y-0 left-0 rounded" style="background-color: var(--accent-primary); width: {rangePos(co)}%"></div>
-					</div>
-					<div>
-						<span class="label block" style="font-size: 9px">52-WEEK HIGH</span>
-						<span class="data" style="color: var(--foreground)">${co.high_52w.toFixed(2)}</span>
-					</div>
-				</div>
-				<p class="label mt-2" style="color: var(--foreground-subtle); text-transform: none; font-size: 10px">
-					Where the current price sits in its 52-week range.
-				</p>
-			{/if}
+			<CompanyProfile company={co} {symbol} {pos} />
 		</div>
 	</div>
 {/if}

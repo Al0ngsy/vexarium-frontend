@@ -99,10 +99,34 @@ export interface CompanyInfo {
   name?: string | null;
   short_name?: string | null;
   exchange?: string | null;
-  high_52w?: number | null;
-  low_52w?: number | null;
   currency?: string | null;
   description?: string | null;
+  sector?: string | null;
+  industry?: string | null;
+  website?: string | null;
+  headquarters?: string | null;
+  employees?: number | null;
+  founded?: number | null;
+  ceo?: string | null;
+  ceo_title?: string | null;
+  ceo_pay?: number | null;
+  market_cap?: number | null;
+  shares_outstanding?: number | null;
+  pe_ratio?: number | null;
+  forward_pe?: number | null;
+  ps_ratio?: number | null;
+  pb_ratio?: number | null;
+  high_52w?: number | null;
+  low_52w?: number | null;
+  dividend_yield?: number | null;
+  payout_ratio?: number | null;
+  revenue_growth?: number | null;
+  earnings_growth?: number | null;
+  profit_margin?: number | null;
+  gross_margin?: number | null;
+  roe?: number | null;
+  roa?: number | null;
+  next_earnings_date?: string | null;
 }
 
 export interface AssetSearchResponse {
