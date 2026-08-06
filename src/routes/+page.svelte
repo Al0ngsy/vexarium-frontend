@@ -31,7 +31,8 @@
   import SaveTradeModal from "../components/SaveTradeModal.svelte";
 
   // ---- search state -------------------------------------------------------
-  let symbol = $state("");
+  let symbol = $state(""); // search input (user-editable)
+  let activeSymbol = $state(""); // symbol of the currently displayed report
   let assetType = $state<AssetType>("stock");
   let mode = $state<"standard" | "options">("standard");
 
@@ -140,6 +141,7 @@
     if (key === lastHandledKey) return;
     lastHandledKey = key;
     symbol = sym;
+    activeSymbol = sym;
     if (m === "options") {
       mode = "options";
     } else {
@@ -229,6 +231,7 @@
     if (mode === "options") {
       // SPA: options workspace renders below the search on the same page.
       goto(`/?symbol=${sym}&mode=options`, { replaceState: true });
+      activeSymbol = sym;
       analysis = null;
       error = null;
     } else {
@@ -244,6 +247,7 @@
     loading = true;
     error = null;
     aiMessage = null;
+    activeSymbol = sym; // freeze the report's symbol — typing in search must not mutate it
     try {
       analysis = await analyze(sym, assetType);
       if (analysis?.overall?.overall_verdict) {
@@ -270,7 +274,7 @@
     aiMessage = null;
     try {
       const res = await getAIAnalysis(
-        symbol,
+        activeSymbol,
         assetType,
         getToken() ?? undefined,
       );
@@ -361,7 +365,7 @@
       {
         k: "PRICE",
         v: formatPrice(analysis.current_price),
-        d: `${symbol} · ${analysis.asset_type?.toUpperCase() ?? "STOCK"}`,
+        d: `${activeSymbol} · ${analysis.asset_type?.toUpperCase() ?? "STOCK"}`,
       },
     ];
     if (co && co.low_52w != null && co.high_52w != null) {
@@ -549,16 +553,16 @@
   </div>
 
   <!-- ============================ RESULTS BELOW ============================ -->
-  {#if (mode === "options" && symbol) || loading || error || analysis}
+  {#if (mode === "options" && activeSymbol) || loading || error || analysis}
     <!-- Disclaimer: only shown when content is displayed, between search and results -->
     <div class="mt-10 w-full max-w-5xl">
       <DisclaimerBanner />
     </div>
   {/if}
   <div class="mt-10 w-full max-w-5xl">
-    {#if mode === "options" && symbol}
+    {#if mode === "options" && activeSymbol}
       <!-- Options SPA: full options workspace below the search -->
-      <OptionsWorkspace {symbol} />
+      <OptionsWorkspace symbol={activeSymbol} />
     {:else if loading}
       <div class="panel mb-6 p-6">
         <div
@@ -594,7 +598,7 @@
         style="border-top: 2px solid var(--accent-primary)"
       >
         <p class="brand text-2xl" style="color: var(--accent-primary)">
-          DATA UNAVAILABLE FOR {symbol}
+          DATA UNAVAILABLE FOR {activeSymbol}
         </p>
         <p class="label" style="color: var(--foreground-muted)">{error}</p>
         <button class="btn-outline" onclick={runAnalysis}>RETRY</button>
@@ -604,7 +608,7 @@
       <div class="panel mb-6 p-6">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p class="label mb-1">HEALTH CHECK — {symbol}</p>
+            <p class="label mb-1">HEALTH CHECK — {activeSymbol}</p>
             <p
               class="brand"
               style="font-size: 1.6rem; color: {VERDICT_COLORS[
@@ -623,7 +627,7 @@
           </div>
           <div class="flex items-center gap-5">
             <div class="text-right">
-              <p class="label mb-1">{symbol}</p>
+              <p class="label mb-1">{activeSymbol}</p>
               <p
                 class="data"
                 style="color: var(--foreground); font-size: 1.25rem"
@@ -631,7 +635,7 @@
                 {formatPrice(analysis.current_price)}
               </p>
               <a
-                href={`/options/${symbol}`}
+                href={`/options/${activeSymbol}`}
                 class="btn-outline mt-3 inline-block"
               >
                 VIEW OPTIONS →
@@ -762,11 +766,11 @@
               class="brand"
               style="border-bottom: 2px solid var(--accent-primary)"
             >
-              ABOUT {symbol}
+              ABOUT {activeSymbol}
             </h2>
             <span class="flex items-center gap-3">
               <span class="label" style="color: var(--foreground-muted)">
-                {co.name || symbol}{co.exchange
+                {co.name || activeSymbol}{co.exchange
                   ? ` · ${co.exchange}`
                   : ""}{co.currency ? ` · ${co.currency}` : ""}
               </span>
@@ -777,7 +781,7 @@
           </button>
           {#if aboutOpen}
             <div class="p-4">
-              <CompanyProfile company={co} {symbol} {pos} />
+              <CompanyProfile company={co} symbol={activeSymbol} {pos} />
             </div>
           {/if}
         </div>
@@ -992,7 +996,7 @@
 
       <SaveTradeModal
         open={showSave}
-        {symbol}
+        symbol={activeSymbol}
         entryPrice={analysis.current_price}
         onClose={() => (showSave = false)}
       />
@@ -1000,7 +1004,7 @@
   </div>
 
   <!-- ==================== RECENT ANALYSES (idle state) ==================== -->
-  {#if !analysis && !loading && !(mode === "options" && symbol)}
+  {#if !analysis && !loading && !(mode === "options" && activeSymbol)}
     <div class="mt-10 w-full max-w-xl">
       <div class="section-title" style="margin-top: 0;">
         RECENT ANALYSES <span class="line"></span>
