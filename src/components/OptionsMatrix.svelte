@@ -99,9 +99,9 @@
 		</span>
 		<div class="flex gap-1">
 			<button type="button" onclick={() => (view = 'table')}
-				class="px-3 py-1 label" style="border: 1px solid {view === 'table' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {view === 'table' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {view === 'table' ? '#fff' : 'var(--foreground-muted)'};">TABLE</button>
+				class="px-3 py-1 label rounded-lg" style="border: 1px solid {view === 'table' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {view === 'table' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {view === 'table' ? 'var(--accent-white)' : 'var(--foreground-muted)'};">TABLE</button>
 			<button type="button" onclick={() => (view = 'graph')}
-				class="px-3 py-1 label" style="border: 1px solid {view === 'graph' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {view === 'graph' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {view === 'graph' ? '#fff' : 'var(--foreground-muted)'};">GRAPH</button>
+				class="px-3 py-1 label rounded-lg" style="border: 1px solid {view === 'graph' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {view === 'graph' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {view === 'graph' ? 'var(--accent-white)' : 'var(--foreground-muted)'};">GRAPH</button>
 		</div>
 	</div>
 
@@ -161,7 +161,7 @@
 								cx={X(i, m.expiries.length)}
 								cy={Y(cell ? cell.pl : 0)}
 								r="1.6"
-								fill={(cell ? cell.pl : 0) >= 0 ? '#16a34a' : '#dc2626'}
+								fill={(cell ? cell.pl : 0) >= 0 ? '#34d399' : '#f87171'}
 							/>
 						{/each}
 						{#if m.expiries.length > 1}

@@ -39,8 +39,8 @@
 	const rorColor = $derived(
 		strategy.return_on_risk !== null && strategy.return_on_risk !== undefined
 			? strategy.return_on_risk > 0.15
-				? '#ea580c'
-				: '#dc2626'
+				? '#fb923c'
+				: '#f87171'
 			: 'var(--foreground-muted)'
 	);
 

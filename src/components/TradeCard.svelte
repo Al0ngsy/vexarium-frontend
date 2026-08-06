@@ -25,7 +25,7 @@
 	let pnlPct = $derived(
 		trade.entryPrice > 0 ? ((currentPrice - trade.entryPrice) / trade.entryPrice) * 100 : 0
 	);
-	let pnlColor = $derived(pnlPct >= 0 ? '#16a34a' : '#dc2626');
+	let pnlColor = $derived(pnlPct >= 0 ? '#34d399' : '#f87171');
 
 	function onRemove() {
 		if (confirm(`Remove ${trade.symbol} from portfolio?`)) {

@@ -47,8 +47,8 @@
 	}
 	function moneynessColor(c: OptionContract): string {
 		// ITM calls / OTM puts etc. colored by distance direction.
-		if (c.distance_pct > 0) return '#22c55e'; // call OTM (green) / put ITM
-		if (c.distance_pct < 0) return '#f97316'; // call ITM / put OTM
+		if (c.distance_pct > 0) return '#4ade80'; // call OTM (green) / put ITM
+		if (c.distance_pct < 0) return '#fb923c'; // call ITM / put OTM
 		return 'var(--foreground)';
 	}
 	// Distance sign flips meaning for calls vs puts.
@@ -57,7 +57,7 @@
 		// For a call: +distance = OTM (further above). For a put: +distance = ITM.
 		const isCall = c.type === 'call';
 		const otm = isCall ? c.distance_pct > 0 : c.distance_pct < 0;
-		return otm ? '#22c55e' : '#f97316';
+		return otm ? '#4ade80' : '#fb923c';
 	}
 
 	// Group contracts by expiration.

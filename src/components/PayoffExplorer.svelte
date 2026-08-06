@@ -122,7 +122,7 @@
 			<!-- zero line -->
 			<line x1="0" y1="30" x2="100" y2="30" stroke="var(--panel-border)" stroke-dasharray="2 2" />
 			<!-- payoff curve -->
-			<path d="M{polyline}" fill="none" stroke="#16a34a" stroke-width="1.5" vector-effect="non-scaling-stroke" />
+			<path d="M{polyline}" fill="none" stroke="#34d399" stroke-width="1.5" vector-effect="non-scaling-stroke" />
 			<!-- breakeven marker -->
 			{#if breakeven && breakeven >= lo && breakeven <= hi}
 				<circle cx={X(breakeven)} cy="30" r="1.4" fill="var(--foreground)" />
@@ -162,13 +162,13 @@
 		</div>
 		<div class="p-2" style="border: 1px solid var(--panel-border); background: var(--surface)">
 			<span class="label block" style="font-size: 9px">P/L</span>
-			<span class="data" style="font-size: 15px; color: {(value?.estimated_pl ?? 0) >= 0 ? '#16a34a' : '#dc2626'}">
+			<span class="data" style="font-size: 15px; color: {(value?.estimated_pl ?? 0) >= 0 ? '#34d399' : '#f87171'}">
 				{loading ? '…' : formatPL(value?.estimated_pl ?? 0)}
 			</span>
 		</div>
 		<div class="p-2" style="border: 1px solid var(--panel-border); background: var(--surface)">
 			<span class="label block" style="font-size: 9px">P/L %</span>
-			<span class="data" style="font-size: 15px; color: {(value?.pl_pct ?? 0) >= 0 ? '#16a34a' : '#dc2626'}">
+			<span class="data" style="font-size: 15px; color: {(value?.pl_pct ?? 0) >= 0 ? '#34d399' : '#f87171'}">
 				{loading ? '…' : `${(value?.pl_pct ?? 0) >= 0 ? '+' : '−'}${Math.abs((value?.pl_pct ?? 0) * 100).toFixed(1)}%`}
 			</span>
 		</div>

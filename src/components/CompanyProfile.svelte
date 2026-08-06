@@ -153,13 +153,13 @@
 			{#if has(company.revenue_growth)}
 				<div class="rounded p-2" style="border: 1px solid var(--panel-border); background: var(--surface)">
 					<span class="label block" style="font-size: 9px">REVENUE GROWTH <InfoPopover title="REVENUE GROWTH" content="How fast sales are growing each year. Strong growth is usually a good sign for a company's future." /></span>
-					<span class="data" style="font-size: 13px; color: {(company.revenue_growth ?? 0) >= 0 ? '#16a34a' : '#dc2626'}">{fmtPct(company.revenue_growth)}</span>
+					<span class="data" style="font-size: 13px; color: {(company.revenue_growth ?? 0) >= 0 ? '#34d399' : '#f87171'}">{fmtPct(company.revenue_growth)}</span>
 				</div>
 			{/if}
 			{#if has(company.earnings_growth)}
 				<div class="rounded p-2" style="border: 1px solid var(--panel-border); background: var(--surface)">
 					<span class="label block" style="font-size: 9px">EARNINGS GROWTH <InfoPopover title="EARNINGS GROWTH" content="How fast profit (earnings) is growing. Growing earnings often push the stock price up over time." /></span>
-					<span class="data" style="font-size: 13px; color: {(company.earnings_growth ?? 0) >= 0 ? '#16a34a' : '#dc2626'}">{fmtPct(company.earnings_growth)}</span>
+					<span class="data" style="font-size: 13px; color: {(company.earnings_growth ?? 0) >= 0 ? '#34d399' : '#f87171'}">{fmtPct(company.earnings_growth)}</span>
 				</div>
 			{/if}
 			{#if has(company.dividend_yield)}

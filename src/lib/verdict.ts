@@ -1,11 +1,11 @@
 import type { Verdict, Stance } from './types';
 
 export const VERDICT_COLORS: Record<Verdict, string> = {
-	strong_buy: '#16a34a',
-	buy: '#65a30d',
-	hold: '#ca8a04',
-	sell: '#ea580c',
-	strong_sell: '#dc2626'
+	strong_buy: '#34d399',
+	buy: '#4ade80',
+	hold: '#fbbf24',
+	sell: '#fb923c',
+	strong_sell: '#f87171'
 };
 
 export const VERDICT_ICONS: Record<Verdict, string> = {
@@ -25,9 +25,9 @@ export const VERDICT_LABELS: Record<Verdict, string> = {
 };
 
 export const STANCE_COLORS: Record<Stance, string> = {
-	TAKE_PROFIT: '#16a34a',
-	HOLD: '#2563eb',
-	CUT_LOSS: '#dc2626'
+	TAKE_PROFIT: '#34d399',
+	HOLD: '#60a5fa',
+	CUT_LOSS: '#f87171'
 };
 
 export const STANCE_LABELS: Record<Stance, string> = {

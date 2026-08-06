@@ -132,7 +132,7 @@
 				type="button"
 				onclick={() => { ctype = 'call'; strike = null; }}
 				class="flex-1 px-3 py-2 label text-center"
-				style="border: 1px solid {ctype === 'call' ? '#16a34a' : 'var(--panel-border)'}; background-color: {ctype === 'call' ? 'rgba(22,163,74,0.08)' : 'var(--surface)'}; color: {ctype === 'call' ? '#16a34a' : 'var(--foreground-muted)'};"
+				style="border: 1px solid {ctype === 'call' ? '#34d399' : 'var(--panel-border)'}; background-color: {ctype === 'call' ? 'rgba(52,211,153,0.08)' : 'var(--surface)'}; color: {ctype === 'call' ? '#34d399' : 'var(--foreground-muted)'};"
 			>
 				CALL
 			</button>
@@ -140,7 +140,7 @@
 				type="button"
 				onclick={() => { ctype = 'put'; strike = null; }}
 				class="flex-1 px-3 py-2 label text-center"
-				style="border: 1px solid {ctype === 'put' ? '#dc2626' : 'var(--panel-border)'}; background-color: {ctype === 'put' ? 'rgba(220,38,38,0.08)' : 'var(--surface)'}; color: {ctype === 'put' ? '#dc2626' : 'var(--foreground-muted)'};"
+				style="border: 1px solid {ctype === 'put' ? '#f87171' : 'var(--panel-border)'}; background-color: {ctype === 'put' ? 'rgba(248,113,113,0.08)' : 'var(--surface)'}; color: {ctype === 'put' ? '#f87171' : 'var(--foreground-muted)'};"
 			>
 				PUT
 			</button>
@@ -150,7 +150,7 @@
 	<!-- STRIKE ladder centered on current price -->
 	<div>
 		<span class="label block mb-2">
-			STRIKE · CENTERED ON <span class="data" style="color: #16a34a">
+			STRIKE · CENTERED ON <span class="data" style="color: #34d399">
 				{currentPrice ? `$${currentPrice.toFixed(2)}` : '—'}
 			</span>
 		</span>
@@ -166,10 +166,10 @@
 						class="flex items-center justify-between px-3 py-2"
 						style="border: 1px solid {strike === s ? 'var(--accent-primary)' : 'var(--panel-border)'}; background-color: {strike === s ? 'rgba(200,30,30,0.1)' : 'var(--surface)'}; box-shadow: {strike === s ? 'inset 0 0 0 1px var(--accent-primary)' : 'none'};"
 					>
-						<span class="data" style="color: {nearATM ? '#16a34a' : pct > 0 ? '#22c55e' : '#f97316'}">
+						<span class="data" style="color: {nearATM ? '#34d399' : pct > 0 ? '#4ade80' : '#fb923c'}">
 							{s.toFixed(0)}
 						</span>
-						<span class="data" style="font-size: 11px; color: {pct === 0 ? 'var(--foreground-muted)' : pct > 0 ? '#22c55e' : '#f97316'}">
+						<span class="data" style="font-size: 11px; color: {pct === 0 ? 'var(--foreground-muted)' : pct > 0 ? '#4ade80' : '#fb923c'}">
 							{pct >= 0 ? '+' : '−'}{Math.abs(pct).toFixed(1)}%
 						</span>
 						{#if prem !== null}

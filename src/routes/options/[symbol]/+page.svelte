@@ -183,7 +183,7 @@
 	function formatPLPct(v: number): string {
 		return `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%`;
 	}
-	const plColor = $derived((v: number) => (v >= 0 ? '#16a34a' : '#dc2626'));
+	const plColor = $derived((v: number) => (v >= 0 ? '#34d399' : '#f87171'));
 
 	const GREEKS: Array<{ key: keyof Greeks; label: string; text: string }> = [
 		{
@@ -236,11 +236,11 @@
 		very_bullish: 'VERY BULLISH'
 	};
 	const SENTIMENT_COLOR: Record<Sentiment, string> = {
-		very_bearish: '#dc2626',
-		bearish: '#ea580c',
-		neutral: '#ca8a04',
-		bullish: '#65a30d',
-		very_bullish: '#16a34a'
+		very_bearish: '#f87171',
+		bearish: '#fb923c',
+		neutral: '#fbbf24',
+		bullish: '#4ade80',
+		very_bullish: '#34d399'
 	};
 	// Map a technical-analysis verdict to a sentiment.
 	const verdictSentiment = $derived.by<Sentiment>(() => {
@@ -327,7 +327,7 @@
 			<p class="brand" style="font-size: 1.5rem">{symbol}</p>
 			<VerdictBadge verdict={analysis.overall.overall_verdict} />
 			{#if delayed}
-				<span class="label" style="color: #ca8a04; border: 1px solid #ca8a0433; padding: 2px 6px; border-radius: 2px">DELAYED</span>
+				<span class="label" style="color: #fbbf24; border: 1px solid rgba(251,191,36,0.33); padding: 2px 6px; border-radius: 4px">DELAYED</span>
 			{/if}
 		</div>
 		<div class="flex flex-wrap items-center gap-6">
@@ -355,9 +355,9 @@
 	<!-- Experience level + tabs -->
 	<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
 		<div class="flex gap-1">
-			<button type="button" onclick={() => (tab = 'guided')} class="px-4 py-2 label" style="border: 1px solid {tab === 'guided' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {tab === 'guided' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {tab === 'guided' ? '#fff' : 'var(--foreground-muted)'};">GUIDED</button>
-			<button type="button" onclick={() => (tab = 'chain')} class="px-4 py-2 label" style="border: 1px solid {tab === 'chain' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {tab === 'chain' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {tab === 'chain' ? '#fff' : 'var(--foreground-muted)'};">CHAIN</button>
-			<button type="button" onclick={() => (tab = 'builder')} class="px-4 py-2 label" style="border: 1px solid {tab === 'builder' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {tab === 'builder' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {tab === 'builder' ? '#fff' : 'var(--foreground-muted)'};">BUILDER</button>
+			<button type="button" onclick={() => (tab = 'guided')} class="px-4 py-2 label rounded-lg" style="border: 1px solid {tab === 'guided' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {tab === 'guided' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {tab === 'guided' ? 'var(--accent-white)' : 'var(--foreground-muted)'}; font-weight: {tab === 'guided' ? 700 : 600};">GUIDED</button>
+			<button type="button" onclick={() => (tab = 'chain')} class="px-4 py-2 label rounded-lg" style="border: 1px solid {tab === 'chain' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {tab === 'chain' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {tab === 'chain' ? 'var(--accent-white)' : 'var(--foreground-muted)'}; font-weight: {tab === 'chain' ? 700 : 600};">CHAIN</button>
+			<button type="button" onclick={() => (tab = 'builder')} class="px-4 py-2 label rounded-lg" style="border: 1px solid {tab === 'builder' ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {tab === 'builder' ? 'var(--accent-primary)' : 'var(--surface)'}; color: {tab === 'builder' ? 'var(--accent-white)' : 'var(--foreground-muted)'}; font-weight: {tab === 'builder' ? 700 : 600};">BUILDER</button>
 		</div>
 		<div class="flex items-center gap-2">
 			<span class="label" style="color: var(--foreground-subtle)">EXPERIENCE</span>
@@ -519,14 +519,14 @@
 
 		<!-- Chance of profit (Pro) -->
 		<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
-			<h2 class="brand mb-4" style="border-bottom: 2px solid var(--accent-primary)">CHANCE OF PROFIT <span class="label" style="color: #ca8a04">PRO</span></h2>
+			<h2 class="brand mb-4" style="border-bottom: 2px solid var(--accent-primary)">CHANCE OF PROFIT <span class="label" style="color: #fbbf24">PRO</span></h2>
 			{#if !contractSymbol}
 				<p class="label" style="color: var(--foreground-muted)">Select a contract to estimate its chance of profit.</p>
 			{:else if chance}
 				<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
 					<div>
 						<span class="label block mb-1">PROB OF PROFIT <InfoPopover title="CHANCE OF PROFIT" content="An ESTIMATE of how likely this trade is to make money, from a Black-Scholes model using the option's implied volatility. Not a guarantee." /></span>
-						<span class="data" style="font-size: 1.3rem; color: {(chance.prob_profit ?? 0) >= 0.5 ? '#16a34a' : '#ea580c'}">{(chance.prob_profit * 100).toFixed(0)}%</span>
+						<span class="data" style="font-size: 1.3rem; color: {(chance.prob_profit ?? 0) >= 0.5 ? '#34d399' : '#fb923c'}">{(chance.prob_profit * 100).toFixed(0)}%</span>
 					</div>
 					<div>
 						<span class="label block mb-1">PROB ENDS ITM <InfoPopover title="PROBABILITY OF ITM" content="How likely the option ends 'in the money' (intrinsic value) by expiry." /></span>
@@ -534,7 +534,7 @@
 					</div>
 					<div>
 						<span class="label block mb-1">EXPECTED VALUE <InfoPopover title="EXPECTED VALUE" content="Estimated theoretical value minus the premium. Positive = statistically favourable." /></span>
-						<span class="data" style="font-size: 1.3rem; color: {(chance.expected_value ?? 0) >= 0 ? '#16a34a' : '#dc2626'}">{formatPL(chance.expected_value)}</span>
+						<span class="data" style="font-size: 1.3rem; color: {(chance.expected_value ?? 0) >= 0 ? '#34d399' : '#f87171'}">{formatPL(chance.expected_value)}</span>
 					</div>
 					<div>
 						<span class="label block mb-1">BREAKEVEN</span>

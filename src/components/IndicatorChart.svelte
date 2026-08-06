@@ -40,7 +40,7 @@
 	}
 
 	function refLineColor(v: number): string {
-		return v > 50 ? '#dc2626' : '#16a34a';
+		return v > 50 ? '#f87171' : '#34d399';
 	}
 
 	onMount(() => {
@@ -65,12 +65,12 @@
 		if (isOverlay()) {
 			// Candlestick price series + indicator line on the same price scale.
 			chart.addSeries(CandlestickSeries, {
-				upColor: '#16a34a',
-				downColor: '#dc2626',
-				borderUpColor: '#16a34a',
-				borderDownColor: '#dc2626',
-				wickUpColor: '#16a34a',
-				wickDownColor: '#dc2626',
+				upColor: '#34d399',
+				downColor: '#f87171',
+				borderUpColor: '#34d399',
+				borderDownColor: '#f87171',
+				wickUpColor: '#34d399',
+				wickDownColor: '#f87171',
 				priceLineVisible: false,
 				lastValueVisible: false
 			}).setData(
