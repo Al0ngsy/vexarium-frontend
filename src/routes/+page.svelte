@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { AssetInfo, AssetType, AnalysisResponse, IndicatorSeries, IndicatorResult } from '$lib/types';
@@ -41,6 +42,10 @@
 	let authed = $state(false);
 	let proUser = $state(false);
 
+	// Rotating hero word: "buy" ↔ "sell".
+	let heroWord = $state<'buy' | 'sell'>('buy');
+	let heroTimer: ReturnType<typeof setInterval> | null = null;
+
 	// Group suggestions by asset type, preserving order: stock, etf, index.
 	const grouped = $derived.by(() => {
 		const order: AssetType[] = ['stock', 'etf', 'index'];
@@ -71,12 +76,22 @@
 		proUser = getUser()?.tier === 'pro';
 		recent = getRecentAnalyses();
 		document.addEventListener('click', handleOutsideClick);
+		// Rotate the hero word periodically (respect reduced motion).
+		if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			heroTimer = setInterval(() => {
+				heroWord = heroWord === 'buy' ? 'sell' : 'buy';
+			}, 3000);
+		}
 		// Deep-link: /?symbol=AAPL auto-runs the health check.
 		const q = page.url.searchParams.get('symbol');
 		if (q) {
 			symbol = q.toUpperCase();
 			runAnalysis();
 		}
+	});
+
+	onDestroy(() => {
+		if (heroTimer) clearInterval(heroTimer);
 	});
 
 	function handleOutsideClick(e: MouseEvent) {
@@ -321,7 +336,7 @@
 </script>
 
 <svelte:head>
-	<title>VEXARIUM — Check before you buy</title>
+	<title>VEXARIUM — Check before you buy or sell</title>
 </svelte:head>
 
 <div class="flex flex-col items-center">
@@ -335,7 +350,11 @@
 			<span class="label" style="color: var(--foreground-muted); letter-spacing: 0.06em;">10 FREE CHECKS · AI SECOND OPINION ON PRO</span>
 		</div>
 		<h1 class="brand" style="font-size: 2.6rem; letter-spacing: 0.02em; text-transform: none; line-height: 1.1;">
-			Check before you <span style="color: var(--accent-primary)">buy.</span>
+			Check before you <span style="color: var(--accent-primary); display: inline-block;">
+				{#key heroWord}
+					<span class="inline-block" transition:fly={{ y: 14, duration: 400 }}>{heroWord}.</span>
+				{/key}
+			</span>
 		</h1>
 		<p class="label mt-4 mb-8" style="color: var(--foreground-muted); text-transform: none; font-weight: 400; font-size: 1rem; max-width: 560px; line-height: 1.6;">
 			A plain-language health check for any stock, ETF or option. Built for beginners, deep enough for pros.
