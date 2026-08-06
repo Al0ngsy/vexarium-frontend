@@ -47,7 +47,7 @@ frontend/
 Requires Node.js 22+ and Yarn Berry (v4). The repo pins Yarn 4.17.0 via `packageManager` + a committed release in `.yarn/releases/`.
 
 ```bash
-cd frontend
+cd <vexarium-frontend checkout>
 corepack enable          # activate the pinned Yarn version (once)
 yarn install
 ```
@@ -58,7 +58,7 @@ yarn install
 yarn dev                 # http://localhost:5173 (proxies /api → http://localhost:8000)
 ```
 
-Start the backend first (see `backend/README.md`). The dev proxy forwards `/api` to the FastAPI server.
+Start the backend first (see the `vexarium-backend` repo's `README.md`). The dev proxy forwards `/api` to the FastAPI server.
 
 To point the client at a non-local backend:
 
@@ -77,14 +77,14 @@ The app is pre-configured for **Cloudflare Pages** via `@sveltejs/adapter-cloudf
 
 ### Deploy to Cloudflare Pages (recommended, free)
 
-1. Push the repo to GitHub (`Al0ngsy`).
+1. Push the repo to GitHub (`Al0ngsy/vexarium-frontend`).
 2. In the Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git**.
-3. Pick the repo + `frontend` as the root directory.
+3. Pick the repo (root = repo root, no subdirectory).
 4. Build settings:
    - **Build command:** `yarn build`
    - **Output directory:** `.svelte-kit/cloudflare`
    - **Framework preset:** SvelteKit (auto-detected)
-5. Add environment variable `VITE_API_URL` pointing at your deployed backend (e.g. `https://api.vexarium.com`).
+5. Add environment variable `VITE_API_URL` pointing at your deployed backend (e.g. `https://vexarium-api.onrender.com`).
 6. Deploy. Optionally set a custom domain (e.g. `app.vexarium.com`).
 
 > The GitHub Actions workflow also runs `yarn build` on every push/PR, so a failed build blocks the branch.
