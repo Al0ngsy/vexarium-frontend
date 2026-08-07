@@ -11,20 +11,30 @@ export function formatTimeAgo(iso: string): string {
 	return `${d}d ago`;
 }
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-	EUR: '€',
-	GBP: '£',
-	JPY: '¥',
-	CHF: 'CHF ',
-	CAD: 'C$',
-	AUD: 'A$',
-	HKD: 'HK$'
+// Currency -> formatting locale. Position and decimals are a locale convention:
+// "163,10 €" (de-DE) vs "$163.10" (en-US). Default USD/en-US for US listings.
+const CURRENCY_LOCALES: Record<string, string> = {
+	EUR: 'de-DE',
+	USD: 'en-US',
+	GBP: 'en-GB',
+	JPY: 'ja-JP',
+	CHF: 'de-CH',
+	CAD: 'en-CA',
+	AUD: 'en-AU',
+	HKD: 'en-HK'
 };
 
-/** Format a price with the right currency symbol (defaults to $ — US listings
- * are the common case; non-US symbols pass their company currency). */
+/** Format a price with locale-correct currency (symbol position, decimals). */
 export function formatPrice(v: number | null | undefined, currency?: string | null): string {
 	if (v === null || v === undefined) return '—';
-	const sym = currency ? (CURRENCY_SYMBOLS[currency.toUpperCase()] ?? `${currency} `) : '$';
-	return `${sym}${v.toFixed(2)}`;
+	const code = (currency || 'USD').toUpperCase();
+	try {
+		return new Intl.NumberFormat(CURRENCY_LOCALES[code] ?? 'en-US', {
+			style: 'currency',
+			currency: code,
+			maximumFractionDigits: 2
+		}).format(v);
+	} catch {
+		return `$${v.toFixed(2)}`; // unknown/invalid currency code
+	}
 }
