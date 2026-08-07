@@ -241,6 +241,20 @@
     }
   }
 
+  function switchToMainListing() {
+    const ml = analysis?.company?.main_listing;
+    if (!ml || !ml.symbol) return;
+    // Re-run the health check on the primary home-exchange listing.
+    symbol = ml.symbol;
+    activeSymbol = ml.symbol;
+    analysis = null;
+    error = null;
+    aiMessage = null;
+    lastHandledKey = `standard:${ml.symbol.toUpperCase()}`;
+    goto(`/?symbol=${ml.symbol}`, { replaceState: true });
+    runAnalysis();
+  }
+
   async function runAnalysis() {
     const sym = symbol.trim().toUpperCase();
     if (!sym) return;
@@ -492,7 +506,8 @@
                   >
                   <span
                     class="label truncate"
-                    style="color: var(--foreground-muted)">{asset.name}</span
+                    style="color: var(--foreground-muted)"
+                    >{asset.name}{asset.exchange ? ` · ${asset.exchange}` : ''}</span
                   >
                 </button>
               {/each}
@@ -599,6 +614,15 @@
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p class="label mb-1">HEALTH CHECK — {activeSymbol}</p>
+            {#if analysis.company?.main_listing}
+              <p
+                class="label mb-1"
+                style="color: var(--foreground-muted); text-transform: none;"
+              >
+                {analysis.company.exchange ?? "OTC ADR"} · ADR of
+                {analysis.company.main_listing.name ?? analysis.company.main_listing.symbol}
+              </p>
+            {/if}
             <p
               class="brand"
               style="font-size: 1.6rem; color: {VERDICT_COLORS[
@@ -630,6 +654,15 @@
               >
                 VIEW OPTIONS →
               </a>
+              {#if analysis.company?.main_listing}
+                <button
+                  class="btn-outline mt-3 inline-block"
+                  onclick={switchToMainListing}
+                  title="Switch to the primary home-exchange listing"
+                >
+                  VIEW MAIN LISTING {analysis.company.main_listing.symbol} →
+                </button>
+              {/if}
             </div>
             <!-- Grade ring -->
             <div class="grade-ring">

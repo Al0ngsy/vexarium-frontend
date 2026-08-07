@@ -94,6 +94,12 @@ export interface NewsArticle {
   symbols?: string[];
 }
 
+export interface MainListing {
+  symbol: string;
+  name?: string | null;
+  exchange?: string | null;
+}
+
 export interface CompanyInfo {
   symbol: string;
   name?: string | null;
@@ -101,6 +107,7 @@ export interface CompanyInfo {
   exchange?: string | null;
   currency?: string | null;
   description?: string | null;
+  main_listing?: MainListing | null;
   sector?: string | null;
   industry?: string | null;
   website?: string | null;
