@@ -3,7 +3,7 @@
   import { page } from "$app/state";
   import { analyze, searchAssets, streamAIAnalysis } from "$lib/api";
   import { getToken, initAuth } from "$lib/auth.svelte";
-  import { formatTimeAgo } from "$lib/format";
+  import { formatPrice, formatTimeAgo } from "$lib/format";
   import {
     explainIndicator,
     STATUS_ICON,
@@ -41,6 +41,8 @@
   let recent = $state<RecentAnalysis[]>([]);
   let dropdownOpen = $state(false);
   let activeIndex = $state(0);
+  let searching = $state(false); // search request in flight (may be a cold start)
+  let searchFailed = $state(false); // backend unreachable / request failed
 
   let inputEl: HTMLInputElement;
   let containerEl: HTMLDivElement;
@@ -165,13 +167,31 @@
     if (!q) {
       suggestions = [];
       dropdownOpen = false;
+      searching = false;
+      searchFailed = false;
       return;
     }
     dropdownOpen = true;
     activeIndex = 0;
+    searchFailed = false;
     if (searchTimer) clearTimeout(searchTimer);
     searchTimer = setTimeout(async () => {
-      let found = await searchAssets(q);
+      const qSent = symbol.trim();
+      searching = true;
+      let found = await searchAssets(qSent);
+      searching = false;
+      // Stale guard: user kept typing while the request hung (cold start) —
+      // drop the result for the old query.
+      if (qSent.trim().toUpperCase() !== symbol.trim().toUpperCase()) return;
+      if (found === null) {
+        searchFailed = true;
+        suggestions = [];
+        // Only reopen if the user is still typing in the box — a stale
+        // failure must not pop the dropdown over a running analysis.
+        if (document.activeElement === inputEl) dropdownOpen = true;
+        activeIndex = 0;
+        return;
+      }
       const qU = symbol.trim().toUpperCase();
       found = found.sort((a, b) => {
         const aExact = a.symbol.toUpperCase() === qU ? 0 : 1;
@@ -306,11 +326,6 @@
   }
 
   // ---- formatting + health-check helpers ----------------------------------
-  function formatPrice(v: number | null): string {
-    if (v === null || v === undefined) return "—";
-    return `$${v.toFixed(2)}`;
-  }
-
   function seriesFor(name: string): IndicatorSeries | null {
     const found = (analysis?.indicator_series || []).find((s) =>
       s.name.toLowerCase().includes(name.toLowerCase()),
@@ -374,17 +389,18 @@
   const vitals = $derived.by(() => {
     if (!analysis) return [];
     const co = analysis.company;
+    const cur = co?.currency ?? null;
     const out: { k: string; v: string; d: string }[] = [
       {
         k: "PRICE",
-        v: formatPrice(analysis.current_price),
+        v: formatPrice(analysis.current_price, cur),
         d: `${activeSymbol} · ${analysis.asset_type?.toUpperCase() ?? "STOCK"}`,
       },
     ];
     if (co && co.low_52w != null && co.high_52w != null) {
       out.push({
         k: "52-WEEK RANGE",
-        v: `$${co.low_52w.toFixed(0)}–$${co.high_52w.toFixed(0)}`,
+        v: `${formatPrice(co.low_52w, cur).replace(/^[^\d-]+/, "")}–${formatPrice(co.high_52w, cur).replace(/^[^\d-]+/, "")}`,
         d: "yearly low–high",
       });
     }
@@ -470,43 +486,60 @@
           style="border-color: var(--panel-border); background-color: var(--surface-2); color: var(--foreground); text-transform: uppercase;"
         />
 
-        {#if dropdownOpen && grouped.length > 0}
+        {#if dropdownOpen && (grouped.length > 0 || searching || searchFailed)}
           <div
             class="absolute z-30 mt-1 w-full overflow-hidden rounded-lg"
             style="background-color: var(--surface); border: 1px solid var(--panel-border); max-height: 320px; overflow-y: auto; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);"
           >
-            {#each grouped as group, gi}
-              {@const groupOffset = flatRows.findIndex(
-                (r) => r.label === group.label,
-              )}
-              <div
-                class="px-3 py-1.5 label"
-                style="background-color: var(--surface-3); color: var(--accent-primary); border-bottom: 1px solid var(--panel-border);"
-              >
-                {group.label} — {group.items.length}
-              </div>
-              {#each group.items as asset, ai}
-                {@const rowIndex = groupOffset + 1 + ai}
-                <button
-                  type="button"
-                  onclick={() => selectAsset(asset)}
-                  onmouseenter={() => (activeIndex = rowIndex)}
-                  class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
-                  style="background-color: {activeIndex === rowIndex
-                    ? 'var(--surface-active)'
-                    : 'transparent'}; border-bottom: 1px solid var(--grid-line);"
+            {#if searching && grouped.length === 0}
+              <!-- Cold start / slow backend: show we're still trying. -->
+              <div class="flex items-center gap-2.5 px-3 py-2.5">
+                <span
+                  class="inline-block h-3.5 w-3.5 animate-spin rounded-full"
+                  style="border: 2px solid var(--panel-border); border-top-color: var(--accent-primary);"
+                ></span>
+                <span class="label" style="color: var(--foreground-muted)"
+                  >WAKING SERVER — FETCHING DATA…</span
                 >
-                  <span class="data" style="color: var(--foreground)"
-                    >{asset.symbol}</span
+              </div>
+            {:else if searchFailed && grouped.length === 0}
+              <div class="px-3 py-2.5 label" style="color: var(--accent-primary)">
+                SERVER UNREACHABLE — IT'S STILL WAKING UP. TRY AGAIN IN A MOMENT.
+              </div>
+            {:else}
+              {#each grouped as group, gi}
+                {@const groupOffset = flatRows.findIndex(
+                  (r) => r.label === group.label,
+                )}
+                <div
+                  class="px-3 py-1.5 label"
+                  style="background-color: var(--surface-3); color: var(--accent-primary); border-bottom: 1px solid var(--panel-border);"
+                >
+                  {group.label} — {group.items.length}
+                </div>
+                {#each group.items as asset, ai}
+                  {@const rowIndex = groupOffset + 1 + ai}
+                  <button
+                    type="button"
+                    onclick={() => selectAsset(asset)}
+                    onmouseenter={() => (activeIndex = rowIndex)}
+                    class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+                    style="background-color: {activeIndex === rowIndex
+                      ? 'var(--surface-active)'
+                      : 'transparent'}; border-bottom: 1px solid var(--grid-line);"
                   >
-                  <span
-                    class="label truncate"
-                    style="color: var(--foreground-muted)"
-                    >{asset.name}{asset.exchange ? ` · ${asset.exchange}` : ''}</span
-                  >
-                </button>
+                    <span class="data" style="color: var(--foreground)"
+                      >{asset.symbol}</span
+                    >
+                    <span
+                      class="label truncate"
+                      style="color: var(--foreground-muted)"
+                      >{asset.name}{asset.exchange ? ` · ${asset.exchange}` : ''}</span
+                    >
+                  </button>
+                {/each}
               {/each}
-            {/each}
+            {/if}
           </div>
         {/if}
       </div>
@@ -641,7 +674,7 @@
                 class="data"
                 style="color: var(--foreground); font-size: 1.25rem"
               >
-                {formatPrice(analysis.current_price)}
+                {formatPrice(analysis.current_price, analysis.company?.currency)}
               </p>
               <a
                 href={`/options/${activeSymbol}`}

@@ -9,6 +9,7 @@
 		getOptionChance
 	} from '$lib/api';
 	import { getToken } from '$lib/auth.svelte';
+	import { formatPrice } from '$lib/format';
 	import type {
 		AnalysisResponse,
 		OptionContract,
@@ -171,10 +172,6 @@
 		return { gte: '', lte: '' };
 	}
 
-	function formatPrice(v: number | null): string {
-		if (v === null || v === undefined) return '—';
-		return `$${v.toFixed(2)}`;
-	}
 	function formatPL(v: number): string {
 		return `${v >= 0 ? '+' : '−'}$${Math.abs(v).toFixed(2)}`;
 	}

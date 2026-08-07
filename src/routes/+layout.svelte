@@ -1,9 +1,23 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import favicon from "$lib/assets/favicon.svg";
+  import { wakeUp } from "$lib/api";
   import "../app.css";
   import ConsentBanner from "../components/ConsentBanner.svelte";
 
   let { children } = $props();
+
+  // Render free tier sleeps after ~15 min of inactivity and cold-starts on the
+  // first request. Ping /health on load and whenever the tab regains focus so
+  // the backend is warm by the time the user searches.
+  onMount(() => {
+    wakeUp();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") wakeUp();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  });
 </script>
 
 <svelte:head>

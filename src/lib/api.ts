@@ -16,6 +16,13 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// Wake the backend (Render free tier sleeps after inactivity). Fire-and-forget;
+// `cache: 'no-store'` so the request always reaches the origin instead of the
+// browser cache. Cheap GET, never throws.
+export function wakeUp(): void {
+	fetch(`${BASE_URL}/health`, { cache: 'no-store' }).catch(() => {});
+}
+
 // --- Auth ---------------------------------------------------------------
 
 export interface AuthResponse {
@@ -243,9 +250,22 @@ export async function streamAIAnalysis(
 	return full;
 }
 
-export async function searchAssets(q: string): Promise<AssetInfo[]> {
-	const resp = await fetch(`${BASE_URL}/api/v1/assets/search?q=${encodeURIComponent(q)}`);
-	if (!resp.ok) return [];
-	const data = (await resp.json()) as AssetSearchResponse;
-	return data.assets || [];
+/**
+ * Search assets. Returns `null` when the backend is unreachable (e.g. Render
+ * cold start still booting) so the UI can show a "waking server" state instead
+ * of silently pretending there are no matches. 60s cap: Render free cold
+ * starts usually finish within that; a black-holed connection must not spin
+ * forever.
+ */
+export async function searchAssets(q: string): Promise<AssetInfo[] | null> {
+	try {
+		const resp = await fetch(`${BASE_URL}/api/v1/assets/search?q=${encodeURIComponent(q)}`, {
+			signal: AbortSignal.timeout(60_000)
+		});
+		if (!resp.ok) return null;
+		const data = (await resp.json()) as AssetSearchResponse;
+		return data.assets || [];
+	} catch {
+		return null;
+	}
 }

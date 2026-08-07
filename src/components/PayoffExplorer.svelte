@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getOptionValueAtPrice } from '$lib/api';
+	import { formatPrice } from '$lib/format';
 	import type { OptionValueAtPrice } from '$lib/types';
 
 	// Concept C payoff explorer: payoff graph + draggable price slider + readouts.
@@ -92,10 +93,6 @@
 	const curX = $derived(X(price));
 	const curY = $derived(curve.length ? Y(curve.reduce((a, b) => (Math.abs(b.x - price) < Math.abs(a.x - price) ? b : a)).pl) : 30);
 
-	function formatPrice(v: number | null): string {
-		if (v === null || v === undefined) return '—';
-		return `$${v.toFixed(2)}`;
-	}
 	function formatPL(v: number): string {
 		return `${v >= 0 ? '+' : '−'}$${Math.abs(v).toFixed(2)}`;
 	}
