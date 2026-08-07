@@ -17,19 +17,11 @@
 	let loaded = $state(false);
 	let stances = $state<Record<string, StanceState>>({});
 
-	function mockCurrentPrice(trade: SavedTrade): number {
-		if (trade.type === 'option') return trade.entryPrice;
-		return trade.entryPrice * 1.03;
-	}
-
-	function currentPriceOf(trade: SavedTrade): number {
-		return mockCurrentPrice(trade);
-	}
-
 	async function evaluate(trade: SavedTrade) {
 		stances[trade.id] = { loading: true, data: null };
 		try {
-			const res = await getStance(trade, mockCurrentPrice(trade));
+			// The backend fetches the live quote; the client only stores entry prices.
+			const res = await getStance(trade);
 			stances[trade.id] = { loading: false, data: res };
 		} catch {
 			stances[trade.id] = { loading: false, data: null };
@@ -53,11 +45,6 @@
 	}
 
 	let totalInvested = $derived(trades.reduce((sum, t) => sum + t.entryPrice * t.quantity, 0));
-	let currentValue = $derived(
-		trades.reduce((sum, t) => sum + mockCurrentPrice(t) * t.quantity, 0)
-	);
-	let totalPl = $derived(currentValue - totalInvested);
-	let totalPlPct = $derived(totalInvested > 0 ? (totalPl / totalInvested) * 100 : 0);
 
 	function formatMoney(v: number): string {
 		return `$${v.toFixed(2)}`;
@@ -79,10 +66,6 @@
 	</div>
 {:else if loaded}
 	<DisclaimerBanner />
-	<!-- Anonymous sync banner -->
-	<div class="panel mb-6 px-5 py-3" style="border-top: 2px solid var(--accent-primary)">
-		<p class="label" style="color: var(--foreground-muted)">SIGN UP TO SYNC ACROSS DEVICES</p>
-	</div>
 
 	<!-- Summary -->
 	<div class="panel mb-6 p-6" style="border-top: 2px solid var(--accent-primary)">
@@ -95,22 +78,6 @@
 				<p class="label mb-1">TOTAL INVESTED</p>
 				<p class="data" style="font-size: 1.25rem; color: var(--foreground)">
 					{formatMoney(totalInvested)}
-				</p>
-			</div>
-			<div>
-				<p class="label mb-1">CURRENT VALUE</p>
-				<p class="data" style="font-size: 1.25rem; color: var(--foreground)">
-					{formatMoney(currentValue)}
-				</p>
-			</div>
-			<div>
-				<p class="label mb-1">TOTAL P/L</p>
-				<p
-					class="data"
-					style="font-size: 1.25rem; color: {totalPl >= 0 ? 'var(--stance-take-profit)' : 'var(--stance-cut-loss)'}"
-				>
-					{totalPl >= 0 ? '+' : ''}{formatMoney(totalPl)}
-					<span style="color: var(--foreground-subtle)"> ({totalPlPct >= 0 ? '+' : ''}{totalPlPct.toFixed(2)}%)</span>
 				</p>
 			</div>
 		</div>
@@ -135,7 +102,6 @@
 					{trade}
 					stance={stances[trade.id]?.data ?? null}
 					loading={stances[trade.id]?.loading ?? true}
-					currentPrice={mockCurrentPrice(trade)}
 				/>
 			{/each}
 		</div>

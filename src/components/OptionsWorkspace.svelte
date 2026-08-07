@@ -67,7 +67,6 @@
 	let showSave = $state(false);
 
 	const token = $derived(getToken());
-	const isPro = $derived(getToken() ? true : false); // backend decides; we try and handle 403
 
 	onMount(() => {
 		load();

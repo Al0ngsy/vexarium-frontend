@@ -8,6 +8,7 @@
     explainIndicator,
     STATUS_ICON,
     STATUS_LABEL,
+    verdictToStatus,
   } from "$lib/indicator-explain";
   import { renderAIMarkdown } from "$lib/markdown";
   import {
@@ -331,25 +332,19 @@
     (analysis?.overall?.breakdown || []).length - bullCount - bearCount,
   );
 
-  const verdictStatus = (v: string): "pass" | "watch" | "fail" => {
-    if (["buy", "strong_buy"].includes(v)) return "pass";
-    if (["sell", "strong_sell"].includes(v)) return "fail";
-    return "watch";
-  };
-
   const passCount = $derived(
     (analysis?.overall?.breakdown || []).filter(
-      (i) => verdictStatus(i.verdict) === "pass",
+      (i) => verdictToStatus(i.verdict) === "pass",
     ).length,
   );
   const watchCount = $derived(
     (analysis?.overall?.breakdown || []).filter(
-      (i) => verdictStatus(i.verdict) === "watch",
+      (i) => verdictToStatus(i.verdict) === "watch",
     ).length,
   );
   const failCount = $derived(
     (analysis?.overall?.breakdown || []).filter(
-      (i) => verdictStatus(i.verdict) === "fail",
+      (i) => verdictToStatus(i.verdict) === "fail",
     ).length,
   );
   const totalChecks = $derived((analysis?.overall?.breakdown || []).length);

@@ -6,13 +6,11 @@
 	let {
 		trade,
 		stance,
-		loading,
-		currentPrice
+		loading
 	}: {
 		trade: SavedTrade;
 		stance: StanceResponse | null;
 		loading: boolean;
-		currentPrice: number;
 	} = $props();
 
 	const typeLabels: Record<SavedTrade['type'], string> = {
@@ -22,9 +20,8 @@
 		option: 'OPTION'
 	};
 
-	let pnlPct = $derived(
-		trade.entryPrice > 0 ? ((currentPrice - trade.entryPrice) / trade.entryPrice) * 100 : 0
-	);
+	// pnl from the server-computed stance (live price), not a client guess.
+	let pnlPct = $derived(stance ? stance.pnl_pct * 100 : 0);
 	let pnlColor = $derived(pnlPct >= 0 ? '#34d399' : '#f87171');
 
 	function onRemove() {
@@ -49,11 +46,12 @@
 
 		<div class="flex items-center gap-2">
 			<span class="data" style="color: var(--foreground-muted)">${trade.entryPrice.toFixed(2)}</span>
-			<span class="data" style="color: var(--foreground-subtle)">→</span>
-			<span class="data" style="color: var(--foreground)">${currentPrice.toFixed(2)}</span>
-			<span class="data" style="color: {pnlColor}">
-				{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
-			</span>
+			{#if stance}
+				<span class="data" style="color: var(--foreground-subtle)">→</span>
+				<span class="data" style="color: {pnlColor}">
+					{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
+				</span>
+			{/if}
 		</div>
 	</div>
 

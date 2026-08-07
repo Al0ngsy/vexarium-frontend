@@ -7,7 +7,6 @@ export interface IndicatorResult {
   name: string;
   value: number | Record<string, number> | null;
   verdict: Verdict;
-  tier: string;
 }
 
 export interface OverallVerdict {
@@ -80,7 +79,6 @@ export interface AIAnalysisResponse {
     low_52w?: number | null;
     ytd_change_pct?: number | null;
   };
-  is_preview?: boolean;
 }
 
 export interface NewsArticle {
@@ -164,8 +162,6 @@ export interface OptionContract {
   theoretical_value: number;
   spread: number;
   distance_pct: number;
-  volume: number | null;
-  open_interest: number | null;
 }
 
 export interface OptionsChainResponse {
@@ -189,7 +185,6 @@ export interface OptionChanceResponse {
   prob_itm: number; // 0..1
   expected_value: number;
   breakeven: number;
-  is_estimate: boolean;
 }
 
 export interface PayoffRow {
@@ -207,7 +202,6 @@ export interface OptionsPayoffResponse {
 	premium: number;
 	breakeven: number;
 	payoff_timeline: PayoffRow[];
-	is_estimate: boolean;
 }
 
 export interface OptionValueAtPrice {

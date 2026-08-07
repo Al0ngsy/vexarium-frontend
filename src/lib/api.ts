@@ -151,7 +151,7 @@ export async function getStrategies(
 	return resp.json();
 }
 
-export async function getStance(trade: SavedTrade, currentPrice: number): Promise<StanceResponse> {
+export async function getStance(trade: SavedTrade, currentPrice = 0): Promise<StanceResponse> {
 	const resp = await fetch(`${BASE_URL}/api/v1/portfolio/stance`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
