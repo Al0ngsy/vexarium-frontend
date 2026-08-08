@@ -42,16 +42,6 @@ export async function register(email: string, password: string): Promise<AuthRes
 	return resp.json();
 }
 
-export async function login(email: string, password: string): Promise<AuthResponse> {
-	const resp = await fetch(`${BASE_URL}/api/v1/auth/login`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ email, password })
-	});
-	if (!resp.ok) throw new Error('Invalid credentials');
-	return resp.json();
-}
-
 export async function getMe(token: string): Promise<{ id: number; email: string; tier: string }> {
 	const resp = await fetch(`${BASE_URL}/api/v1/auth/me?token=${encodeURIComponent(token)}`);
 	if (!resp.ok) throw new Error('Session expired');
