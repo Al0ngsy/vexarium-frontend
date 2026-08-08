@@ -29,33 +29,7 @@
   import WidgetCard from "../../../components/WidgetCard.svelte";
   import WidgetGrid from "../../../components/WidgetGrid.svelte";
   import WidgetLibrary from "../../../components/WidgetLibrary.svelte";
-
-  function positionTip(anchor: HTMLElement) {
-    const tip = anchor.querySelector<HTMLElement>(".tooltip");
-    if (!tip) return;
-    requestAnimationFrame(() => {
-      const a = anchor.getBoundingClientRect();
-      const t = tip.getBoundingClientRect();
-      const gap = 6;
-      let top = a.bottom + gap;
-      let left = Math.min(a.left, window.innerWidth - t.width - 8);
-      left = Math.max(8, left);
-      if (top + t.height > window.innerHeight - 8) {
-        top = Math.max(8, a.top - t.height - gap);
-      }
-      tip.style.position = "fixed";
-      tip.style.left = `${left}px`;
-      tip.style.top = `${top}px`;
-    });
-  }
-
-  function clearTip(anchor: HTMLElement) {
-    const tip = anchor.querySelector<HTMLElement>(".tooltip");
-    if (!tip) return;
-    tip.style.position = "";
-    tip.style.left = "";
-    tip.style.top = "";
-  }
+  import { positionTip, clearTip } from "$lib/tooltip";
 
   const symbol = $derived(String(page.params.symbol || "").toUpperCase());
 

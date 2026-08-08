@@ -5,7 +5,8 @@ export const VERDICT_COLORS: Record<Verdict, string> = {
 	buy: '#34d399',
 	hold: '#f59e0b',
 	sell: '#fb923c',
-	strong_sell: '#f43f5e'
+	strong_sell: '#f43f5e',
+	none: 'var(--foreground-subtle)'
 };
 
 export const VERDICT_ICONS: Record<Verdict, string> = {
@@ -13,7 +14,8 @@ export const VERDICT_ICONS: Record<Verdict, string> = {
 	buy: '↑',
 	hold: '—',
 	sell: '↓',
-	strong_sell: '⇊'
+	strong_sell: '⇊',
+	none: '–'
 };
 
 export const VERDICT_LABELS: Record<Verdict, string> = {
@@ -21,7 +23,8 @@ export const VERDICT_LABELS: Record<Verdict, string> = {
 	buy: 'BUY',
 	hold: 'HOLD',
 	sell: 'SELL',
-	strong_sell: 'STRONG SELL'
+	strong_sell: 'STRONG SELL',
+	none: 'NONE'
 };
 
 export const STANCE_COLORS: Record<Stance, string> = {

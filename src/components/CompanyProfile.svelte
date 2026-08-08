@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { CompanyInfo } from "$lib/types";
-  import InfoPopover from "./InfoPopover.svelte";
+  import MetricTip from "./MetricTip.svelte";
+  import { explainMetricValue } from "$lib/metric-explain";
 
   // Beginner-first "About / Fundamentals" company card.
-  // Every metric is explained with an InfoPopover in plain English.
+  // Every metric is explained with a MetricTip in plain English.
 
   let {
     company,
@@ -46,6 +47,30 @@
 
   const has = (v: unknown) =>
     v !== null && v !== undefined && v !== "" && !isNaN(Number(v) as number);
+
+  // Plain-English explanation per metric label — shown on title hover. Keys
+  // are the display labels used in the template.
+  const METRIC_TIPS: Record<string, string> = {
+    "SECTOR / INDUSTRY": "The broad business category (sector) and specific area (industry) the company operates in. Helps compare it to similar businesses.",
+    "HEADQUARTERS": "Where the company is based. Useful for a quick sense of size and jurisdiction.",
+    "EMPLOYEES": "How many people work for the company. A rough proxy for the scale of its operations.",
+    "CEO": "The Chief Executive Officer — the top boss responsible for running the company.",
+    "CEO PAY / YR": "The CEO's total yearly compensation. Big pay isn't good or bad on its own — it matters whether the CEO's interests align with shareholders'.",
+    "NEXT EARNINGS": "When the company next reports its quarterly profit (earnings). Stock prices often jump around this date.",
+    "MARKET CAP": "The total dollar value of ALL the company's shares combined (price × shares). Bigger = larger, more established company.",
+    "P/E RATIO": "The price you pay for each $1 of the company's yearly profit. A lower P/E usually means cheaper relative to earnings; a high P/E can mean high expected growth.",
+    "FORWARD P/E": "The P/E ratio using expected future earnings instead of the last year's. Gives a sense of whether the price already accounts for growth.",
+    "P/S RATIO": "Price paid per $1 of sales (revenue). Useful for young companies that aren't profitable yet.",
+    "NET MARGIN": "The % of every sales dollar the company keeps as profit after all costs. Higher is better — more of each sale is pure profit.",
+    "GROSS MARGIN": "The % of sales left after paying the direct cost of making the product. Shows how strong the underlying business is before overhead.",
+    "RETURN ON EQUITY": "How much profit the company makes for each $1 shareholders own. High ROE = the business efficiently turns owners' money into profit.",
+    "RETURN ON ASSETS": "Profit generated for each $1 of the company's total assets. Higher = uses its resources more efficiently.",
+    "REVENUE GROWTH": "How fast sales are growing each year. Strong growth is usually a good sign for a company's future.",
+    "EARNINGS GROWTH": "How fast profit (earnings) is growing. Growing earnings often push the stock price up over time.",
+    "DIVIDEND YIELD": "The annual cash dividend paid as a % of the share price. Income you get just for holding the stock. 0% means it pays no dividend.",
+    "SHARES OUT": "How many total shares of the company exist. Combined with the price, this gives the market cap.",
+    "52-WEEK RANGE": "The highest and lowest the stock price has been in the last year. Buying near the low of the range is usually cheaper than near the high.",
+  };
 </script>
 
 <div class="flex flex-col gap-4">
@@ -67,10 +92,7 @@
         style="border: 1px solid var(--panel-border); background: var(--surface)"
       >
         <span class="label block" style="font-size: 9px"
-          >SECTOR / INDUSTRY <InfoPopover
-            title="SECTOR / INDUSTRY"
-            content="The broad business category (sector) and specific area (industry) the company operates in. Helps compare it to similar businesses."
-          /></span
+          ><MetricTip text="SECTOR / INDUSTRY" tip={METRIC_TIPS["SECTOR / INDUSTRY"]} /></span
         >
         <span class="data" style="font-size: 12px; color: var(--foreground)"
           >{company.sector || ""}{company.sector && company.industry
@@ -85,10 +107,7 @@
         style="border: 1px solid var(--panel-border); background: var(--surface)"
       >
         <span class="label block" style="font-size: 9px"
-          >HEADQUARTERS <InfoPopover
-            title="HEADQUARTERS"
-            content="Where the company is based. Useful for a quick sense of size and jurisdiction."
-          /></span
+          ><MetricTip text="HEADQUARTERS" tip={METRIC_TIPS["HEADQUARTERS"]} /></span
         >
         <span class="data" style="font-size: 12px; color: var(--foreground)"
           >{company.headquarters}</span
@@ -101,10 +120,7 @@
         style="border: 1px solid var(--panel-border); background: var(--surface)"
       >
         <span class="label block" style="font-size: 9px"
-          >EMPLOYEES <InfoPopover
-            title="EMPLOYEES"
-            content="How many people work for the company. A rough proxy for the scale of its operations."
-          /></span
+          ><MetricTip text="EMPLOYEES" tip={METRIC_TIPS["EMPLOYEES"]} /></span
         >
         <span class="data" style="font-size: 12px; color: var(--foreground)"
           >{fmtShares(company.employees)}</span
@@ -117,10 +133,7 @@
         style="border: 1px solid var(--panel-border); background: var(--surface)"
       >
         <span class="label block" style="font-size: 9px"
-          >CEO <InfoPopover
-            title="CEO"
-            content="The Chief Executive Officer — the top boss responsible for running the company."
-          /></span
+          ><MetricTip text="CEO" tip={METRIC_TIPS["CEO"]} /></span
         >
         <span class="data" style="font-size: 12px; color: var(--foreground)"
           >{company.ceo}</span
@@ -133,10 +146,7 @@
         style="border: 1px solid var(--panel-border); background: var(--surface)"
       >
         <span class="label block" style="font-size: 9px"
-          >CEO PAY / YR <InfoPopover
-            title="CEO PAY"
-            content="The CEO's total yearly compensation. Big pay isn't good or bad on its own — it matters whether the CEO's interests align with shareholders'."
-          /></span
+          ><MetricTip text="CEO PAY / YR" tip={METRIC_TIPS["CEO PAY / YR"]} /></span
         >
         <span class="data" style="font-size: 12px; color: var(--foreground)"
           >{fmtBigPay(company.ceo_pay)}</span
@@ -149,10 +159,7 @@
         style="border: 1px solid var(--panel-border); background: var(--surface)"
       >
         <span class="label block" style="font-size: 9px"
-          >NEXT EARNINGS <InfoPopover
-            title="NEXT EARNINGS"
-            content="When the company next reports its quarterly profit (earnings). Stock prices often jump around this date."
-          /></span
+          ><MetricTip text="NEXT EARNINGS" tip={METRIC_TIPS["NEXT EARNINGS"]} /></span
         >
         <span class="data" style="font-size: 12px; color: var(--foreground)"
           >{company.next_earnings_date}</span
@@ -173,13 +180,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >MARKET CAP <InfoPopover
-              title="MARKET CAP"
-              content="The total dollar value of ALL the company's shares combined (price × shares). Bigger = larger, more established company."
-            /></span
+            ><MetricTip text="MARKET CAP" tip={METRIC_TIPS["MARKET CAP"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtBig(company.market_cap)}</span
+            ><MetricTip text={fmtBig(company.market_cap)} tip={explainMetricValue("market_cap", company.market_cap)} /></span
           >
         </div>
       {/if}
@@ -189,13 +193,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >P/E RATIO <InfoPopover
-              title="PRICE-TO-EARNINGS (P/E)"
-              content="The price you pay for each $1 of the company's yearly profit. A lower P/E usually means cheaper relative to earnings; a high P/E can mean high expected growth."
-            /></span
+            ><MetricTip text="P/E RATIO" tip={METRIC_TIPS["P/E RATIO"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtMult(company.pe_ratio)}</span
+            ><MetricTip text={fmtMult(company.pe_ratio)} tip={explainMetricValue("pe_ratio", company.pe_ratio)} /></span
           >
         </div>
       {/if}
@@ -205,13 +206,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >FORWARD P/E <InfoPopover
-              title="FORWARD P/E"
-              content="The P/E ratio using expected future earnings instead of the last year's. Gives a sense of whether the price already accounts for growth."
-            /></span
+            ><MetricTip text="FORWARD P/E" tip={METRIC_TIPS["FORWARD P/E"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtMult(company.forward_pe)}</span
+            ><MetricTip text={fmtMult(company.forward_pe)} tip={explainMetricValue("forward_pe", company.forward_pe)} /></span
           >
         </div>
       {/if}
@@ -221,13 +219,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >P/S RATIO <InfoPopover
-              title="PRICE-TO-SALES (P/S)"
-              content="Price paid per $1 of sales (revenue). Useful for young companies that aren't profitable yet."
-            /></span
+            ><MetricTip text="P/S RATIO" tip={METRIC_TIPS["P/S RATIO"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtMult(company.ps_ratio)}</span
+            ><MetricTip text={fmtMult(company.ps_ratio)} tip={explainMetricValue("ps_ratio", company.ps_ratio)} /></span
           >
         </div>
       {/if}
@@ -246,13 +241,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >NET MARGIN <InfoPopover
-              title="NET PROFIT MARGIN"
-              content="The % of every sales dollar the company keeps as profit after all costs. Higher is better — more of each sale is pure profit."
-            /></span
+            ><MetricTip text="NET MARGIN" tip={METRIC_TIPS["NET MARGIN"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtPct(company.profit_margin)}</span
+            ><MetricTip text={fmtPct(company.profit_margin)} tip={explainMetricValue("profit_margin", company.profit_margin)} /></span
           >
         </div>
       {/if}
@@ -262,13 +254,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >GROSS MARGIN <InfoPopover
-              title="GROSS MARGIN"
-              content="The % of sales left after paying the direct cost of making the product. Shows how strong the underlying business is before overhead."
-            /></span
+            ><MetricTip text="GROSS MARGIN" tip={METRIC_TIPS["GROSS MARGIN"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtPct(company.gross_margin)}</span
+            ><MetricTip text={fmtPct(company.gross_margin)} tip={explainMetricValue("gross_margin", company.gross_margin)} /></span
           >
         </div>
       {/if}
@@ -278,13 +267,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >RETURN ON EQUITY <InfoPopover
-              title="RETURN ON EQUITY (ROE)"
-              content="How much profit the company makes for each $1 shareholders own. High ROE = the business efficiently turns owners' money into profit."
-            /></span
+            ><MetricTip text="RETURN ON EQUITY" tip={METRIC_TIPS["RETURN ON EQUITY"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtPct(company.roe)}</span
+            ><MetricTip text={fmtPct(company.roe)} tip={explainMetricValue("roe", company.roe)} /></span
           >
         </div>
       {/if}
@@ -294,13 +280,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >RETURN ON ASSETS <InfoPopover
-              title="RETURN ON ASSETS (ROA)"
-              content="Profit generated for each $1 of the company's total assets. Higher = uses its resources more efficiently."
-            /></span
+            ><MetricTip text="RETURN ON ASSETS" tip={METRIC_TIPS["RETURN ON ASSETS"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtPct(company.roa)}</span
+            ><MetricTip text={fmtPct(company.roa)} tip={explainMetricValue("roa", company.roa)} /></span
           >
         </div>
       {/if}
@@ -310,16 +293,13 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >REVENUE GROWTH <InfoPopover
-              title="REVENUE GROWTH"
-              content="How fast sales are growing each year. Strong growth is usually a good sign for a company's future."
-            /></span
+            ><MetricTip text="REVENUE GROWTH" tip={METRIC_TIPS["REVENUE GROWTH"]} /></span
           >
           <span
             class="data"
             style="font-size: 13px; color: {(company.revenue_growth ?? 0) >= 0
               ? '#34d399'
-              : '#f87171'}">{fmtPct(company.revenue_growth)}</span
+              : '#f87171'}"><MetricTip text={fmtPct(company.revenue_growth)} tip={explainMetricValue("revenue_growth", company.revenue_growth)} /></span
           >
         </div>
       {/if}
@@ -329,16 +309,13 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >EARNINGS GROWTH <InfoPopover
-              title="EARNINGS GROWTH"
-              content="How fast profit (earnings) is growing. Growing earnings often push the stock price up over time."
-            /></span
+            ><MetricTip text="EARNINGS GROWTH" tip={METRIC_TIPS["EARNINGS GROWTH"]} /></span
           >
           <span
             class="data"
             style="font-size: 13px; color: {(company.earnings_growth ?? 0) >= 0
               ? '#34d399'
-              : '#f87171'}">{fmtPct(company.earnings_growth)}</span
+              : '#f87171'}"><MetricTip text={fmtPct(company.earnings_growth)} tip={explainMetricValue("earnings_growth", company.earnings_growth)} /></span
           >
         </div>
       {/if}
@@ -348,13 +325,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >DIVIDEND YIELD <InfoPopover
-              title="DIVIDEND YIELD"
-              content="The annual cash dividend paid as a % of the share price. Income you get just for holding the stock. 0% means it pays no dividend."
-            /></span
+            ><MetricTip text="DIVIDEND YIELD" tip={METRIC_TIPS["DIVIDEND YIELD"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtPct(company.dividend_yield)}</span
+            ><MetricTip text={fmtPct(company.dividend_yield)} tip={explainMetricValue("dividend_yield", company.dividend_yield)} /></span
           >
         </div>
       {/if}
@@ -364,13 +338,10 @@
           style="border: 1px solid var(--panel-border); background: var(--surface)"
         >
           <span class="label block" style="font-size: 9px"
-            >SHARES OUT <InfoPopover
-              title="SHARES OUTSTANDING"
-              content="How many total shares of the company exist. Combined with the price, this gives the market cap."
-            /></span
+            ><MetricTip text="SHARES OUT" tip={METRIC_TIPS["SHARES OUT"]} /></span
           >
           <span class="data" style="font-size: 13px; color: var(--foreground)"
-            >{fmtShares(company.shares_outstanding)}</span
+            ><MetricTip text={fmtShares(company.shares_outstanding)} tip={explainMetricValue("shares_outstanding", company.shares_outstanding)} /></span
           >
         </div>
       {/if}
@@ -384,10 +355,7 @@
       style="border: 1px solid var(--panel-border); background: var(--surface)"
     >
       <span class="label block mb-2" style="color: var(--foreground-subtle)"
-        >52-WEEK RANGE — WHERE THE PRICE TRADED THIS YEAR <InfoPopover
-          title="52-WEEK RANGE"
-          content="The highest and lowest the stock price has been in the last year. Buying near the low of the range is usually cheaper than near the high."
-        /></span
+        ><MetricTip text="52-WEEK RANGE — WHERE THE PRICE TRADED THIS YEAR" tip={METRIC_TIPS["52-WEEK RANGE"]} /></span
       >
       <div class="flex flex-wrap items-center gap-3">
         <span class="data" style="font-size: 12px; color: var(--foreground)"

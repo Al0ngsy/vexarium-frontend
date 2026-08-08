@@ -1,7 +1,13 @@
-export type Verdict = 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
-export type Stance = 'HOLD' | 'TAKE_PROFIT' | 'CUT_LOSS';
-export type AssetType = 'stock' | 'etf' | 'index';
-export type TradeType = 'stock' | 'etf' | 'index' | 'option';
+export type Verdict =
+  | "strong_buy"
+  | "buy"
+  | "hold"
+  | "sell"
+  | "strong_sell"
+  | "none";
+export type Stance = "HOLD" | "TAKE_PROFIT" | "CUT_LOSS";
+export type AssetType = "stock" | "etf" | "index";
+export type TradeType = "stock" | "etf" | "index" | "option";
 
 export interface IndicatorResult {
   name: string;
@@ -17,12 +23,12 @@ export interface OverallVerdict {
 }
 
 export interface AnalysisResponse {
-	symbol: string;
-	asset_type: string;
-	timeframe?: string;
-	current_price: number | null;
-	day_change_pct?: number | null;
-	overall: OverallVerdict;
+  symbol: string;
+  asset_type: string;
+  timeframe?: string;
+  current_price: number | null;
+  day_change_pct?: number | null;
+  overall: OverallVerdict;
   indicators: IndicatorResult[];
   analyzed_at?: string | null;
   price_series?: PricePoint[];
@@ -53,7 +59,7 @@ export interface IndicatorPoint {
 
 export interface IndicatorSeries {
   name: string;
-  kind: 'overlay' | 'oscillator';
+  kind: "overlay" | "oscillator";
   points: IndicatorPoint[];
 }
 
@@ -198,76 +204,76 @@ export interface PayoffRow {
 }
 
 export interface OptionsPayoffResponse {
-	symbol: string;
-	greeks: Greeks;
-	implied_volatility: number;
-	premium: number;
-	breakeven: number;
-	payoff_timeline: PayoffRow[];
+  symbol: string;
+  greeks: Greeks;
+  implied_volatility: number;
+  premium: number;
+  breakeven: number;
+  payoff_timeline: PayoffRow[];
 }
 
 export interface OptionValueAtPrice {
-	symbol: string;
-	contract_symbol: string;
-	strike: number;
-	premium: number;
-	is_call: boolean;
-	target_price: number;
-	target_date: string;
-	days_to_expiry: number;
-	estimated_option_price: number;
-	estimated_pl: number;
-	pl_pct: number;
+  symbol: string;
+  contract_symbol: string;
+  strike: number;
+  premium: number;
+  is_call: boolean;
+  target_price: number;
+  target_date: string;
+  days_to_expiry: number;
+  estimated_option_price: number;
+  estimated_pl: number;
+  pl_pct: number;
 }
 
 export interface MatrixCell {
-	expiry: string;
-	days_to_expiry: number;
-	option_value: number;
-	pl: number;
-	pl_pct: number;
+  expiry: string;
+  days_to_expiry: number;
+  option_value: number;
+  pl: number;
+  pl_pct: number;
 }
 
 export interface MatrixRow {
-	strike: number;
-	move_pct: number;
-	cells: MatrixCell[];
+  strike: number;
+  move_pct: number;
+  cells: MatrixCell[];
 }
 
 export interface OptionsMatrixResponse {
-	symbol: string;
-	contract_symbol: string;
-	current_price: number;
-	range_pct: number;
-	premium: number;
-	breakeven: number;
-	expiries: string[];
-	strikes: MatrixRow[];
+  symbol: string;
+  contract_symbol: string;
+  current_price: number;
+  range_pct: number;
+  premium: number;
+  breakeven: number;
+  expiries: string[];
+  strikes: MatrixRow[];
 }
 
 export interface StanceResponse {
-	stance: Stance;
-	reason: string;
-	pnl_pct: number;
-	take_profit_at: number;
-	cut_loss_at: number;
+  stance: Stance;
+  reason: string;
+  pnl_pct: number;
+  take_profit_at: number;
+  cut_loss_at: number;
 }
 
 export interface StrategyCard {
-	name: string;
-	subtitle: string;
-	is_bullish: boolean;
-	max_profit: number | null;
-	max_loss: number | null;
-	breakeven: number;
-	return_on_risk: number | null;
-	payoff_curve: PayoffRow[];
+  name: string;
+  subtitle: string;
+  is_bullish: boolean;
+  max_profit: number | null;
+  max_loss: number | null;
+  breakeven: number;
+  return_on_risk: number | null;
+  payoff_curve: PayoffRow[];
 }
 
 export interface StrategiesResponse {
-	symbol: string;
-	sentiment: string;
-	strategies: StrategyCard[];
+  symbol: string;
+  sentiment: string;
+  strategies: StrategyCard[];
 }
 
 export interface SavedTrade {
