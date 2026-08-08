@@ -10,9 +10,10 @@
 
 import type { IndicatorResult } from '$lib/types';
 
-export type CheckStatus = 'pass' | 'watch' | 'fail';
+export type CheckStatus = 'pass' | 'watch' | 'fail' | 'none';
 
 export function verdictToStatus(v: string): CheckStatus {
+	if (v === 'none') return 'none';
 	if (['buy', 'strong_buy'].includes(v)) return 'pass';
 	if (['sell', 'strong_sell'].includes(v)) return 'fail';
 	return 'watch';
@@ -21,13 +22,15 @@ export function verdictToStatus(v: string): CheckStatus {
 export const STATUS_LABEL: Record<CheckStatus, string> = {
 	pass: 'PASS',
 	watch: 'WATCH',
-	fail: 'FAIL'
+	fail: 'FAIL',
+	none: 'NONE'
 };
 
 export const STATUS_ICON: Record<CheckStatus, string> = {
 	pass: '✓',
 	watch: '△',
-	fail: '✗'
+	fail: '✗',
+	none: '–'
 };
 
 // --- value helpers ----------------------------------------------------------
@@ -243,6 +246,81 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 			if (s === 'fail') return 'Price is below the cloud — the trend is down, and the cloud above acts as resistance.';
 			return 'Price is inside the cloud — the market is undecided, no clear trend.';
 		}
+	},
+	'CCI(20)': {
+		what: 'Measures how far the price has moved from its average over the last 20 days, adjusted for how wild the swings are. Above +100 = the price is stretched unusually high (overbought). Below -100 = it is stretched unusually low (oversold).',
+		format: (v) => signed(num(v)),
+		reason: (v, s) => {
+			const r = num(v);
+			if (r === null) return 'No reading available.';
+			if (s === 'pass') return r < -100 ? 'Deeply oversold — the price has fallen well below its normal range; a bounce is often near.' : 'Oversold — the price is below its typical range, sellers may be running out of steam.';
+			if (s === 'fail') return r > 100 ? 'Overbought — the price has run well above its normal range; a pullback is often near.' : 'Overbought — the price is stretched above its typical range, buyers may be exhausted.';
+			return 'Near the middle of its range — no strong signal either way.';
+		}
+	},
+	'Williams %R(14)': {
+		what: 'Like Stochastic, it shows where the latest price sits inside the high–low range of the last 14 days, but upside-down: it is always between -100 and 0. Above -20 = overbought. Below -80 = oversold.',
+		format: (v) => pctRaw(num(v)),
+		reason: (v, s) => {
+			const r = num(v);
+			if (r === null) return 'No reading available.';
+			if (s === 'pass') return r < -80 ? 'Oversold — the price is near the bottom of its 14-day range, a bounce is often near.' : 'Below -60 — momentum is turning up from a low level.';
+			if (s === 'fail') return r > -20 ? 'Overbought — the price is near the top of its 14-day range, a pullback is often near.' : 'Above -40 — momentum is fading from a high level.';
+			return 'Neutral zone — no strong signal either way.';
+		}
+	},
+	'MFI(14)': {
+		what: 'Like RSI, but it also counts volume: it measures whether money is flowing into the stock (buying) or out of it (selling) over 14 days. Above 80 = overbought. Below 20 = oversold.',
+		format: (v) => pctRaw(num(v)),
+		reason: (v, s) => {
+			const r = num(v);
+			if (r === null) return 'No reading available.';
+			if (s === 'pass') return r < 20 ? 'Oversold with heavy outflow — sellers may be exhausted, a bounce is often near.' : 'Money flow is weak — an early sign that selling pressure is easing.';
+			if (s === 'fail') return r > 80 ? 'Overbought with heavy inflow — buyers may be exhausted, a pullback is often near.' : 'Money flow is strong — buyers may be running out of steam.';
+			return 'Money flow is balanced — no clear signal either way.';
+		}
+	},
+	'ROC(12)': {
+		what: 'Shows how much the price has changed over the last 12 days, as a percentage. Positive = the price rose over that period. Negative = it fell. Big numbers mean fast, strong moves.',
+		format: (v) => {
+			const r = num(v);
+			return r === null ? '—' : `${signed(r)}%`;
+		},
+		reason: (v, s) => {
+			const r = num(v);
+			if (r === null) return 'No reading available.';
+			if (s === 'pass') return r > 5 ? 'Strong momentum — the price has climbed more than 5% in 12 days.' : 'Positive momentum — the price is rising over the last 12 days.';
+			if (s === 'fail') return r < -5 ? 'Sharp decline — the price has dropped more than 5% in 12 days.' : 'Negative momentum — the price is falling over the last 12 days.';
+			return 'Nearly flat — the price has barely moved over the last 12 days.';
+		}
+	},
+	'PSAR': {
+		what: 'Parabolic SAR draws dots that trail the price. Dots below the price = uptrend. Dots above = downtrend. When the dots flip sides, it signals the trend may have changed — handy for knowing when to stay in or get out.',
+		format: (v) => {
+			const d = v as Record<string, unknown> | null;
+			if (!d) return '—';
+			const p = num(d.psar);
+			return `${d.trend === 'up' ? '↑' : '↓'} PSAR ${money(p)}`;
+		},
+		reason: (v, s) => {
+			const d = v as Record<string, unknown> | null;
+			const p = num(d?.psar);
+			if (p === null) return 'No reading available.';
+			if (s === 'pass') return 'Dots are below the price — an uptrend is in place. It stays up until the dots flip above the price.';
+			if (s === 'fail') return 'Dots are above the price — a downtrend is in place. It stays down until the dots flip below the price.';
+			return 'No clear trend — the dots are not giving a signal yet.';
+		}
+	},
+	'CMO(14)': {
+		what: 'A momentum gauge between -100 and +100. Positive = buyers have been stronger than sellers over 14 days. Negative = sellers have been stronger. Above +50 = strong buying. Below -50 = strong selling.',
+		format: (v) => pctRaw(num(v)),
+		reason: (v, s) => {
+			const r = num(v);
+			if (r === null) return 'No reading available.';
+			if (s === 'pass') return r < -50 ? 'Deeply negative — selling has been extreme; a bounce is often near.' : 'Negative but recovering — sellers were in control, buyers are stepping in.';
+			if (s === 'fail') return r > 50 ? 'Strongly positive — buying has been extreme; a pullback is often near.' : 'Positive but fading — buyers were in control, sellers are stepping in.';
+			return 'Balanced — buyers and sellers are roughly even over the last 14 days.';
+		}
 	}
 };
 
@@ -256,6 +334,14 @@ export function explainIndicator(indicator: IndicatorResult): {
 } {
 	const def = EXPLAIN[indicator.name] || EXPLAIN[indicator.name.toUpperCase()];
 	const status = verdictToStatus(indicator.verdict);
+	if (status === 'none') {
+		return {
+			what: 'Not enough data to compute this indicator.',
+			reading: '—',
+			reason: 'Not computable with the available data.',
+			status
+		};
+	}
 	if (!def) {
 		return {
 			what: 'Technical check based on price history.',

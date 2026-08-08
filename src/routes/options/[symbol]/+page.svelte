@@ -40,6 +40,15 @@
 <div>
 	<DisclaimerBanner />
 
+	<div
+		class="mb-4 rounded-xl px-3 py-1.5 text-center"
+		style="background-color: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3);"
+	>
+		<span class="label" style="color: var(--accent-primary); letter-spacing: 0.08em;">
+			🚧 OPTIONS WORKSPACE — UNDER CONSTRUCTION. SOME FEATURES ARE INCOMPLETE OR EXPERIMENTAL.
+		</span>
+	</div>
+
 	<WidgetGrid view="options" defs={OPTIONS_WIDGETS} {enabled} {onToggle}>
 		{#snippet children({ def }: { def: WidgetDef })}
 			<WidgetCard {def} enabled={enabled[def.id] !== false} {onToggle}>

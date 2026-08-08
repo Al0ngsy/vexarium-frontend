@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { AnalysisResponse } from '$lib/types';
+	import type { AnalysisResponse, Verdict } from '$lib/types';
 	import { formatPrice } from '$lib/format';
 	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
 	import { quotes, setWatch } from '$lib/quotes.svelte';
@@ -9,12 +9,20 @@
 		analysis,
 		symbol,
 		onSave,
-		optionsHref = `/options/${symbol}`
+		optionsHref = `/options/${symbol}`,
+		verdict,
+		score,
+		count
 	}: {
 		analysis: AnalysisResponse;
 		symbol: string;
 		onSave?: () => void;
 		optionsHref?: string;
+		// Client-side overrides (indicator exclusions) — fall back to the
+		// backend-computed overall so other callers keep working untouched.
+		verdict?: string;
+		score?: number;
+		count?: number;
 	} = $props();
 
 	$effect(() => {
@@ -27,17 +35,32 @@
 
 	const co = $derived(analysis.company ?? null);
 	const currency = $derived(co?.currency ?? null);
+	const shownCount = $derived(
+		count ??
+			analysis.overall?.indicator_count ??
+			analysis.overall?.breakdown?.length ??
+			0
+	);
 	const gradeLetter = $derived.by(() => {
-		const s = analysis.overall?.score ?? 0;
-		if (s >= 7) return 'A';
-		if (s >= 4) return 'B+';
-		if (s >= 1) return 'B';
-		if (s >= -1) return 'C';
-		if (s >= -4) return 'D';
+		// Score is summed only over computed indicators (verdict 'none' is
+		// excluded backend-side), so normalize by the pool size to keep the
+		// grade comparable across timeframes (1d vs 1mo have different
+		// numbers of computable indicators).
+		const c = shownCount;
+		const s = score ?? analysis.overall?.score ?? 0;
+		if (c === 0) return '—';
+		const r = s / (2 * c); // fraction of max conviction, -1..1
+		if (r >= 0.7) return 'A';
+		if (r >= 0.4) return 'B+';
+		if (r >= 0.1) return 'B';
+		if (r >= -0.1) return 'C';
+		if (r >= -0.4) return 'D';
 		return 'F';
 	});
-	const verdict = $derived(analysis.overall?.overall_verdict ?? 'hold');
-	const vColor = $derived(VERDICT_COLORS[verdict]);
+	const shownVerdict = $derived(
+		(verdict ?? analysis.overall?.overall_verdict ?? 'hold') as Verdict
+	);
+	const vColor = $derived(VERDICT_COLORS[shownVerdict]);
 
 	// 52-week position (if company data present).
 	const rangePos = $derived.by(() => {
@@ -111,22 +134,11 @@
 	<span
 		class="verdict-badge"
 		style="border-color: {vColor}; color: {vColor};"
-		title={analysis.overall?.indicator_count
-			? `${analysis.overall.indicator_count} indicators`
-			: ''}
+		title={shownCount ? `${shownCount} indicators` : ''}
 	>
 		<span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
-		{VERDICT_LABELS[verdict]} {VERDICT_ICONS[verdict]}
-	</span>
-
-	<span
-		class="grade"
-		style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--panel-border); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600;"
-	>
-		<span style="color: {vColor};">{gradeLetter}</span>
-		<span style="color: var(--foreground-subtle); font-size: 0.66rem;">
-			{analysis.overall?.breakdown?.length ?? 0} checks
-		</span>
+		<span style="font-weight: 600;">{gradeLetter}</span>
+		{VERDICT_LABELS[shownVerdict]} {VERDICT_ICONS[shownVerdict]}
 	</span>
 
 	<div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">

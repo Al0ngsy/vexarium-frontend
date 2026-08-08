@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { page } from "$app/state";
+  import { untrack } from "svelte";
   import { analyze, getBars, streamAIAnalysis } from "$lib/api";
   import { getToken } from "$lib/auth.svelte";
   import { formatPrice } from "$lib/format";
@@ -10,7 +12,7 @@
   } from "$lib/indicator-explain";
   import { renderAIMarkdown } from "$lib/markdown";
   import { addRecentAnalysis } from "$lib/storage";
-  import type { AnalysisResponse, PricePoint } from "$lib/types";
+  import type { AnalysisResponse, PricePoint, Verdict } from "$lib/types";
   import { VERDICT_COLORS, VERDICT_LABELS } from "$lib/verdict";
 
   import {
@@ -31,27 +33,32 @@
   const symbol = $derived(String(page.params.symbol || "").toUpperCase());
 
   const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1mo"];
-  let timeframe = $state("1d");
+  let chartTf = $state("1d");
+  let indicatorTf = $state("1d");
   let timeframeVerdicts = $state<Record<string, string>>({});
   let chartBars = $state<PricePoint[] | null>(null);
   let barsLoading = $state(false);
 
   // Fetch bars whenever the symbol or resolution changes (debounced lightly).
+  // Only clear bars on symbol change — on timeframe change keep the old bars
+  // visible so IndicatorChart updates in place instead of being destroyed.
+  let barsSymbol = $state("");
   $effect(() => {
     const sym = symbol;
-    const tf = timeframe;
+    const tf = chartTf;
     if (!sym) return;
     barsLoading = true;
-    chartBars = null;
+    if (barsSymbol !== sym) chartBars = null;
+    barsSymbol = sym;
     getBars(sym, tf, 300)
       .then((points) => {
-        if (symbol === sym && timeframe === tf) chartBars = points;
+        if (symbol === sym && chartTf === tf) chartBars = points;
       })
       .catch(() => {
-        if (symbol === sym && timeframe === tf) chartBars = null;
+        if (symbol === sym && chartTf === tf) chartBars = null;
       })
       .finally(() => {
-        if (symbol === sym && timeframe === tf) barsLoading = false;
+        if (symbol === sym && chartTf === tf) barsLoading = false;
       });
   });
 
@@ -72,11 +79,12 @@
   );
 
   async function runAnalysis() {
+    const tf = untrack(() => indicatorTf);
     loading = true;
     error = null;
     aiMessage = null;
     try {
-      analysis = await analyze(symbol, assetType, false, timeframe);
+      analysis = await analyze(symbol, assetType, false, tf);
       if (analysis?.overall?.overall_verdict) {
         addRecentAnalysis({
           symbol,
@@ -121,6 +129,20 @@
     runAnalysis();
   });
 
+  // Quietly recompute the analysis when the indicator timeframe changes:
+  // keep the current content visible and swap the result in place — no
+  // loading skeleton, no AI restart. (Same pattern as the bars effect.)
+  $effect(() => {
+    const sym = symbol;
+    const tf = indicatorTf;
+    if (!sym) return;
+    analyze(sym, assetType, false, tf)
+      .then((res) => {
+        if (symbol === sym && indicatorTf === tf) analysis = res;
+      })
+      .catch(() => {});
+  });
+
   // Keep the compact multi-timeframe verdict strip independent from the
   // selected detail timeframe.
   $effect(() => {
@@ -136,39 +158,94 @@
 
   // ---- derivations (ported from the old home page) ------------------------
 
+  // ---- indicator exclusion ------------------------------------------------
+  // Clicking an indicator chip excludes it from the verdict client-side.
+  // Persisted per indicator NAME (global across symbols/timeframes).
+  const INDICATOR_SCORES: Record<string, number> = {
+    strong_buy: 2,
+    buy: 1,
+    hold: 0,
+    sell: -1,
+    strong_sell: -2,
+  };
+  function bucketScore(s: number): Verdict {
+    if (s >= 5) return "strong_buy";
+    if (s >= 2) return "buy";
+    if (s <= -5) return "strong_sell";
+    if (s <= -2) return "sell";
+    return "hold";
+  }
+  const IND_EXCL_KEY = "vexarium:indicators:off";
+  let excludedInd = $state<Record<string, boolean>>({});
+  if (browser) {
+    try {
+      const raw = JSON.parse(localStorage.getItem(IND_EXCL_KEY) ?? "{}");
+      if (raw && typeof raw === "object") excludedInd = raw;
+    } catch {
+      // corrupt storage — start clean
+    }
+  }
+  function toggleIndicator(name: string) {
+    excludedInd[name] = !excludedInd[name];
+    try {
+      localStorage.setItem(IND_EXCL_KEY, JSON.stringify(excludedInd));
+    } catch {
+      // storage unavailable — exclusion just won't persist
+    }
+  }
+
+  const enabledIndicators = $derived(
+    (analysis?.indicators ?? []).filter((i) => !excludedInd[i.name]),
+  );
+  // Verdict 'none' contributes 0 to the score and is never counted
+  // (mirrors the backend).
+  const scoredIndicators = $derived(
+    enabledIndicators.filter((i) => verdictToStatus(i.verdict) !== "none"),
+  );
+  const clientScore = $derived(
+    scoredIndicators.reduce(
+      (sum, i) => sum + (INDICATOR_SCORES[i.verdict] ?? 0),
+      0,
+    ),
+  );
+  const clientVerdict = $derived(bucketScore(clientScore));
+  const clientCount = $derived(scoredIndicators.length);
+
   const bullCount = $derived(
-    (analysis?.overall?.breakdown || []).filter((i) =>
+    scoredIndicators.filter((i) =>
       ["buy", "strong_buy"].includes(i.verdict),
     ).length,
   );
   const bearCount = $derived(
-    (analysis?.overall?.breakdown || []).filter((i) =>
+    scoredIndicators.filter((i) =>
       ["sell", "strong_sell"].includes(i.verdict),
     ).length,
   );
   const neutralCount = $derived(
-    (analysis?.overall?.breakdown || []).length - bullCount - bearCount,
+    scoredIndicators.filter(
+      (i) => verdictToStatus(i.verdict) === "watch",
+    ).length,
   );
   const passCount = $derived(
-    (analysis?.overall?.breakdown || []).filter(
+    scoredIndicators.filter(
       (i) => verdictToStatus(i.verdict) === "pass",
     ).length,
   );
   const watchCount = $derived(
-    (analysis?.overall?.breakdown || []).filter(
+    scoredIndicators.filter(
       (i) => verdictToStatus(i.verdict) === "watch",
     ).length,
   );
   const failCount = $derived(
-    (analysis?.overall?.breakdown || []).filter(
+    scoredIndicators.filter(
       (i) => verdictToStatus(i.verdict) === "fail",
     ).length,
   );
-  const totalChecks = $derived((analysis?.overall?.breakdown || []).length);
+  const totalChecks = $derived(scoredIndicators.length);
 
   const plainSummary = $derived.by(() => {
     if (!analysis?.overall) return "";
-    const v = analysis.overall.overall_verdict;
+    const v = clientVerdict;
     if (["strong_buy", "buy"].includes(v)) {
       return `${passCount} of ${totalChecks} checks pass. Trend and momentum are green${watchCount > 0 ? `, with ${watchCount} to watch` : ""}${failCount > 0 ? ` and ${failCount} flagging caution` : ""}.`;
     }
@@ -182,6 +259,7 @@
     if (!analysis) return [];
     const co = analysis.company;
     const cur = co?.currency ?? null;
+    const tf = analysis.timeframe ?? indicatorTf;
     const out: { k: string; v: string; d: string }[] = [
       {
         k: "Price",
@@ -205,10 +283,12 @@
           ? atr.value
           : (atr.value as Record<string, number> | null | undefined)?.atr;
       if (typeof atrVal === "number") {
+        const atrUnit =
+          tf === "1w" ? "avg weekly move" : tf === "1mo" ? "avg monthly move" : tf === "1d" ? "avg daily move" : "avg move per bar";
         out.push({
-          k: "Volatility",
+          k: `Volatility - ${tf}`,
           v: `ATR ${atrVal.toFixed(1)}`,
-          d: "avg daily move",
+          d: atrUnit,
         });
       }
     }
@@ -217,7 +297,7 @@
     );
     if (rsi && typeof rsi.value === "number") {
       out.push({
-        k: "Momentum",
+        k: `Momentum - ${tf}`,
         v: `RSI ${rsi.value.toFixed(0)}`,
         d:
           rsi.value > 70
@@ -230,7 +310,7 @@
     return out;
   });
 
-  const verdict = $derived(analysis?.overall?.overall_verdict ?? "hold");
+  const verdict = $derived(clientVerdict);
   const vColor = $derived(VERDICT_COLORS[verdict]);
 
   // ---- widget toggling ----------------------------------------------------
@@ -303,7 +383,14 @@
     </div>
   {:else if analysis}
     {@const an = analysis}
-    <SymbolStrip analysis={an} {symbol} onSave={() => (showSave = true)} />
+    <SymbolStrip
+      analysis={an}
+      {symbol}
+      onSave={() => (showSave = true)}
+      verdict={clientVerdict}
+      score={clientScore}
+      count={clientCount}
+    />
 
     <!-- Widget grid -->
     <WidgetGrid view="analysis" defs={ANALYSIS_WIDGETS} {enabled} {onToggle}>
@@ -317,21 +404,26 @@
                 <select
                   class="tf-select"
                   aria-label="Chart timeframe"
-                  bind:value={timeframe}
+                  bind:value={chartTf}
                 >
                   {#each TIMEFRAMES as tf}
                     <option value={tf}>{tf}</option>
                   {/each}
                 </select>
               </div>
-              {#if (chartBars?.length ?? 0) > 0}
-                {#key chartBars}
-                  <IndicatorChart
-                    series={{ name: "PRICE", kind: "overlay", points: [] }}
-                    priceSeries={chartBars ?? []}
-                    height={260}
-                  />
-                {/key}
+              <div style="position: relative; flex: 1; min-height: 0;">
+                {#if barsLoading && (chartBars?.length ?? 0) > 0}
+                  <span
+                    style="position: absolute; top: 6px; right: 6px; z-index: 5; background: var(--surface-3); color: var(--foreground-muted); border: 1px solid var(--panel-border); border-radius: 10px; padding: 2px 10px; font-size: 0.68rem;"
+                    >Updating…</span
+                  >
+                {/if}
+                {#if (chartBars?.length ?? 0) > 0}
+                <IndicatorChart
+                  series={{ name: "PRICE", kind: "overlay", points: [] }}
+                  priceSeries={chartBars ?? []}
+                  height={260}
+                />
               {:else if barsLoading}
                 <div
                   class="flex h-44 items-center justify-center rounded-lg border border-dashed"
@@ -342,13 +434,11 @@
                   >
                 </div>
               {:else if (an.price_series?.length ?? 0) > 0}
-                {#key an.price_series}
-                  <IndicatorChart
-                    series={{ name: "PRICE", kind: "overlay", points: [] }}
-                    priceSeries={an.price_series}
-                    height={260}
-                  />
-                {/key}
+                <IndicatorChart
+                  series={{ name: "PRICE", kind: "overlay", points: [] }}
+                  priceSeries={an.price_series}
+                  height={260}
+                />
               {:else}
                 <div
                   class="flex h-44 items-center justify-center rounded-lg border border-dashed"
@@ -359,6 +449,7 @@
                   >
                 </div>
               {/if}
+              </div>
             </div>
           {:else if def.id === "vitals"}
             <div class="grid grid-cols-2 gap-3">
@@ -377,7 +468,20 @@
                   {@const tf = item[0]}
                   {@const tfVerdict = timeframeVerdicts[tf]}
                   {@const tfColor = tfVerdict ? (VERDICT_COLORS as Record<string, string>)[tfVerdict] : 'var(--foreground-muted)'}
-                  <div class="tf-summary-card" class:active={tf === timeframe}>
+                  <div
+                    class="tf-summary-card"
+                    class:active={tf === indicatorTf}
+                    role="button"
+                    tabindex="0"
+                    title="Show indicators for {item[1]}"
+                    onclick={() => (indicatorTf = tf)}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        indicatorTf = tf;
+                      }
+                    }}
+                  >
                     <span class="label">{item[1]}</span>
                     <strong style="color: {tfColor}">
                       {tfVerdict ? (VERDICT_LABELS as Record<string, string>)[tfVerdict] : "Loading…"}
@@ -385,22 +489,14 @@
                   </div>
                 {/each}
               </div>
-              <div class="indicator-toolbar">
-                <span class="label">Indicators calculated from</span>
-                <select aria-label="Indicator candle timeframe" bind:value={timeframe}>
-                  {#each TIMEFRAMES.filter((tf) => ["30m", "1h", "4h", "1d", "1w", "1mo"].includes(tf)) as tf}
-                    <option value={tf}>{tf} candles</option>
-                  {/each}
-                </select>
-              </div>
               <div class="plainbox">
                 <div class="k">What this means for you</div>
                 <p>
                   {VERDICT_LABELS[verdict]} — {bullCount} of {totalChecks}
                   checks are bullish, {neutralCount} neutral, {bearCount} bearish.
-                  {an.overall.score > 0
+                  {clientScore > 0
                     ? "The overall bias is positive."
-                    : an.overall.score < 0
+                    : clientScore < 0
                       ? "The overall bias is negative."
                       : "The overall bias is neutral."}
                 </p>
@@ -413,9 +509,22 @@
                   {@const vc =
                     VERDICT_COLORS[indicator.verdict] ||
                     "var(--foreground-subtle)"}
+                  {@const off = excludedInd[indicator.name] === true}
                   <div
                     class="check"
-                    style="display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--panel-border); border-radius: 6px; min-width: 0;"
+                    role="button"
+                    tabindex="0"
+                    title={off
+                      ? "Click to re-enable this indicator"
+                      : "Click to exclude from verdict"}
+                    onclick={() => toggleIndicator(indicator.name)}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleIndicator(indicator.name);
+                      }
+                    }}
+                    style="display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--panel-border); border-radius: 6px; min-width: 0; cursor: pointer; transition: opacity 0.15s; {off ? 'opacity: 0.45; filter: grayscale(1);' : ''}"
                   >
                     <div
                       style="display: flex; align-items: center; gap: 8px; min-width: 0;"
@@ -428,16 +537,23 @@
                       </span>
                       <span
                         class="indicator-tip"
-                        style="flex: 1 1 auto; min-width: 0; font-size: 0.75rem; font-weight: 500; color: var(--foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                        style="flex: 1 1 auto; min-width: 0; font-size: 0.75rem; font-weight: 500; color: var(--foreground);"
                       >
-                        {indicator.name}
+                        <span class="tip-label">{indicator.name}</span>
+                        {#if off}
+                          <span
+                            class="label"
+                            style="color: var(--foreground-subtle); font-size: 0.58rem; border: 1px solid var(--panel-border); border-radius: 3px; padding: 0 3px; flex-shrink: 0;"
+                            >OFF</span
+                          >
+                        {/if}
                         <span class="tooltip tooltip-name">{ex.what}</span>
                       </span>
                     </div>
                     <span class="indicator-tip data"
-                      style="padding-left: 30px; font-size: 0.68rem; color: {vc}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;"
+                      style="padding-left: 30px; font-size: 0.68rem; color: {vc}; min-width: 0;"
                     >
-                      {ex.reading}
+                      <span class="tip-label">{ex.reading}</span>
                       <span class="tooltip tooltip-value">
                         <b>{ex.reading}</b>
                         <small>{ex.reason}</small>

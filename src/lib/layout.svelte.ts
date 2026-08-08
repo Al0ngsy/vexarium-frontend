@@ -51,6 +51,7 @@ export const ANALYSIS_WIDGETS: WidgetDef[] = [
   {
     id: "ai-opinion",
     title: "AI second opinion",
+    sub: "1D daily data",
     x: 4,
     y: 4,
     w: 4,

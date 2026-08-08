@@ -193,7 +193,9 @@ export async function getStance(trade: SavedTrade, currentPrice = 0): Promise<St
 export async function getAIAnalysis(
 	symbol: string,
 	assetType: AssetType = 'stock',
-	token?: string
+	token?: string,
+	signal?: AbortSignal,
+	timeframe: string = '1d'
 ): Promise<AIAnalysisResponse> {
 	const url = token
 		? `${BASE_URL}/api/v1/analysis/ai?token=${encodeURIComponent(token)}`
@@ -201,7 +203,8 @@ export async function getAIAnalysis(
 	const resp = await fetch(url, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ symbol, asset_type: assetType })
+		body: JSON.stringify({ symbol, asset_type: assetType, timeframe }),
+		signal
 	});
 	if (!resp.ok) throw new Error(`AI analysis failed: ${resp.status}`);
 	return resp.json();
@@ -217,7 +220,8 @@ export async function streamAIAnalysis(
 	assetType: AssetType = 'stock',
 	onChunk: (text: string) => void,
 	token?: string,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	timeframe: string = '1d'
 ): Promise<string> {
 	const url = token
 		? `${BASE_URL}/api/v1/analysis/ai/stream?token=${encodeURIComponent(token)}`
@@ -225,11 +229,11 @@ export async function streamAIAnalysis(
 	const resp = await fetch(url, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ symbol, asset_type: assetType }),
+		body: JSON.stringify({ symbol, asset_type: assetType, timeframe }),
 		signal
 	});
 	if (!resp.ok) throw new Error(`AI analysis failed: ${resp.status}`);
-	if (!resp.body) return getAIAnalysis(symbol, assetType, token).then((r) => r.analysis);
+	if (!resp.body) return getAIAnalysis(symbol, assetType, token, undefined, timeframe).then((r) => r.analysis);
 
 	const reader = resp.body.getReader();
 	const decoder = new TextDecoder();
