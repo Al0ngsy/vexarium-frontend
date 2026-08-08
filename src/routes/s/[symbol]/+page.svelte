@@ -30,6 +30,33 @@
   import WidgetGrid from "../../../components/WidgetGrid.svelte";
   import WidgetLibrary from "../../../components/WidgetLibrary.svelte";
 
+  function positionTip(anchor: HTMLElement) {
+    const tip = anchor.querySelector<HTMLElement>(".tooltip");
+    if (!tip) return;
+    requestAnimationFrame(() => {
+      const a = anchor.getBoundingClientRect();
+      const t = tip.getBoundingClientRect();
+      const gap = 6;
+      let top = a.bottom + gap;
+      let left = Math.min(a.left, window.innerWidth - t.width - 8);
+      left = Math.max(8, left);
+      if (top + t.height > window.innerHeight - 8) {
+        top = Math.max(8, a.top - t.height - gap);
+      }
+      tip.style.position = "fixed";
+      tip.style.left = `${left}px`;
+      tip.style.top = `${top}px`;
+    });
+  }
+
+  function clearTip(anchor: HTMLElement) {
+    const tip = anchor.querySelector<HTMLElement>(".tooltip");
+    if (!tip) return;
+    tip.style.position = "";
+    tip.style.left = "";
+    tip.style.top = "";
+  }
+
   const symbol = $derived(String(page.params.symbol || "").toUpperCase());
 
   const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1mo"];
@@ -514,9 +541,6 @@
                     class="check"
                     role="button"
                     tabindex="0"
-                    title={off
-                      ? "Click to re-enable this indicator"
-                      : "Click to exclude from verdict"}
                     onclick={() => toggleIndicator(indicator.name)}
                     onkeydown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -537,6 +561,8 @@
                       </span>
                       <span
                         class="indicator-tip"
+                        onmouseenter={(e) => positionTip(e.currentTarget)}
+                        onmouseleave={(e) => clearTip(e.currentTarget)}
                         style="flex: 1 1 auto; min-width: 0; font-size: 0.75rem; font-weight: 500; color: var(--foreground);"
                       >
                         <span class="tip-label">{indicator.name}</span>
@@ -551,6 +577,8 @@
                       </span>
                     </div>
                     <span class="indicator-tip data"
+                      onmouseenter={(e) => positionTip(e.currentTarget)}
+                      onmouseleave={(e) => clearTip(e.currentTarget)}
                       style="padding-left: 30px; font-size: 0.68rem; color: {vc}; min-width: 0;"
                     >
                       <span class="tip-label">{ex.reading}</span>

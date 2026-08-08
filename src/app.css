@@ -158,13 +158,29 @@ body {
 .tf-summary-card strong { font-size: .78rem; }
 .indicator-tip { position: relative; cursor: help; }
 .tip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tooltip { display: none; position: absolute; z-index: 50; width: min(300px, 75vw); padding: 10px 12px; background: var(--surface-3); border: 1px solid var(--panel-border-active); border-radius: 6px; box-shadow: 0 8px 24px #0008; color: var(--foreground); white-space: normal; font-size: .72rem; line-height: 1.45; pointer-events: none; }
+.tooltip { display: none; position: absolute; z-index: 50; width: min(300px, 75vw); padding: 10px 12px; background: var(--surface-3); border: 1px solid var(--panel-border-active); border-radius: 6px; box-shadow: 0 8px 24px #0008; color: var(--foreground); white-space: normal; font-size: .72rem; line-height: 1.45; pointer-events: none; max-height: calc(100vh - 16px); overflow-y: auto; }
 .indicator-tip:hover > .tooltip, .indicator-tip:focus-within > .tooltip { display: block; }
-.tooltip-name { left: 0; top: calc(100% + 6px); }
-.tooltip-value { right: 0; bottom: calc(100% + 6px); }
 .tooltip-value b, .tooltip-value small { display: block; }
 .tooltip-value b { color: inherit; margin-bottom: 5px; }
 .tooltip-value small { color: var(--foreground-muted); }
+
+/* Hover tooltips must overlay, not expand the widget's scroll area — an
+   absolute tooltip past the widget edge turns .w-body overflow:auto (and
+   gridstack's .grid-stack-item-content overflow:hidden auto) into a scrollbar
+   that can't scroll the tooltip itself, or clips it. Only widgets whose bodies
+   genuinely scroll (company, news) keep overflow:auto. */
+/* gridstack's own .grid-stack-item-content rule is (0,3,0) and its sheet
+   loads after app.css — equal specificity would lose the tie, so use the
+   child chain for one extra class of specificity. */
+.grid-stack > .grid-stack-item[data-wid="greeks"] > .grid-stack-item-content,
+.grid-stack-item[data-wid="greeks"] .widget-card,
+.grid-stack-item[data-wid="greeks"] .w-body,
+.grid-stack > .grid-stack-item[data-wid="probability"] > .grid-stack-item-content,
+.grid-stack-item[data-wid="probability"] .widget-card,
+.grid-stack-item[data-wid="probability"] .w-body,
+.grid-stack > .grid-stack-item[data-wid="strategies"] > .grid-stack-item-content,
+.grid-stack-item[data-wid="strategies"] .widget-card,
+.grid-stack-item[data-wid="strategies"] .w-body { overflow: visible; }
 
 /* Grade ring */
 .grade-ring {
