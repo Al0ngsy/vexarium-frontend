@@ -318,6 +318,15 @@
                     height={260}
                   />
                 {/key}
+              {:else if barsLoading}
+                <div
+                  class="flex h-44 items-center justify-center rounded-lg border border-dashed"
+                  style="border-color: var(--panel-border)"
+                >
+                  <span class="label" style="color: var(--foreground-muted)"
+                    >Loading…</span
+                  >
+                </div>
               {:else if (an.price_series?.length ?? 0) > 0}
                 {#key an.price_series}
                   <IndicatorChart
