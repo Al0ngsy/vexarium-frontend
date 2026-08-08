@@ -744,33 +744,6 @@ body {
   border: 1px solid rgba(244, 63, 94, 0.3);
 }
 
-/* Scope toggle (topbar search) */
-.scope-toggle {
-  display: flex;
-  gap: 2px;
-  background: var(--background);
-  border: 1px solid var(--panel-border);
-  border-radius: 6px;
-  padding: 2px;
-  flex-shrink: 0;
-}
-.scope-toggle button {
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-size: 0.64rem;
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  color: var(--foreground-subtle);
-  cursor: pointer;
-  font-family: var(--font-body);
-  white-space: nowrap;
-}
-.scope-toggle button.active {
-  background: var(--accent-primary);
-  color: #fff;
-}
-
 /* Dashboard chrome collapses before it can squeeze or overflow on tablets. */
 @media (max-width: 900px) {
   .topbar {
@@ -826,11 +799,6 @@ body {
 
   .topbar .search {
     gap: 6px;
-  }
-
-  .scope-toggle button {
-    padding-left: 7px;
-    padding-right: 7px;
   }
 
   .symbol-search {

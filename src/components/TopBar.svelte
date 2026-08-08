@@ -2,9 +2,6 @@
   import { page } from "$app/state";
   import SymbolSearch from "./SymbolSearch.svelte";
 
-  type Scope = "stock" | "options";
-  let scope = $state<Scope>("stock");
-
   // US market hours (ET) — 9:30–16:00 weekdays. ponytail: no holiday calendar.
   function marketStatus(): { open: boolean; label: string } {
     const now = new Date();
@@ -46,6 +43,10 @@
   );
   const analysisHref = $derived(symbol ? `/s/${symbol}` : "/");
   const optionsHref = $derived(symbol ? `/options/${symbol}` : "/");
+
+  // Search destination follows the current view: options view searches
+  // options, everything else searches stocks/ETFs.
+  const searchScope = $derived(activeTab === "options" ? "options" : "stock");
 </script>
 
 <header class="topbar">
@@ -65,21 +66,7 @@
   {/if}
 
   <div class="search">
-    <div class="scope-toggle" role="group" aria-label="Search scope">
-      <button
-        class:active={scope === "stock"}
-        onclick={() => (scope = "stock")}
-      >
-        STOCK/ETF
-      </button>
-      <button
-        class:active={scope === "options"}
-        onclick={() => (scope = "options")}
-      >
-        OPTIONS
-      </button>
-    </div>
-    <SymbolSearch {scope} />
+    <SymbolSearch scope={searchScope} />
   </div>
 
   <div class="topbar-right">
