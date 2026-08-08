@@ -30,7 +30,7 @@
 
   const symbol = $derived(String(page.params.symbol || "").toUpperCase());
 
-  const TIMEFRAMES = ["1m", "5m", "15m", "1h", "1d", "1w", "1mo"];
+  const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1mo"];
   let timeframe = $state("1d");
   let timeframeVerdicts = $state<Record<string, string>>({});
   let chartBars = $state<PricePoint[] | null>(null);
@@ -314,15 +314,15 @@
               style="height: 100%; display: flex; flex-direction: column; gap: 6px;"
             >
               <div class="flex items-center gap-1" style="flex-wrap: wrap;">
-                {#each TIMEFRAMES as tf}
-                  <button
-                    class="tf-btn"
-                    class:on={tf === timeframe}
-                    onclick={() => (timeframe = tf)}
-                  >
-                    {tf}
-                  </button>
-                {/each}
+                <select
+                  class="tf-select"
+                  aria-label="Chart timeframe"
+                  bind:value={timeframe}
+                >
+                  {#each TIMEFRAMES as tf}
+                    <option value={tf}>{tf}</option>
+                  {/each}
+                </select>
               </div>
               {#if (chartBars?.length ?? 0) > 0}
                 {#key chartBars}
@@ -388,7 +388,7 @@
               <div class="indicator-toolbar">
                 <span class="label">Indicators calculated from</span>
                 <select aria-label="Indicator candle timeframe" bind:value={timeframe}>
-                  {#each TIMEFRAMES.filter((tf) => ["1h", "1d", "1w", "1mo"].includes(tf)) as tf}
+                  {#each TIMEFRAMES.filter((tf) => ["30m", "1h", "4h", "1d", "1w", "1mo"].includes(tf)) as tf}
                     <option value={tf}>{tf} candles</option>
                   {/each}
                 </select>

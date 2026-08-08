@@ -152,7 +152,7 @@ body {
 }
 
 .indicator-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.indicator-toolbar select { background: var(--surface-3); color: var(--foreground); border: 1px solid var(--panel-border); border-radius: 5px; padding: 5px 8px; font: inherit; font-size: .72rem; }
+.indicator-toolbar select, .tf-select { background: var(--surface-3); color: var(--foreground); border: 1px solid var(--panel-border); border-radius: 5px; padding: 5px 8px; font: inherit; font-size: .72rem; }
 .tf-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .tf-summary-card { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--panel-border); border-radius: 6px; }
 .tf-summary-card.active { border-color: var(--accent-primary); }
