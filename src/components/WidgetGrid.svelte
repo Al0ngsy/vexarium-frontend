@@ -57,6 +57,13 @@
       grid = GridStack.init(
         {
           column: 12,
+          columnOpts: {
+            breakpointForWindow: true,
+            breakpoints: [
+              { w: 767, c: 8 },
+              { w: 479, c: 4 },
+            ],
+          },
           cellHeight: 96,
           margin: 8,
           float: false,

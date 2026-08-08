@@ -32,6 +32,7 @@
 
   const TIMEFRAMES = ["1m", "5m", "15m", "1h", "1d", "1w", "1mo"];
   let timeframe = $state("1d");
+  let timeframeVerdicts = $state<Record<string, string>>({});
   let chartBars = $state<PricePoint[] | null>(null);
   let barsLoading = $state(false);
 
@@ -75,7 +76,7 @@
     error = null;
     aiMessage = null;
     try {
-      analysis = await analyze(symbol, assetType);
+      analysis = await analyze(symbol, assetType, false, timeframe);
       if (analysis?.overall?.overall_verdict) {
         addRecentAnalysis({
           symbol,
@@ -118,6 +119,19 @@
     // alone would never re-fire and the page would keep showing the old symbol).
     symbol;
     runAnalysis();
+  });
+
+  // Keep the compact multi-timeframe verdict strip independent from the
+  // selected detail timeframe.
+  $effect(() => {
+    const sym = symbol;
+    if (!sym) return;
+    Promise.all(["1d", "1w", "1mo"].map((tf) => analyze(sym, assetType, false, tf)))
+      .then((items) => {
+        if (symbol !== sym) return;
+        timeframeVerdicts = Object.fromEntries(items.map((item) => [item.timeframe ?? "1d", item.overall.overall_verdict]));
+      })
+      .catch(() => {});
   });
 
   // ---- derivations (ported from the old home page) ------------------------
@@ -358,6 +372,27 @@
             </div>
           {:else if def.id === "indicator-checks"}
             <div class="flex flex-col gap-2">
+              <div class="tf-summary" aria-label="Overall verdict by timeframe">
+                {#each [["1d", "1 day"], ["1w", "1 week"], ["1mo", "1 month"]] as item}
+                  {@const tf = item[0]}
+                  {@const tfVerdict = timeframeVerdicts[tf]}
+                  {@const tfColor = tfVerdict ? (VERDICT_COLORS as Record<string, string>)[tfVerdict] : 'var(--foreground-muted)'}
+                  <div class="tf-summary-card" class:active={tf === timeframe}>
+                    <span class="label">{item[1]}</span>
+                    <strong style="color: {tfColor}">
+                      {tfVerdict ? (VERDICT_LABELS as Record<string, string>)[tfVerdict] : "Loading…"}
+                    </strong>
+                  </div>
+                {/each}
+              </div>
+              <div class="indicator-toolbar">
+                <span class="label">Indicators calculated from</span>
+                <select aria-label="Indicator candle timeframe" bind:value={timeframe}>
+                  {#each TIMEFRAMES.filter((tf) => ["1h", "1d", "1w", "1mo"].includes(tf)) as tf}
+                    <option value={tf}>{tf} candles</option>
+                  {/each}
+                </select>
+              </div>
               <div class="plainbox">
                 <div class="k">What this means for you</div>
                 <p>
@@ -392,16 +427,24 @@
                         {STATUS_ICON[ex.status]}
                       </span>
                       <span
+                        class="indicator-tip"
                         style="flex: 1 1 auto; min-width: 0; font-size: 0.75rem; font-weight: 500; color: var(--foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
                       >
                         {indicator.name}
+                        <span class="tooltip tooltip-name">{ex.what}</span>
                       </span>
                     </div>
-                    <span
-                      class="data"
+                    <span class="indicator-tip data"
                       style="padding-left: 30px; font-size: 0.68rem; color: {vc}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;"
                     >
                       {ex.reading}
+                      <span class="tooltip tooltip-value">
+                        <b>{ex.reading}</b>
+                        <small>{ex.reason}</small>
+                        {#if an.indicator_series?.find((s) => s.name === indicator.name)?.points?.length}
+                          <IndicatorChart series={an.indicator_series.find((s) => s.name === indicator.name)!} height={90} />
+                        {/if}
+                      </span>
                     </span>
                   </div>
                 {/each}

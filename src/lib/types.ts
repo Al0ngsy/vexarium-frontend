@@ -19,6 +19,7 @@ export interface OverallVerdict {
 export interface AnalysisResponse {
 	symbol: string;
 	asset_type: string;
+	timeframe?: string;
 	current_price: number | null;
 	day_change_pct?: number | null;
 	overall: OverallVerdict;

@@ -151,6 +151,21 @@ body {
   line-height: 1.65;
 }
 
+.indicator-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.indicator-toolbar select { background: var(--surface-3); color: var(--foreground); border: 1px solid var(--panel-border); border-radius: 5px; padding: 5px 8px; font: inherit; font-size: .72rem; }
+.tf-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tf-summary-card { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--panel-border); border-radius: 6px; }
+.tf-summary-card.active { border-color: var(--accent-primary); }
+.tf-summary-card strong { font-size: .78rem; }
+.indicator-tip { position: relative; cursor: help; }
+.tooltip { display: none; position: absolute; z-index: 20; width: min(300px, 75vw); padding: 10px 12px; background: var(--surface-3); border: 1px solid var(--panel-border-active); border-radius: 6px; box-shadow: 0 8px 24px #0008; color: var(--foreground); white-space: normal; font-size: .72rem; line-height: 1.45; pointer-events: none; }
+.indicator-tip:hover > .tooltip, .indicator-tip:focus-within > .tooltip { display: block; }
+.tooltip-name { left: 0; top: calc(100% + 6px); }
+.tooltip-value { right: 0; bottom: calc(100% + 6px); }
+.tooltip-value b, .tooltip-value small { display: block; }
+.tooltip-value b { color: inherit; margin-bottom: 5px; }
+.tooltip-value small { color: var(--foreground-muted); }
+
 /* Grade ring */
 .grade-ring {
   position: relative;
@@ -754,4 +769,100 @@ body {
 .scope-toggle button.active {
   background: var(--accent-primary);
   color: #fff;
+}
+
+/* Dashboard chrome collapses before it can squeeze or overflow on tablets. */
+@media (max-width: 900px) {
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 56px;
+    gap: 8px 12px;
+    padding: 8px 16px;
+  }
+
+  .topbar .logo {
+    flex: 0 0 auto;
+  }
+
+  .topbar .view-tabs {
+    margin-left: auto;
+  }
+
+  .topbar .search {
+    order: 3;
+    flex: 1 0 100%;
+    max-width: none;
+    min-width: 0;
+    justify-content: stretch;
+  }
+
+  .topbar .topbar-right {
+    order: 4;
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+
+  main.flex-1 {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 8px 10px;
+  }
+
+  .topbar .logo {
+    font-size: 0.9rem;
+  }
+
+  .topbar .view-tabs a {
+    padding: 5px 8px;
+    font-size: 0.65rem;
+  }
+
+  .topbar .search {
+    gap: 6px;
+  }
+
+  .scope-toggle button {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .symbol-search {
+    padding: 8px 10px;
+  }
+
+  .symbol-search .kbd {
+    display: none;
+  }
+
+  .topbar .conn-chip {
+    font-size: 0.62rem;
+  }
+
+  .grid-stack {
+    margin-top: 10px;
+  }
+
+  .widget-card .w-head {
+    padding: 9px 10px;
+  }
+
+  .widget-card .w-body {
+    padding: 10px;
+  }
+
+  .app-footer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .app-footer nav {
+    gap: 12px;
+  }
 }

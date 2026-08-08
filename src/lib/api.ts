@@ -69,12 +69,13 @@ export async function createCheckoutSession(token: string): Promise<{ checkout_u
 export async function analyze(
 	symbol: string,
 	assetType: AssetType = 'stock',
-	optionsEnabled: boolean = false
+	optionsEnabled: boolean = false,
+	timeframe: string = '1d'
 ): Promise<AnalysisResponse> {
 	const resp = await fetch(`${BASE_URL}/api/v1/analysis`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ symbol, asset_type: assetType, options_enabled: optionsEnabled })
+		body: JSON.stringify({ symbol, asset_type: assetType, options_enabled: optionsEnabled, timeframe })
 	});
 	if (!resp.ok) throw new Error(`Analysis failed: ${resp.status}`);
 	return resp.json();
