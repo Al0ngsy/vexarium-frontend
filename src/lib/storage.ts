@@ -54,3 +54,36 @@ export function addRecentAnalysis(a: RecentAnalysis): void {
 	filtered.unshift(a);
 	localStorage.setItem(RECENT_KEY, JSON.stringify(filtered.slice(0, RECENT_MAX)));
 }
+
+// ── Watchlist (localStorage) ────────────────────────────────────────────
+const WATCH_KEY = 'vexarium_watchlist';
+
+export interface WatchSymbol {
+	symbol: string;
+	name?: string;
+}
+
+export function getWatchlist(): WatchSymbol[] {
+	if (typeof localStorage === 'undefined') return [];
+	try {
+		const data = localStorage.getItem(WATCH_KEY);
+		return data ? JSON.parse(data) : [];
+	} catch {
+		return [];
+	}
+}
+
+export function addToWatchlist(s: WatchSymbol): void {
+	const list = getWatchlist().filter(
+		(item) => item.symbol.toUpperCase() !== s.symbol.toUpperCase()
+	);
+	list.push({ ...s, symbol: s.symbol.toUpperCase() });
+	localStorage.setItem(WATCH_KEY, JSON.stringify(list));
+}
+
+export function removeFromWatchlist(symbol: string): void {
+	const list = getWatchlist().filter(
+		(item) => item.symbol.toUpperCase() !== symbol.toUpperCase()
+	);
+	localStorage.setItem(WATCH_KEY, JSON.stringify(list));
+}

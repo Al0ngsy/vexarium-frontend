@@ -17,10 +17,11 @@ export interface OverallVerdict {
 }
 
 export interface AnalysisResponse {
-  symbol: string;
-  asset_type: string;
-  current_price: number | null;
-  overall: OverallVerdict;
+	symbol: string;
+	asset_type: string;
+	current_price: number | null;
+	day_change_pct?: number | null;
+	overall: OverallVerdict;
   indicators: IndicatorResult[];
   analyzed_at?: string | null;
   price_series?: PricePoint[];

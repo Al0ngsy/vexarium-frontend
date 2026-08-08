@@ -11,7 +11,8 @@ import type {
 	AssetSearchResponse,
 	OptionValueAtPrice,
 	OptionsMatrixResponse,
-	OptionChanceResponse
+	OptionChanceResponse,
+	PricePoint
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -76,6 +77,20 @@ export async function analyze(
 		body: JSON.stringify({ symbol, asset_type: assetType, options_enabled: optionsEnabled })
 	});
 	if (!resp.ok) throw new Error(`Analysis failed: ${resp.status}`);
+	return resp.json();
+}
+
+/** OHLC bars at a selectable resolution (1m/5m/15m/1h/1d/1w/1mo). */
+export async function getBars(
+	symbol: string,
+	timeframe: string = '1d',
+	limit: number = 300
+): Promise<PricePoint[]> {
+	const resp = await fetch(
+		`${BASE_URL}/api/v1/analysis/bars/${encodeURIComponent(symbol)}?timeframe=${timeframe}&limit=${limit}`,
+		{ cache: 'no-store' }
+	);
+	if (!resp.ok) throw new Error(`Bars failed: ${resp.status}`);
 	return resp.json();
 }
 

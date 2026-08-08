@@ -51,6 +51,6 @@ VITE_API_URL="$VITE_API_URL" yarn build
 echo "==> Deploying to Cloudflare Pages ($CF_PROJECT)"
 CLOUDFLARE_API_TOKEN="$CLOUDFLARE_API_TOKEN" \
 CLOUDFLARE_ACCOUNT_ID="$CF_ACCOUNT_ID" \
-  yarn wrangler pages deploy .svelte-kit/cloudflare --project-name="$CF_PROJECT" --branch=main
+  yarn wrangler pages deploy .svelte-kit/cloudflare --project-name="$CF_PROJECT" --branch=main --commit-dirty=true
 
 echo "==> Live at https://$CF_PROJECT.pages.dev"
