@@ -36,7 +36,10 @@ function pinTip(anchor: HTMLElement, tip: HTMLElement): void {
     close.setAttribute("aria-label", "Close popup");
     close.textContent = "✕";
     const btn = close;
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      // Never let closing the popup reach the indicator chip underneath —
+      // the chip's toggle is double-click only, but keep the guard anyway.
+      e.stopPropagation();
       tip.classList.remove("pinned");
       btn.remove();
       clearTip(anchor);

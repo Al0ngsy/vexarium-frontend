@@ -3,6 +3,11 @@
 	import { formatPrice } from '$lib/format';
 	import { VERDICT_COLORS, VERDICT_LABELS, VERDICT_ICONS } from '$lib/verdict';
 	import { quotes, setWatch } from '$lib/quotes.svelte';
+	import {
+		getWatchlist,
+		addToWatchlist,
+		removeFromWatchlist
+	} from '$lib/storage';
 
 	// Full-width symbol strip: name · price · verdict · grade · actions.
 	let {
@@ -32,6 +37,25 @@
 	// Live quote overrides the analysis price when a tick has arrived.
 	const live = $derived(quotes[symbol] ?? null);
 	const shownPrice = $derived(live?.price ?? analysis.current_price);
+
+	// Watchlist membership for the current symbol (localStorage-backed).
+	// $state + effect: localStorage reads are not reactive, so a $derived
+	// would never re-evaluate after toggleWatch writes.
+	let watched = $state(false);
+	$effect(() => {
+		watched = getWatchlist().some(
+			(w) => w.symbol.toUpperCase() === symbol.toUpperCase()
+		);
+	});
+	function toggleWatch() {
+		if (watched) {
+			removeFromWatchlist(symbol);
+			watched = false;
+		} else {
+			addToWatchlist({ symbol, name: analysis.company?.name ?? undefined });
+			watched = true;
+		}
+	}
 
 	const co = $derived(analysis.company ?? null);
 	const currency = $derived(co?.currency ?? null);
@@ -142,6 +166,14 @@
 	</span>
 
 	<div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+		<button
+			class="btn"
+			style="background: var(--surface-2); border: 1px solid {watched ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {watched ? 'var(--accent-primary)' : 'var(--foreground)'}; padding: 7px 14px; border-radius: 6px; font-size: 0.72rem; cursor: pointer;"
+			onclick={toggleWatch}
+			title={watched ? 'Remove from watchlist' : 'Save to watchlist'}
+		>
+			{watched ? '★ Watchlisted' : '☆ Add to watchlist'}
+		</button>
 		{#if onSave}
 			<button class="btn" style="background: var(--surface-2); border: 1px solid var(--panel-border); color: var(--foreground); padding: 7px 14px; border-radius: 6px; font-size: 0.72rem; cursor: pointer;" onclick={onSave}>
 				Save trade

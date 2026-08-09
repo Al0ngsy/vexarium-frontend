@@ -160,7 +160,8 @@
   // ---- derivations (ported from the old home page) ------------------------
 
   // ---- indicator exclusion ------------------------------------------------
-  // Clicking an indicator chip excludes it from the verdict client-side.
+  // Double-clicking an indicator chip excludes it from the verdict
+  // client-side (single click would fire while closing the info popup).
   // Persisted per indicator NAME (global across symbols/timeframes).
   const INDICATOR_SCORES: Record<string, number> = {
     strong_buy: 2,
@@ -515,7 +516,7 @@
                     class="check"
                     role="button"
                     tabindex="0"
-                    onclick={() => toggleIndicator(indicator.name)}
+                    ondblclick={() => toggleIndicator(indicator.name)}
                     onkeydown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
@@ -567,6 +568,11 @@
                   </div>
                 {/each}
               </div>
+              <p
+                class="label"
+                style="color: var(--foreground-muted); font-size: 0.65rem; text-transform: none;"
+                >Double-click an indicator to exclude it from the verdict.</p
+              >
             </div>
           {:else if def.id === "ai-opinion"}
             <div class="flex h-full flex-col">

@@ -65,9 +65,11 @@
     </nav>
   {/if}
 
-  <div class="search">
-    <SymbolSearch scope={searchScope} />
-  </div>
+  {#if path !== "/"}
+    <div class="search">
+      <SymbolSearch scope={searchScope} />
+    </div>
+  {/if}
 
   <div class="topbar-right">
     <span class="market-chip" title="US equities — New York">
