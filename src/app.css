@@ -24,12 +24,12 @@
   --verdict-strong-buy: #10b981;
   --verdict-buy: #34d399;
   --verdict-hold: #f59e0b;
-  --verdict-sell: #fb923c;
+  --verdict-sell: #f87171;
   --verdict-strong-sell: #f43f5e;
 
   /* Stance colors */
   --stance-take-profit: #10b981;
-  --stance-hold: #3b82f6;
+  --stance-hold: #f59e0b;
   --stance-cut-loss: #f43f5e;
 
   /* Panels */
@@ -164,7 +164,8 @@ body {
    completes the tooltip stays open (.pinned) with a close button. */
 .tip-progress { position: absolute; top: 0; left: 0; height: 2px; width: 100%; background: var(--accent-primary); transform: scaleX(0); transform-origin: left; }
 .tooltip.pinned { display: block; }
-.tip-close { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--panel-border); background: var(--surface-3); color: var(--foreground-muted); font-size: 10px; line-height: 1; cursor: pointer; padding: 0; pointer-events: auto; }
+.tooltip.pinned .tip-progress { transform: scaleX(1); transition: none; }
+.tip-close { position: absolute; top: 0; right: 0; width: 18px; height: 18px; border-radius: 0 6px 0 4px; border: none; border-left: 1px solid var(--panel-border); border-bottom: 1px solid var(--panel-border); background: var(--surface-3); color: var(--foreground-muted); font-size: 10px; line-height: 1; cursor: pointer; padding: 0; pointer-events: auto; }
 .tooltip-value b, .tooltip-value small { display: block; }
 .tooltip-value b { color: inherit; margin-bottom: 5px; }
 .tooltip-value small { color: var(--foreground-muted); }

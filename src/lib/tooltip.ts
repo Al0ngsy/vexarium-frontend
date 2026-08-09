@@ -8,7 +8,7 @@
 // how much hold time remains. The progress bar + close button are injected
 // here, so no component markup needs to change.
 
-const PIN_MS = 5000;
+const PIN_MS = 2500;
 const pinTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
 
 function ensureProgressBar(tip: HTMLElement): void {
@@ -62,7 +62,10 @@ export function positionTip(anchor: HTMLElement): void {
     tip.style.left = `${left}px`;
     tip.style.top = `${top}px`;
   });
-  // Pin-on-hold: restart the hold timer + progress bar on every entry.
+  // Pin-on-hold: restart the hold timer + progress bar on every entry,
+  // unless already pinned — a pinned tooltip keeps its full bar and close
+  // button; re-hovering only refreshes the position.
+  if (tip.classList.contains("pinned")) return;
   const prev = pinTimers.get(anchor);
   if (prev) clearTimeout(prev);
   ensureProgressBar(tip);

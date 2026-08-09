@@ -74,7 +74,7 @@
 			class="brand"
 			style="font-size: 2.6rem; letter-spacing: -0.01em; text-transform: none; line-height: 1.1;"
 		>
-			Check before you <span class="hero-type" style="color: var(--accent-primary)"
+			Check before you <span class="hero-type" style="color: {HERO_WORDS[heroWordIdx] === 'buy' ? 'var(--verdict-buy)' : 'var(--verdict-sell)'}"
 				>{typed}<span class="hero-caret" aria-hidden="true"></span></span
 			>.
 		</h1>
