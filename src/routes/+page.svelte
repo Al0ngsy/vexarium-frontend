@@ -7,6 +7,7 @@
   import { getRecentAnalyses, getWatchlist } from "$lib/storage";
   import { VERDICT_COLORS, VERDICT_LABELS } from "$lib/verdict";
   import { onMount } from "svelte";
+  import SymbolSearch from "../components/SymbolSearch.svelte";
 
   // Landing: hero + search + watchlist + recent analyses. Deep links
   // (?symbol=X) redirect to the dashboard routes (old bookmark compat).
@@ -71,7 +72,7 @@
 </svelte:head>
 
 <div class="flex flex-col items-center">
-  <!-- HERO -->
+  <!-- HERO + SEARCH -->
   <div class="flex w-full flex-col items-center pt-14 text-center">
     <h1
       class="brand"
@@ -94,6 +95,8 @@
     </p>
 
     <div class="panel flex w-full max-w-xl flex-col gap-4 p-6">
+      <label class="label" for="symbol">SYMBOL</label>
+      <SymbolSearch scope="stock" />
       <div class="flex gap-2">
         <a
           href="/portfolio"
@@ -101,14 +104,15 @@
           style="flex: 1; text-align: center; text-decoration: none;"
           >PORTFOLIO</a
         >
-        {#if !authed}
+        <!-- For now no Pro feature - therefore no pricing -->
+        <!-- {#if !authed}
           <a
             href="/pricing"
             class="btn-outline"
             style="flex: 1; text-align: center; text-decoration: none;"
             >PRICING</a
           >
-        {/if}
+        {/if} -->
       </div>
     </div>
   </div>
@@ -135,7 +139,8 @@
                 >{w.symbol}</span
               >
               {#if w.name}
-                <span class="label" style="text-transform: none;">{w.name}</span>
+                <span class="label" style="text-transform: none;">{w.name}</span
+                >
               {/if}
             </div>
             <span class="label" style="color: var(--foreground-muted)"

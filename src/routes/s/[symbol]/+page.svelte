@@ -1,7 +1,6 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/state";
-  import { untrack } from "svelte";
   import { analyze, getBars, streamAIAnalysis } from "$lib/api";
   import { getToken } from "$lib/auth.svelte";
   import { formatPrice } from "$lib/format";
@@ -14,12 +13,15 @@
   import { addRecentAnalysis } from "$lib/storage";
   import type { AnalysisResponse, PricePoint, Verdict } from "$lib/types";
   import { VERDICT_COLORS, VERDICT_LABELS } from "$lib/verdict";
+  import { untrack } from "svelte";
 
   import {
     ANALYSIS_WIDGETS,
     loadEnabled,
     type WidgetDef,
   } from "$lib/layout.svelte";
+  import { quotes } from "$lib/quotes.svelte";
+  import { clearTip, positionTip } from "$lib/tooltip";
   import CompanyProfile from "../../../components/CompanyProfile.svelte";
   import DisclaimerBanner from "../../../components/DisclaimerBanner.svelte";
   import IndicatorChart from "../../../components/IndicatorChart.svelte";
@@ -29,7 +31,6 @@
   import WidgetCard from "../../../components/WidgetCard.svelte";
   import WidgetGrid from "../../../components/WidgetGrid.svelte";
   import WidgetLibrary from "../../../components/WidgetLibrary.svelte";
-  import { positionTip, clearTip } from "$lib/tooltip";
 
   const symbol = $derived(String(page.params.symbol || "").toUpperCase());
 
@@ -61,6 +62,25 @@
       .finally(() => {
         if (symbol === sym && chartTf === tf) barsLoading = false;
       });
+  });
+
+  // Live tick extends the last candle of the price chart. The quote stream is
+  // already subscribed via SymbolStrip; the same-day guard keeps a completed
+  // bar untouched. ponytail: last-bar update for every timeframe — correct
+  // while the current period is open, fine for 1d..1mo.
+  $effect(() => {
+    const q = quotes[symbol];
+    const bars = chartBars;
+    if (!q || !bars || bars.length === 0) return;
+    const last = bars[bars.length - 1];
+    if (new Date(q.ts).toDateString() !== new Date(last.t).toDateString())
+      return;
+    bars[bars.length - 1] = {
+      ...last,
+      close: q.price,
+      high: Math.max(last.high, q.price),
+      low: Math.min(last.low, q.price),
+    };
   });
 
   // ---- analysis state -----------------------------------------------------
@@ -149,10 +169,17 @@
   $effect(() => {
     const sym = symbol;
     if (!sym) return;
-    Promise.all(["1d", "1w", "1mo"].map((tf) => analyze(sym, assetType, false, tf)))
+    Promise.all(
+      ["1d", "1w", "1mo"].map((tf) => analyze(sym, assetType, false, tf)),
+    )
       .then((items) => {
         if (symbol !== sym) return;
-        timeframeVerdicts = Object.fromEntries(items.map((item) => [item.timeframe ?? "1d", item.overall.overall_verdict]));
+        timeframeVerdicts = Object.fromEntries(
+          items.map((item) => [
+            item.timeframe ?? "1d",
+            item.overall.overall_verdict,
+          ]),
+        );
       })
       .catch(() => {});
   });
@@ -214,34 +241,28 @@
   const clientCount = $derived(scoredIndicators.length);
 
   const bullCount = $derived(
-    scoredIndicators.filter((i) =>
-      ["buy", "strong_buy"].includes(i.verdict),
-    ).length,
+    scoredIndicators.filter((i) => ["buy", "strong_buy"].includes(i.verdict))
+      .length,
   );
   const bearCount = $derived(
-    scoredIndicators.filter((i) =>
-      ["sell", "strong_sell"].includes(i.verdict),
-    ).length,
+    scoredIndicators.filter((i) => ["sell", "strong_sell"].includes(i.verdict))
+      .length,
   );
   const neutralCount = $derived(
-    scoredIndicators.filter(
-      (i) => verdictToStatus(i.verdict) === "watch",
-    ).length,
+    scoredIndicators.filter((i) => verdictToStatus(i.verdict) === "watch")
+      .length,
   );
   const passCount = $derived(
-    scoredIndicators.filter(
-      (i) => verdictToStatus(i.verdict) === "pass",
-    ).length,
+    scoredIndicators.filter((i) => verdictToStatus(i.verdict) === "pass")
+      .length,
   );
   const watchCount = $derived(
-    scoredIndicators.filter(
-      (i) => verdictToStatus(i.verdict) === "watch",
-    ).length,
+    scoredIndicators.filter((i) => verdictToStatus(i.verdict) === "watch")
+      .length,
   );
   const failCount = $derived(
-    scoredIndicators.filter(
-      (i) => verdictToStatus(i.verdict) === "fail",
-    ).length,
+    scoredIndicators.filter((i) => verdictToStatus(i.verdict) === "fail")
+      .length,
   );
   const totalChecks = $derived(scoredIndicators.length);
 
@@ -286,7 +307,13 @@
           : (atr.value as Record<string, number> | null | undefined)?.atr;
       if (typeof atrVal === "number") {
         const atrUnit =
-          tf === "1w" ? "avg weekly move" : tf === "1mo" ? "avg monthly move" : tf === "1d" ? "avg daily move" : "avg move per bar";
+          tf === "1w"
+            ? "avg weekly move"
+            : tf === "1mo"
+              ? "avg monthly move"
+              : tf === "1d"
+                ? "avg daily move"
+                : "avg move per bar";
         out.push({
           k: `Volatility - ${tf}`,
           v: `ATR ${atrVal.toFixed(1)}`,
@@ -421,36 +448,36 @@
                   >
                 {/if}
                 {#if (chartBars?.length ?? 0) > 0}
-                <IndicatorChart
-                  series={{ name: "PRICE", kind: "overlay", points: [] }}
-                  priceSeries={chartBars ?? []}
-                  height={260}
-                />
-              {:else if barsLoading}
-                <div
-                  class="flex h-44 items-center justify-center rounded-lg border border-dashed"
-                  style="border-color: var(--panel-border)"
-                >
-                  <span class="label" style="color: var(--foreground-muted)"
-                    >Loading…</span
+                  <IndicatorChart
+                    series={{ name: "PRICE", kind: "overlay", points: [] }}
+                    priceSeries={chartBars ?? []}
+                    height={260}
+                  />
+                {:else if barsLoading}
+                  <div
+                    class="flex h-44 items-center justify-center rounded-lg border border-dashed"
+                    style="border-color: var(--panel-border)"
                   >
-                </div>
-              {:else if (an.price_series?.length ?? 0) > 0}
-                <IndicatorChart
-                  series={{ name: "PRICE", kind: "overlay", points: [] }}
-                  priceSeries={an.price_series}
-                  height={260}
-                />
-              {:else}
-                <div
-                  class="flex h-44 items-center justify-center rounded-lg border border-dashed"
-                  style="border-color: var(--panel-border)"
-                >
-                  <span class="label" style="color: var(--foreground-muted)"
-                    >No price data</span
+                    <span class="label" style="color: var(--foreground-muted)"
+                      >Loading…</span
+                    >
+                  </div>
+                {:else if (an.price_series?.length ?? 0) > 0}
+                  <IndicatorChart
+                    series={{ name: "PRICE", kind: "overlay", points: [] }}
+                    priceSeries={an.price_series}
+                    height={260}
+                  />
+                {:else}
+                  <div
+                    class="flex h-44 items-center justify-center rounded-lg border border-dashed"
+                    style="border-color: var(--panel-border)"
                   >
-                </div>
-              {/if}
+                    <span class="label" style="color: var(--foreground-muted)"
+                      >No price data</span
+                    >
+                  </div>
+                {/if}
               </div>
             </div>
           {:else if def.id === "vitals"}
@@ -469,7 +496,9 @@
                 {#each [["1d", "1 day"], ["1w", "1 week"], ["1mo", "1 month"]] as item}
                   {@const tf = item[0]}
                   {@const tfVerdict = timeframeVerdicts[tf]}
-                  {@const tfColor = tfVerdict ? (VERDICT_COLORS as Record<string, string>)[tfVerdict] : 'var(--foreground-muted)'}
+                  {@const tfColor = tfVerdict
+                    ? (VERDICT_COLORS as Record<string, string>)[tfVerdict]
+                    : "var(--foreground-muted)"}
                   <div
                     class="tf-summary-card"
                     class:active={tf === indicatorTf}
@@ -486,7 +515,9 @@
                   >
                     <span class="label">{item[1]}</span>
                     <strong style="color: {tfColor}">
-                      {tfVerdict ? (VERDICT_LABELS as Record<string, string>)[tfVerdict] : "Loading…"}
+                      {tfVerdict
+                        ? (VERDICT_LABELS as Record<string, string>)[tfVerdict]
+                        : "Loading…"}
                     </strong>
                   </div>
                 {/each}
@@ -523,7 +554,9 @@
                         toggleIndicator(indicator.name);
                       }
                     }}
-                    style="display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--panel-border); border-radius: 6px; min-width: 0; cursor: pointer; transition: opacity 0.15s; {off ? 'opacity: 0.45; filter: grayscale(1);' : ''}"
+                    style="display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--panel-border); border-radius: 6px; min-width: 0; cursor: pointer; transition: opacity 0.15s; {off
+                      ? 'opacity: 0.45; filter: grayscale(1);'
+                      : ''}"
                   >
                     <div
                       style="display: flex; align-items: center; gap: 8px; min-width: 0;"
@@ -551,7 +584,8 @@
                         <span class="tooltip tooltip-name">{ex.what}</span>
                       </span>
                     </div>
-                    <span class="indicator-tip data"
+                    <span
+                      class="indicator-tip data"
                       onmouseenter={(e) => positionTip(e.currentTarget)}
                       onmouseleave={(e) => clearTip(e.currentTarget)}
                       style="padding-left: 30px; font-size: 0.68rem; color: {vc}; min-width: 0;"
@@ -561,7 +595,12 @@
                         <b>{ex.reading}</b>
                         <small>{ex.reason}</small>
                         {#if an.indicator_series?.find((s) => s.name === indicator.name)?.points?.length}
-                          <IndicatorChart series={an.indicator_series.find((s) => s.name === indicator.name)!} height={90} />
+                          <IndicatorChart
+                            series={an.indicator_series.find(
+                              (s) => s.name === indicator.name,
+                            )!}
+                            height={90}
+                          />
                         {/if}
                       </span>
                     </span>
@@ -571,8 +610,9 @@
               <p
                 class="label"
                 style="color: var(--foreground-muted); font-size: 0.65rem; text-transform: none;"
-                >Double-click an indicator to exclude it from the verdict.</p
               >
+                Double-click an indicator to exclude it from the verdict.
+              </p>
             </div>
           {:else if def.id === "ai-opinion"}
             <div class="flex h-full flex-col">
