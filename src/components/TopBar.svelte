@@ -3,8 +3,7 @@
   import SymbolSearch from "./SymbolSearch.svelte";
 
   // US market hours (ET) — 9:30–16:00 weekdays. ponytail: no holiday calendar.
-  function marketStatus(): { open: boolean; label: string } {
-    const now = new Date();
+  function marketStatus(now: Date): { open: boolean; label: string } {
     const et = new Intl.DateTimeFormat("en-US", {
       timeZone: "America/New_York",
       weekday: "short",
@@ -27,7 +26,14 @@
       label: `${isOpen ? "MARKET OPEN" : "MARKET CLOSED"} · ${time}`,
     };
   }
-  const market = $derived(marketStatus());
+  // $derived only recomputes when a dependency changes — `new Date()` never
+  // is one, so drive it from a $state timestamp refreshed by an interval.
+  let now = $state(Date.now());
+  $effect(() => {
+    const id = setInterval(() => (now = Date.now()), 30_000);
+    return () => clearInterval(id);
+  });
+  const market = $derived(marketStatus(new Date(now)));
 
   // View tabs — highlight from the current route; links keep the symbol context.
   const path = $derived(page.url.pathname);
