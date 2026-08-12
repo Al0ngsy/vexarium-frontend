@@ -35,7 +35,7 @@
     <p style={empty}>No insider filings</p>
   {:else}
     <div>
-      {#each bundle.insider as t (t.name + t.filing_date)}
+      {#each bundle.insider as t}
         <div style={row}>
           <span style={nameCol} title={t.name}>{t.name}</span>
           <span style={`color: ${t.change >= 0 ? BUY : SELL}; font-weight: 600;`}>
@@ -52,7 +52,7 @@
     <p style={empty}>No earnings data</p>
   {:else}
     <div>
-      {#each bundle.earnings as e (e.period)}
+      {#each bundle.earnings as e}
         {@const sp = e.surprise_pct}
         <div style={row}>
           <span style={`${nameCol} color: ${MUTED};`}>{e.period}</span>
@@ -74,7 +74,7 @@
     <p style={empty}>No peer data</p>
   {:else}
     <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-      {#each bundle.peers as p (p)}
+      {#each bundle.peers as p}
         <a
           href={`/s/${p}`}
           style="background: var(--surface-3); color: var(--foreground); border: 1px solid var(--panel-border); border-radius: 10px; padding: 3px 12px; font-size: 0.75rem; text-decoration: none;"
