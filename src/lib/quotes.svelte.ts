@@ -5,6 +5,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export interface Quote {
 	symbol: string;
 	price: number;
+	prevClose?: number; // previous trading day close (from the SSE event)
 	ts: string;
 	dir: 'up' | 'down' | null; // flash direction, cleared 1s after the tick
 	at: number; // local tick time (ms epoch) — drives the flash clear
@@ -40,6 +41,7 @@ function connect() {
 			quotes[d.symbol] = {
 				symbol: d.symbol,
 				price: d.price,
+				prevClose: d.prev_close ?? undefined,
 				ts: d.ts ?? '',
 				at: Date.now(),
 				dir: prev ? (d.price > prev.price ? 'up' : d.price < prev.price ? 'down' : null) : null

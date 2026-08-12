@@ -61,11 +61,31 @@
 					<span class="label truncate" style="flex: 1; text-transform: none;">{s.name}</span>
 				{/if}
 				{#if quotes[s.symbol]}
-					<span
-						class="data"
-						style="font-size: 0.75rem; transition: color 0.15s; {quotes[s.symbol].dir === 'up' ? 'color: var(--verdict-strong-buy);' : quotes[s.symbol].dir === 'down' ? 'color: var(--verdict-strong-sell);' : 'color: var(--foreground);'}"
-						>{formatPrice(quotes[s.symbol].price)}</span
-					>
+					{@const q = quotes[s.symbol]}
+					{@const pc = q.prevClose}
+					{@const d = pc ? q.price - pc : null}
+					{@const pct = pc && d !== null ? (d / pc) * 100 : null}
+					{@const deltaColor =
+						d === null
+							? 'var(--foreground-subtle)'
+							: d >= 0
+								? 'var(--verdict-strong-buy)'
+								: 'var(--verdict-strong-sell)'}
+					<span class="flex flex-col items-end" style="gap: 1px;">
+						<span
+							class="data"
+							style="font-size: 0.75rem; transition: color 0.15s; {q.dir === 'up' ? 'color: var(--verdict-strong-buy);' : q.dir === 'down' ? 'color: var(--verdict-strong-sell);' : 'color: var(--foreground);'}"
+							>{formatPrice(q.price)}</span
+						>
+						<span class="label" style="font-size: 0.65rem; color: {deltaColor}; text-transform: none;">
+							{#if d !== null && pct !== null}
+								{d >= 0 ? '+' : ''}{formatPrice(d)} ({pct >= 0 ? '+' : ''}{pct.toFixed(2)}%)
+								<span style="color: var(--foreground-subtle);"> prev {formatPrice(pc)}</span>
+							{:else}
+								prev {formatPrice(pc)}
+							{/if}
+						</span>
+					</span>
 				{/if}
 				<span
 					class="label"
