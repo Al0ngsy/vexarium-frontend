@@ -117,14 +117,16 @@
     };
   });
 
-  // Data-freshness hint for intraday charts: IEX is real-time, Yahoo is
-  // delayed ~15 min. Unknown source (cached/analysis fallback) shows nothing.
+  // Data-freshness hint for intraday charts. Alpaca's historical bars API
+  // excludes the last ~15 min by design (only quotes/trades are real-time),
+  // so bars lag 15 min for BOTH sources; the SSE quote stream keeps the last
+  // candle's price live. Unknown source (cached/analysis fallback) shows nothing.
   const chartHint = $derived(
     INTRADAY_TFS.has(chartTf)
       ? chartBars?.[chartBars.length - 1]?.source === "yahoo"
         ? "~15 min delay"
         : chartBars?.[chartBars.length - 1]?.source === "alpaca"
-          ? "Live · IEX"
+          ? "Live price · bars ~15m"
           : ""
       : ""
   );
