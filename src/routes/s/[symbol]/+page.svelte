@@ -136,7 +136,6 @@
 
   // ---- analysis state -----------------------------------------------------
   let analysis = $state<AnalysisResponse | null>(null);
-  let loading = $state(true);
   let error = $state<string | null>(null);
   let showSave = $state(false);
   let aiLoading = $state(false);
@@ -149,16 +148,21 @@
   // Finnhub enrichment (insider / earnings / peers) — symbol-scoped, not
   // timeframe-scoped; 12h server cache. Failure just leaves widgets empty.
   let finnhub = $state<import("$lib/types").FinnhubBundle | null>(null);
+  let finnhubDone = $state(false);
   $effect(() => {
     const sym = symbol;
     if (!sym) return;
     finnhub = null;
+    finnhubDone = false;
     getFinnhub(sym)
       .then((b) => {
-        if (symbol === sym) finnhub = b;
+        if (symbol === sym) {
+          finnhub = b;
+          finnhubDone = true;
+        }
       })
       .catch(() => {
-        if (symbol === sym) finnhub = null;
+        if (symbol === sym) finnhubDone = true;
       });
   });
 
@@ -168,7 +172,7 @@
 
   async function runAnalysis() {
     const tf = untrack(() => indicatorTf);
-    loading = true;
+    analysis = null;
     error = null;
     aiMessage = null;
     try {
@@ -185,8 +189,6 @@
     } catch (e) {
       analysis = null;
       error = e instanceof Error ? e.message : "Analysis failed";
-    } finally {
-      loading = false;
     }
   }
 
@@ -447,36 +449,15 @@
 <div>
   <DisclaimerBanner />
 
-  {#if loading}
-    <div class="panel mb-6 p-6">
-      <div
-        class="mb-4 h-6 w-40 rounded"
-        style="background-color: var(--surface-3)"
-      ></div>
-      <div
-        class="mb-2 h-4 w-64 rounded"
-        style="background-color: var(--surface-3)"
-      ></div>
-      <div
-        class="h-4 w-32 rounded"
-        style="background-color: var(--surface-3)"
-      ></div>
+  {#snippet loadingNotice()}
+    <div class="flex h-full min-h-24 items-center justify-center">
+      <span class="label" style="color: var(--foreground-muted)"
+        >Loading data…</span
+      >
     </div>
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {#each Array(6) as _}
-        <div class="panel p-4">
-          <div
-            class="mb-3 h-3 w-20 rounded"
-            style="background-color: var(--surface-3)"
-          ></div>
-          <div
-            class="h-4 w-28 rounded"
-            style="background-color: var(--surface-3)"
-          ></div>
-        </div>
-      {/each}
-    </div>
-  {:else if error}
+  {/snippet}
+
+  {#if error && !analysis}
     <div
       class="panel flex flex-col items-center gap-4 p-12"
       style="border-top: 2px solid var(--accent-primary)"
@@ -487,16 +468,17 @@
       <p class="label" style="color: var(--foreground-muted)">{error}</p>
       <button class="btn-outline" onclick={runAnalysis}>Retry</button>
     </div>
-  {:else if analysis}
-    {@const an = analysis}
-    <SymbolStrip
-      analysis={an}
+  {:else}
+    {#if analysis}
+      <SymbolStrip
+        analysis={analysis}
       {symbol}
       onSave={() => (showSave = true)}
       verdict={clientVerdict}
       score={clientScore}
       count={clientCount}
     />
+    {/if}
 
     <!-- Widget grid -->
     <WidgetGrid view="analysis" defs={ANALYSIS_WIDGETS} {enabled} {onToggle}>
@@ -546,10 +528,10 @@
                       >Loading…</span
                     >
                   </div>
-                {:else if (an.price_series?.length ?? 0) > 0}
+                {:else if (analysis?.price_series?.length ?? 0) > 0}
                   <IndicatorChart
                     series={{ name: "PRICE", kind: "overlay", points: [] }}
-                    priceSeries={an.price_series}
+                    priceSeries={analysis?.price_series ?? []}
                     dataKey={`${symbol}:${chartTf}`}
                     height={260}
                   />
@@ -566,16 +548,23 @@
               </div>
             </div>
           {:else if def.id === "vitals"}
-            <div class="grid grid-cols-2 gap-3">
-              {#each vitals as v}
-                <div class="vital">
-                  <div class="k">{v.k}</div>
-                  <div class="v">{v.v}</div>
-                  <div class="d">{v.d}</div>
-                </div>
-              {/each}
-            </div>
+            {#if vitals.length === 0}
+              {@render loadingNotice()}
+            {:else}
+              <div class="grid grid-cols-2 gap-3">
+                {#each vitals as v}
+                  <div class="vital">
+                    <div class="k">{v.k}</div>
+                    <div class="v">{v.v}</div>
+                    <div class="d">{v.d}</div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           {:else if def.id === "indicator-checks"}
+            {#if !analysis}
+              {@render loadingNotice()}
+            {:else}
             <div class="flex flex-col gap-2">
               <div class="tf-summary" aria-label="Overall verdict by timeframe">
                 {#each [["1d", "1 day"], ["1w", "1 week"], ["1mo", "1 month"]] as item}
@@ -622,7 +611,7 @@
               <div
                 style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px;"
               >
-                {#each an.indicators as indicator}
+                {#each analysis.indicators as indicator}
                   {@const ex = explainIndicator(indicator)}
                   {@const vc =
                     VERDICT_COLORS[indicator.verdict] ||
@@ -679,9 +668,9 @@
                       <span class="tooltip tooltip-value">
                         <b>{ex.reading}</b>
                         <small>{ex.reason}</small>
-                        {#if an.indicator_series?.find((s) => s.name === indicator.name)?.points?.length}
+                        {#if analysis.indicator_series?.find((s) => s.name === indicator.name)?.points?.length}
                           <IndicatorChart
-                            series={an.indicator_series.find(
+                            series={analysis.indicator_series.find(
                               (s) => s.name === indicator.name,
                             )!}
                             dataKey={`${symbol}:${indicatorTf}:${indicator.name}`}
@@ -700,6 +689,7 @@
                 Double-click an indicator to exclude it from the verdict.
               </p>
             </div>
+            {/if}
           {:else if def.id === "ai-opinion"}
             <div class="flex h-full flex-col">
               <div class="flex items-center justify-end">
@@ -726,8 +716,10 @@
               {/if}
             </div>
           {:else if def.id === "news"}
-            {#if an.news_sentiment}
-              {@const ns = an.news_sentiment}
+            {#if !analysis}
+              {@render loadingNotice()}
+            {:else if analysis.news_sentiment}
+              {@const ns = analysis.news_sentiment}
               {@const color =
                 ns.sentiment_score > 0.2
                   ? "var(--verdict-strong-buy)"
@@ -743,12 +735,12 @@
                   </div>
                 </div>
               </div>
-              {#if an.news_articles && an.news_articles.length > 0}
+              {#if analysis.news_articles && analysis.news_articles.length > 0}
                 <div
                   class="flex flex-col"
                   style="border-top: 1px solid var(--panel-border); padding-top: 8px; gap: 8px;"
                 >
-                  {#each an.news_articles.slice(0, 5) as article}
+                  {#each analysis.news_articles.slice(0, 5) as article}
                     <a
                       href={article.url || "#"}
                       target="_blank"
@@ -780,18 +772,24 @@
               </p>
             {/if}
           {:else if def.id === "insider" || def.id === "earnings" || def.id === "peers"}
-            <FinnhubWidget kind={def.id} bundle={finnhub} />
+            {#if !finnhubDone}
+              {@render loadingNotice()}
+            {:else}
+              <FinnhubWidget kind={def.id} bundle={finnhub} />
+            {/if}
           {:else if def.id === "company"}
-            {#if an.company && (an.company.name || an.company.description || an.company.market_cap !== null)}
-              {@const co = an.company}
+            {#if !analysis}
+              {@render loadingNotice()}
+            {:else if analysis.company && (analysis.company.name || analysis.company.description || analysis.company.market_cap !== null)}
+              {@const co = analysis.company}
               {@const range = (co.high_52w ?? 0) - (co.low_52w ?? 0)}
               {@const pos =
-                range > 0 && an.current_price
+                range > 0 && analysis.current_price
                   ? Math.min(
                       100,
                       Math.max(
                         0,
-                        ((an.current_price - (co.low_52w ?? 0)) / range) * 100,
+                        ((analysis.current_price - (co.low_52w ?? 0)) / range) * 100,
                       ),
                     )
                   : 0}

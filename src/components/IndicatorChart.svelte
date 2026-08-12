@@ -149,7 +149,11 @@
   }
 
   function lineData() {
-    return series.points.map((p) => ({ time: toTime(p.t), value: p.v }));
+    // Drop null values (NaN bars serialized as null) — lightweight-charts
+    // asserts every line item value must be a number.
+    return series.points
+      .filter((p) => p.v != null)
+      .map((p) => ({ time: toTime(p.t), value: p.v as number }));
   }
 
   // Create the chart — or rebuild it if the display mode (overlay candles vs
