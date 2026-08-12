@@ -35,6 +35,7 @@
   const symbol = $derived(String(page.params.symbol || "").toUpperCase());
 
   const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1mo"];
+  const INTRADAY_TFS = new Set(["1m", "5m", "15m", "30m", "1h", "4h"]);
   let chartTf = $state("1d");
   let indicatorTf = $state("1d");
   let timeframeVerdicts = $state<Record<string, string>>({});
@@ -52,16 +53,23 @@
     barsLoading = true;
     if (barsSymbol !== sym) chartBars = null;
     barsSymbol = sym;
-    getBars(sym, tf, 300)
-      .then((points) => {
-        if (symbol === sym && chartTf === tf) chartBars = points;
-      })
-      .catch(() => {
-        if (symbol === sym && chartTf === tf) chartBars = null;
-      })
-      .finally(() => {
-        if (symbol === sym && chartTf === tf) barsLoading = false;
-      });
+    const load = (initial: boolean) =>
+      getBars(sym, tf, 300)
+        .then((points) => {
+          if (symbol === sym && chartTf === tf) chartBars = points;
+        })
+        .catch(() => {
+          // transient poll failure keeps the last bars; only the first load blanks
+          if (initial && symbol === sym && chartTf === tf) chartBars = null;
+        })
+        .finally(() => {
+          if (symbol === sym && chartTf === tf) barsLoading = false;
+        });
+    load(true);
+    // Intraday bars change every bar: re-fetch so new candles appear.
+    if (!INTRADAY_TFS.has(tf)) return;
+    const timer = setInterval(() => load(false), 60_000);
+    return () => clearInterval(timer);
   });
 
   // Live tick extends the last candle of the price chart. The quote stream is
@@ -82,6 +90,18 @@
       low: Math.min(last.low, q.price),
     };
   });
+
+  // Data-freshness hint for intraday charts: IEX is real-time, Yahoo is
+  // delayed ~15 min. Unknown source (cached/analysis fallback) shows nothing.
+  const chartHint = $derived(
+    INTRADAY_TFS.has(chartTf)
+      ? chartBars?.[chartBars.length - 1]?.source === "yahoo"
+        ? "~15 min delay"
+        : chartBars?.[chartBars.length - 1]?.source === "alpaca"
+          ? "Live · IEX"
+          : ""
+      : ""
+  );
 
   // ---- analysis state -----------------------------------------------------
   let analysis = $state<AnalysisResponse | null>(null);
@@ -439,6 +459,12 @@
                     <option value={tf}>{tf}</option>
                   {/each}
                 </select>
+                {#if chartHint}
+                  <span
+                    style="background: var(--surface-3); color: var(--foreground-muted); border: 1px solid var(--panel-border); border-radius: 10px; padding: 2px 10px; font-size: 0.68rem;"
+                    >{chartHint}</span
+                  >
+                {/if}
               </div>
               <div style="position: relative; flex: 1; min-height: 0;">
                 {#if barsLoading && (chartBars?.length ?? 0) > 0}

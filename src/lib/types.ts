@@ -50,6 +50,8 @@ export interface PricePoint {
   high: number;
   low: number;
   close: number;
+  /** "alpaca" = real-time IEX, "yahoo" = ~15 min delayed, "" = unknown */
+  source?: string;
 }
 
 export interface IndicatorPoint {
