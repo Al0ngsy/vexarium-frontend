@@ -213,42 +213,52 @@
     // (Re)load analysis when the symbol changes — covers the initial mount
     // AND client-side navigation from the search bar (same route, so onMount
     // alone would never re-fire and the page would keep showing the old symbol).
-    symbol;
-    runAnalysis();
+    // untrack: runAnalysis reads assetType (derived from analysis); without
+    // it, assigning the result re-triggers this effect → infinite reload loop
+    // (masked while the 24h analysis cache made each cycle ~50ms).
+    const sym = symbol;
+    if (!sym) return;
+    untrack(() => runAnalysis());
   });
 
   // Quietly recompute the analysis when the indicator timeframe changes:
   // keep the current content visible and swap the result in place — no
   // loading skeleton, no AI restart. (Same pattern as the bars effect.)
+  // untrack: assetType is derived from analysis, so tracking it here would
+  // re-fire on every resolved analysis (same loop as the symbol effect).
   $effect(() => {
     const sym = symbol;
     const tf = indicatorTf;
     if (!sym) return;
-    analyze(sym, assetType, false, tf)
-      .then((res) => {
-        if (symbol === sym && indicatorTf === tf) analysis = res;
-      })
-      .catch(() => {});
+    untrack(() =>
+      analyze(sym, assetType, false, tf)
+        .then((res) => {
+          if (symbol === sym && indicatorTf === tf) analysis = res;
+        })
+        .catch(() => {})
+    );
   });
 
   // Keep the compact multi-timeframe verdict strip independent from the
-  // selected detail timeframe.
+  // selected detail timeframe. untrack: same analysis-loop rationale as above.
   $effect(() => {
     const sym = symbol;
     if (!sym) return;
-    Promise.all(
-      ["1d", "1w", "1mo"].map((tf) => analyze(sym, assetType, false, tf)),
-    )
-      .then((items) => {
-        if (symbol !== sym) return;
-        timeframeVerdicts = Object.fromEntries(
-          items.map((item) => [
-            item.timeframe ?? "1d",
-            item.overall.overall_verdict,
-          ]),
-        );
-      })
-      .catch(() => {});
+    untrack(() =>
+      Promise.all(
+        ["1d", "1w", "1mo"].map((tf) => analyze(sym, assetType, false, tf)),
+      )
+        .then((items) => {
+          if (symbol !== sym) return;
+          timeframeVerdicts = Object.fromEntries(
+            items.map((item) => [
+              item.timeframe ?? "1d",
+              item.overall.overall_verdict,
+            ]),
+          );
+        })
+        .catch(() => {})
+    );
   });
 
   // ---- derivations (ported from the old home page) ------------------------
