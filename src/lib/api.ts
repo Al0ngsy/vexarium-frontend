@@ -12,7 +12,8 @@ import type {
 	OptionValueAtPrice,
 	OptionsMatrixResponse,
 	OptionChanceResponse,
-	PricePoint
+	PricePoint,
+	FinnhubBundle
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -82,6 +83,16 @@ export async function getBars(
 		{ cache: 'no-store' }
 	);
 	if (!resp.ok) throw new Error(`Bars failed: ${resp.status}`);
+	return resp.json();
+}
+
+/** Finnhub enrichment: insider trades, earnings history, peers (12h server cache). */
+export async function getFinnhub(symbol: string): Promise<FinnhubBundle> {
+	const resp = await fetch(
+		`${BASE_URL}/api/v1/analysis/finnhub/${encodeURIComponent(symbol)}`,
+		{ cache: 'no-store' }
+	);
+	if (!resp.ok) throw new Error(`Finnhub failed: ${resp.status}`);
 	return resp.json();
 }
 

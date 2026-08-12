@@ -54,6 +54,26 @@ export interface PricePoint {
   source?: string;
 }
 
+export interface InsiderTrade {
+  name: string;
+  shares: number;
+  change: number;
+  filing_date: string;
+}
+
+export interface EarningsEntry {
+  period: string;
+  estimate: number | null;
+  actual: number | null;
+  surprise_pct: number | null;
+}
+
+export interface FinnhubBundle {
+  insider: InsiderTrade[];
+  earnings: EarningsEntry[];
+  peers: string[];
+}
+
 export interface IndicatorPoint {
   t: string;
   v: number;

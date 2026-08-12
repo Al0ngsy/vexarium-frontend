@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/state";
-  import { analyze, getBars, streamAIAnalysis } from "$lib/api";
+  import { analyze, getBars, getFinnhub, streamAIAnalysis } from "$lib/api";
   import { getToken } from "$lib/auth.svelte";
   import { formatPrice } from "$lib/format";
   import {
@@ -24,6 +24,7 @@
   import { clearTip, positionTip } from "$lib/tooltip";
   import CompanyProfile from "../../../components/CompanyProfile.svelte";
   import DisclaimerBanner from "../../../components/DisclaimerBanner.svelte";
+  import FinnhubWidget from "../../../components/FinnhubWidget.svelte";
   import IndicatorChart from "../../../components/IndicatorChart.svelte";
   import SaveTradeModal from "../../../components/SaveTradeModal.svelte";
   import SymbolStrip from "../../../components/SymbolStrip.svelte";
@@ -144,6 +145,22 @@
   let checksOpen = $state(true);
   let aiOpen = $state(true);
   let newsOpen = $state(false);
+
+  // Finnhub enrichment (insider / earnings / peers) — symbol-scoped, not
+  // timeframe-scoped; 12h server cache. Failure just leaves widgets empty.
+  let finnhub = $state<import("$lib/types").FinnhubBundle | null>(null);
+  $effect(() => {
+    const sym = symbol;
+    if (!sym) return;
+    finnhub = null;
+    getFinnhub(sym)
+      .then((b) => {
+        if (symbol === sym) finnhub = b;
+      })
+      .catch(() => {
+        if (symbol === sym) finnhub = null;
+      });
+  });
 
   const assetType = $derived(
     (analysis?.asset_type as "stock" | "etf" | "index") ?? "stock",
@@ -752,6 +769,8 @@
                 No news data
               </p>
             {/if}
+          {:else if def.id === "insider" || def.id === "earnings" || def.id === "peers"}
+            <FinnhubWidget kind={def.id} bundle={finnhub} />
           {:else if def.id === "company"}
             {#if an.company && (an.company.name || an.company.description || an.company.market_cap !== null)}
               {@const co = an.company}
