@@ -50,7 +50,7 @@ export interface PricePoint {
   high: number;
   low: number;
   close: number;
-  /** "alpaca" = IEX bars, 15 min delayed by Alpaca's historical-data rule; "yahoo" = ~15 min delayed; "" = unknown */
+  /** "finnhub" = real-time bars; "alpaca" = IEX bars, 15 min delayed by Alpaca's historical-data rule; "yahoo" = ~15 min delayed; "" = unknown */
   source?: string;
 }
 

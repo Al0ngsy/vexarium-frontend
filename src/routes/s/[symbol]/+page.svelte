@@ -123,11 +123,13 @@
   // candle's price live. Unknown source (cached/analysis fallback) shows nothing.
   const chartHint = $derived(
     INTRADAY_TFS.has(chartTf)
-      ? chartBars?.[chartBars.length - 1]?.source === "yahoo"
-        ? "~15 min delay"
-        : chartBars?.[chartBars.length - 1]?.source === "alpaca"
-          ? "Live price · bars ~15m"
-          : ""
+      ? chartBars?.[chartBars.length - 1]?.source === "finnhub"
+        ? "Live bars"
+        : chartBars?.[chartBars.length - 1]?.source === "yahoo"
+          ? "~15 min delay"
+          : chartBars?.[chartBars.length - 1]?.source === "alpaca"
+            ? "Live price · bars ~15m"
+            : ""
       : ""
   );
 
