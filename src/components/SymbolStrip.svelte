@@ -59,6 +59,13 @@
 
 	const co = $derived(analysis?.company ?? null);
 	const currency = $derived(co?.currency ?? null);
+	// Ticker subline: only real values, joined as they arrive — no hardcoded
+	// exchange/asset-type placeholders before the analysis resolves.
+	const subline = $derived(
+		[co?.exchange, analysis?.asset_type?.toUpperCase()]
+			.filter((v): v is string => Boolean(v))
+			.join(' · ')
+	);
 	const shownCount = $derived(
 		count ??
 			analysis?.overall?.indicator_count ??
@@ -109,7 +116,7 @@
 			{co?.name ?? symbol}
 		</div>
 		<div class="sym-ticker" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--foreground-subtle);">
-			{symbol} · {co?.exchange ?? 'NASDAQ'} · {analysis?.asset_type?.toUpperCase() ?? 'STOCK'}
+			{symbol}{#if subline} · {subline}{/if}
 		</div>
 	</div>
 
