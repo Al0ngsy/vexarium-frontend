@@ -59,7 +59,7 @@ export const ANALYSIS_WIDGETS: WidgetDef[] = [
     minW: 3,
     minH: 3,
   },
-  { id: "company", title: "About", x: 8, y: 4, w: 4, h: 7, minW: 3, minH: 3 },
+  { id: "company", title: "About", x: 8, y: 3, w: 4, h: 7, minW: 3, minH: 3 },
   {
     id: "watchlist",
     title: "Watchlist",
