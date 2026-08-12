@@ -36,6 +36,26 @@
 
   const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1mo"];
   const INTRADAY_TFS = new Set(["1m", "5m", "15m", "30m", "1h", "4h"]);
+  // Poll cadence per intraday timeframe = bar duration (matches backend TTL).
+  const TF_MINUTES: Record<string, number> = {
+    "1m": 1,
+    "5m": 5,
+    "15m": 15,
+    "30m": 30,
+    "1h": 60,
+    "4h": 240,
+  };
+
+  // Append only NEW candles from a poll instead of replacing the whole series,
+  // so the visible window's first bar stays put and the chart's zoom/scroll
+  // is preserved (setData renders the additions in place). Cap growth at 2×
+  // the limit; when the cap rolls, the window shifts and the chart refits.
+  function mergeBars(old: PricePoint[], fresh: PricePoint[]): PricePoint[] {
+    const freshT = new Set(fresh.map((p) => p.t));
+    const kept = old.filter((p) => !freshT.has(p.t));
+    const merged = [...kept, ...fresh];
+    return merged.length > 600 ? merged.slice(merged.length - 600) : merged;
+  }
   let chartTf = $state("1d");
   let indicatorTf = $state("1d");
   let timeframeVerdicts = $state<Record<string, string>>({});
@@ -56,7 +76,11 @@
     const load = (initial: boolean) =>
       getBars(sym, tf, 300)
         .then((points) => {
-          if (symbol === sym && chartTf === tf) chartBars = points;
+          if (symbol !== sym || chartTf !== tf) return;
+          chartBars =
+            initial || !chartBars || chartBars.length === 0
+              ? points
+              : mergeBars(chartBars, points);
         })
         .catch(() => {
           // transient poll failure keeps the last bars; only the first load blanks
@@ -66,9 +90,11 @@
           if (symbol === sym && chartTf === tf) barsLoading = false;
         });
     load(true);
-    // Intraday bars change every bar: re-fetch so new candles appear.
+    // Intraday bars change every bar: re-fetch at the bar duration so new
+    // candles appear without shifting the window (viewport stays put).
     if (!INTRADAY_TFS.has(tf)) return;
-    const timer = setInterval(() => load(false), 60_000);
+    const minutes = TF_MINUTES[tf] ?? 1;
+    const timer = setInterval(() => load(false), minutes * 60_000);
     return () => clearInterval(timer);
   });
 
@@ -477,6 +503,7 @@
                   <IndicatorChart
                     series={{ name: "PRICE", kind: "overlay", points: [] }}
                     priceSeries={chartBars ?? []}
+                    dataKey={`${symbol}:${chartTf}`}
                     height={260}
                   />
                 {:else if barsLoading}
@@ -492,6 +519,7 @@
                   <IndicatorChart
                     series={{ name: "PRICE", kind: "overlay", points: [] }}
                     priceSeries={an.price_series}
+                    dataKey={`${symbol}:${chartTf}`}
                     height={260}
                   />
                 {:else}
@@ -625,6 +653,7 @@
                             series={an.indicator_series.find(
                               (s) => s.name === indicator.name,
                             )!}
+                            dataKey={`${symbol}:${indicatorTf}:${indicator.name}`}
                             height={90}
                           />
                         {/if}

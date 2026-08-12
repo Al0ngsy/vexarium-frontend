@@ -19,10 +19,12 @@
     series,
     priceSeries,
     height = 140,
+    dataKey = "",
   }: {
     series: IndicatorSeries;
     priceSeries?: PricePoint[];
     height?: number;
+    dataKey?: string;
   } = $props();
 
   let container: HTMLDivElement = $state()!;
@@ -39,7 +41,7 @@
   let tipX = $state(0);
   let tipY = $state(0);
   let tipHtml = $state("");
-  let lastDataKey = "";
+  let lastDataKey: string | null = null;
 
   // Parse a 'YYYY-MM-DD' string into a lightweight-charts unix timestamp (seconds).
   function toTime(t: string): UTCTimestamp {
@@ -296,12 +298,12 @@
         r.s.setData(lineData().map((d) => ({ ...d, value: r.value })));
       }
     }
-    // Fit only when the dataset actually changed (symbol/timeframe switch).
-    // Live last-candle ticks mutate the same bars and must not reset zoom.
-    const data = isOverlay() ? candleData() : lineData();
-    const key = `${data.length}:${data[0]?.time ?? 0}:${data[data.length - 1]?.time ?? 0}`;
-    if (key !== lastDataKey) {
-      lastDataKey = key;
+    // Fit only when the dataset identity changes (symbol/timeframe switch,
+    // passed down as dataKey). Poll-appended candles and live last-candle
+    // ticks keep the same dataKey and must NOT reset the user's zoom/scroll —
+    // setData preserves the visible range.
+    if (dataKey !== lastDataKey) {
+      lastDataKey = dataKey;
       chart?.timeScale().fitContent();
     }
   });
