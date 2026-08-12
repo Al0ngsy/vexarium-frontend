@@ -19,7 +19,7 @@
 		score,
 		count
 	}: {
-		analysis: AnalysisResponse;
+		analysis: AnalysisResponse | null;
 		symbol: string;
 		onSave?: () => void;
 		optionsHref?: string;
@@ -36,7 +36,7 @@
 
 	// Live quote overrides the analysis price when a tick has arrived.
 	const live = $derived(quotes[symbol] ?? null);
-	const shownPrice = $derived(live?.price ?? analysis.current_price);
+	const shownPrice = $derived(live?.price ?? analysis?.current_price);
 
 	// Watchlist membership for the current symbol (localStorage-backed).
 	// $state + effect: localStorage reads are not reactive, so a $derived
@@ -52,17 +52,17 @@
 			removeFromWatchlist(symbol);
 			watched = false;
 		} else {
-			addToWatchlist({ symbol, name: analysis.company?.name ?? undefined });
+			addToWatchlist({ symbol, name: analysis?.company?.name ?? undefined });
 			watched = true;
 		}
 	}
 
-	const co = $derived(analysis.company ?? null);
+	const co = $derived(analysis?.company ?? null);
 	const currency = $derived(co?.currency ?? null);
 	const shownCount = $derived(
 		count ??
-			analysis.overall?.indicator_count ??
-			analysis.overall?.breakdown?.length ??
+			analysis?.overall?.indicator_count ??
+			analysis?.overall?.breakdown?.length ??
 			0
 	);
 	const gradeLetter = $derived.by(() => {
@@ -71,7 +71,7 @@
 		// grade comparable across timeframes (1d vs 1mo have different
 		// numbers of computable indicators).
 		const c = shownCount;
-		const s = score ?? analysis.overall?.score ?? 0;
+		const s = score ?? analysis?.overall?.score ?? 0;
 		if (c === 0) return '—';
 		const r = s / (2 * c); // fraction of max conviction, -1..1
 		if (r >= 0.7) return 'A';
@@ -82,13 +82,13 @@
 		return 'F';
 	});
 	const shownVerdict = $derived(
-		(verdict ?? analysis.overall?.overall_verdict ?? 'hold') as Verdict
+		(verdict ?? analysis?.overall?.overall_verdict ?? 'hold') as Verdict
 	);
 	const vColor = $derived(VERDICT_COLORS[shownVerdict]);
 
 	// 52-week position (if company data present).
 	const rangePos = $derived.by(() => {
-		if (!co || co.low_52w == null || co.high_52w == null || analysis.current_price == null)
+		if (!co || co.low_52w == null || co.high_52w == null || analysis?.current_price == null)
 			return null;
 		const range = co.high_52w - co.low_52w;
 		if (range <= 0) return null;
@@ -97,8 +97,8 @@
 
 	// Day change from the new analysis.day_change_pct field; hide the line if absent.
 	const dayChange = $derived.by(() => {
-		const pct = analysis.day_change_pct;
-		if (pct == null || analysis.current_price == null) return null;
+		const pct = analysis?.day_change_pct;
+		if (pct == null || analysis?.current_price == null) return null;
 		return { abs: (analysis.current_price * pct) / 100, pct };
 	});
 </script>
@@ -109,7 +109,7 @@
 			{co?.name ?? symbol}
 		</div>
 		<div class="sym-ticker" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--foreground-subtle);">
-			{symbol} · {co?.exchange ?? 'NASDAQ'} · {analysis.asset_type?.toUpperCase() ?? 'STOCK'}
+			{symbol} · {co?.exchange ?? 'NASDAQ'} · {analysis?.asset_type?.toUpperCase() ?? 'STOCK'}
 		</div>
 	</div>
 
@@ -155,15 +155,17 @@
 		</div>
 	{/if}
 
-	<span
-		class="verdict-badge"
-		style="border-color: {vColor}; color: {vColor};"
-		title={shownCount ? `${shownCount} indicators` : ''}
-	>
-		<span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
-		<span style="font-weight: 600;">{gradeLetter}</span>
-		{VERDICT_LABELS[shownVerdict]} {VERDICT_ICONS[shownVerdict]}
-	</span>
+	{#if shownCount > 0}
+		<span
+			class="verdict-badge"
+			style="border-color: {vColor}; color: {vColor};"
+			title={shownCount ? `${shownCount} indicators` : ''}
+		>
+			<span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
+			<span style="font-weight: 600;">{gradeLetter}</span>
+			{VERDICT_LABELS[shownVerdict]} {VERDICT_ICONS[shownVerdict]}
+		</span>
+	{/if}
 
 	<div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
 		<button

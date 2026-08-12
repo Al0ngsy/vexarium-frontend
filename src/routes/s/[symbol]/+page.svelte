@@ -469,16 +469,14 @@
       <button class="btn-outline" onclick={runAnalysis}>Retry</button>
     </div>
   {:else}
-    {#if analysis}
-      <SymbolStrip
-        analysis={analysis}
+    <SymbolStrip
+      analysis={analysis}
       {symbol}
       onSave={() => (showSave = true)}
       verdict={clientVerdict}
       score={clientScore}
       count={clientCount}
     />
-    {/if}
 
     <!-- Widget grid -->
     <WidgetGrid view="analysis" defs={ANALYSIS_WIDGETS} {enabled} {onToggle}>
