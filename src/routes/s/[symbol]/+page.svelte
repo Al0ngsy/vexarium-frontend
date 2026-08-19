@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/state";
-  import { analyze, getBars, getFinnhub, getMarketNews, streamAIAnalysis } from "$lib/api";
+  import { analyze, getBars, getFinnhub, getMarketNews, getFearGreed, streamAIAnalysis } from "$lib/api";
   import { getToken } from "$lib/auth.svelte";
   import { formatPrice } from "$lib/format";
   import {
@@ -180,6 +180,20 @@
     getMarketNews()
       .then((m) => {
         if (symbol === sym) marketNews = m;
+      })
+      .catch(() => {});
+  });
+
+  // CNN Fear & Greed index — a fast, symbol-independent gauge, fetched on its
+  // own (not part of the slow /analysis round-trip). ~30 min server cache.
+  let fearGreed = $state<import("$lib/types").FearGreed | null>(null);
+  $effect(() => {
+    const sym = symbol;
+    if (!sym) return;
+    fearGreed = null;
+    getFearGreed()
+      .then((d) => {
+        if (symbol === sym) fearGreed = d;
       })
       .catch(() => {});
   });
@@ -820,6 +834,70 @@
               {@render loadingNotice()}
             {:else}
               <FinnhubWidget kind={def.id} bundle={finnhub} />
+            {/if}
+          {:else if def.id === "fear-greed"}
+            {#if !fearGreed || fearGreed.score == null}
+              <p class="label" style="color: var(--foreground-muted);">
+                Fear & Greed unavailable
+              </p>
+            {:else}
+              {@const s = fearGreed.score}
+              {@const zone =
+                s <= 25
+                  ? "Extreme fear"
+                  : s < 45
+                    ? "Fear"
+                    : s <= 55
+                      ? "Neutral"
+                      : s < 75
+                        ? "Greed"
+                        : "Extreme greed"}
+              {@const zc =
+                s <= 45
+                  ? "var(--verdict-strong-buy)"
+                  : s < 75
+                    ? "var(--verdict-hold)"
+                    : "var(--verdict-strong-sell)"}
+              <div style="padding: 4px 0;">
+                <div
+                  style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;"
+                >
+                  <span
+                    class="data"
+                    style="font-size: 2rem; font-weight: 700; line-height: 1; color: {zc};"
+                    >{Math.round(s)}</span
+                  >
+                  <span class="label" style="font-size: 0.8rem; font-weight: 600; color: {zc}; text-transform: capitalize;">
+                    {zone}
+                  </span>
+                  <span
+                    class="label"
+                    style="margin-left: auto; font-size: 0.62rem; color: var(--foreground-muted); text-transform: none;"
+                  >
+                    1w {Math.round(fearGreed.previous_1_week ?? 0)} · 1m {Math.round(fearGreed.previous_1_month ?? 0)}
+                  </span>
+                </div>
+                <div style="position: relative; height: 12px;">
+                  <div
+                    style="display: flex; height: 10px; border-radius: 5px; overflow: hidden; border: 1px solid var(--panel-border);"
+                  >
+                    <div style="flex: 25; background: #34d399;"></div>
+                    <div style="flex: 20; background: rgba(52, 211, 153, 0.45);"></div>
+                    <div style="flex: 10; background: var(--verdict-hold);"></div>
+                    <div style="flex: 20; background: rgba(248, 113, 113, 0.45);"></div>
+                    <div style="flex: 25; background: #f87171;"></div>
+                  </div>
+                  <div
+                    style="position: absolute; top: -8px; bottom: -8px; left: {Math.min(100, Math.max(0, s))}%; width: 2px; background: var(--foreground); transform: translateX(-50%);"
+                  ></div>
+                </div>
+                <div
+                  style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.6rem; color: var(--foreground-subtle); margin-top: 6px;"
+                >
+                  <span>0 fear</span>
+                  <span>100 greed</span>
+                </div>
+              </div>
             {/if}
           {:else if def.id === "company"}
             {#if !analysis}

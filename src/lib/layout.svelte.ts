@@ -82,6 +82,17 @@ export const ANALYSIS_WIDGETS: WidgetDef[] = [
     minH: 3,
   },
   {
+    id: "fear-greed",
+    title: "Fear & Greed",
+    sub: "market mood",
+    x: 0,
+    y: 17,
+    w: 6,
+    h: 3,
+    minW: 3,
+    minH: 2,
+  },
+  {
     id: "insider",
     title: "Insider trading",
     sub: "recent filings",

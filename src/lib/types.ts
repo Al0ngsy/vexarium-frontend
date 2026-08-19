@@ -128,6 +128,15 @@ export interface MarketNews {
   articles: NewsArticle[];
 }
 
+export interface FearGreed {
+  score: number | null;
+  rating?: string | null;
+  timestamp?: string | null;
+  previous_close?: number | null;
+  previous_1_week?: number | null;
+  previous_1_month?: number | null;
+}
+
 export interface MainListing {
   symbol: string;
   name?: string | null;

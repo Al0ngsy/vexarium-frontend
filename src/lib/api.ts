@@ -14,7 +14,8 @@ import type {
 	OptionChanceResponse,
 	PricePoint,
 	FinnhubBundle,
-	MarketNews
+	MarketNews,
+	FearGreed
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -101,6 +102,13 @@ export async function getFinnhub(symbol: string): Promise<FinnhubBundle> {
 export async function getMarketNews(): Promise<MarketNews> {
 	const resp = await fetch(`${BASE_URL}/api/v1/analysis/market-news`, { cache: 'no-store' });
 	if (!resp.ok) throw new Error(`Market news failed: ${resp.status}`);
+	return resp.json();
+}
+
+/** CNN Fear & Greed index (market-wide mood gauge, ~30 min server cache). */
+export async function getFearGreed(): Promise<FearGreed> {
+	const resp = await fetch(`${BASE_URL}/api/v1/analysis/fear-greed`, { cache: 'no-store' });
+	if (!resp.ok) throw new Error(`Fear & Greed failed: ${resp.status}`);
 	return resp.json();
 }
 
