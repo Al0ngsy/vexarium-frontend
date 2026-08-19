@@ -87,9 +87,9 @@ export const ANALYSIS_WIDGETS: WidgetDef[] = [
     sub: "market mood",
     x: 0,
     y: 17,
-    w: 6,
+    w: 3,
     h: 3,
-    minW: 3,
+    minW: 2,
     minH: 2,
   },
   {

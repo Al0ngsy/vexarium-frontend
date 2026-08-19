@@ -874,48 +874,28 @@
                   : s < 75
                     ? "var(--verdict-hold)"
                     : "var(--verdict-strong-sell)"}
-              {@const d7 = fearGreed.previous_1_week != null ? (s - fearGreed.previous_1_week >= 0 ? "+" : "") + Math.round(s - fearGreed.previous_1_week) : ""}
-              {@const d30 = fearGreed.previous_1_month != null ? (s - fearGreed.previous_1_month >= 0 ? "+" : "") + Math.round(s - fearGreed.previous_1_month) : ""}
               {@const A0 = 135}
               {@const valAngle = A0 + Math.min(100, Math.max(0, s)) * 2.7}
-              {@const zones = [
-                { a0: A0, a1: A0 + 25 * 2.7, c: "#34d399" },
-                { a0: A0 + 25 * 2.7, a1: A0 + 45 * 2.7, c: "rgba(52, 211, 153, 0.45)" },
-                { a0: A0 + 45 * 2.7, a1: A0 + 55 * 2.7, c: "var(--verdict-hold)" },
-                { a0: A0 + 55 * 2.7, a1: A0 + 75 * 2.7, c: "rgba(248, 113, 113, 0.45)" },
-                { a0: A0 + 75 * 2.7, a1: A0 + 100 * 2.7, c: "#f87171" },
-              ]}
-              <div style="display: flex; gap: 14px; align-items: center; padding: 2px 0 6px;">
-                <svg viewBox="0 0 120 120" style="width: 132px; height: 132px; flex-shrink: 0; display: block;">
-                  {#each zones as z}
-                    <path d={arcPath(60, 60, 46, z.a0, z.a1)} fill="none" stroke={z.c} stroke-width="13" />
-                  {/each}
-                  <path
-                    d={arcPath(60, 60, 46, A0, valAngle)}
-                    fill="none"
-                    stroke="var(--foreground)"
-                    stroke-width="5"
-                    stroke-linecap="round"
-                  />
-                  {#if valAngle < 403}
-                    <circle cx={polarX(60, 60, 46, valAngle)} cy={polarY(60, 60, 46, valAngle)} r="4" fill="var(--foreground)" />
+              <div style="display: flex; align-items: center; gap: 18px; padding: 4px 2px 8px;">
+                <svg viewBox="0 0 120 120" style="width: 118px; height: 118px; flex-shrink: 0; display: block;">
+                  <path d={arcPath(60, 60, 46, A0, A0 + 270)} fill="none" stroke="var(--surface-3)" stroke-width="12" stroke-linecap="round" />
+                  <path d={arcPath(60, 60, 46, A0, Math.max(A0 + 2, valAngle))} fill="none" stroke={zc} stroke-width="12" stroke-linecap="round" />
+                  {#if valAngle >= A0 + 4}
+                    <circle cx={polarX(60, 60, 46, valAngle)} cy={polarY(60, 60, 46, valAngle)} r="4.5" fill={zc} />
                   {/if}
-                  <text x="60" y="63" text-anchor="middle" fill="var(--foreground)" font-size="30" font-weight="700" style="font-family: var(--font-mono);">{Math.round(s)}</text>
-                  <text x="60" y="80" text-anchor="middle" fill={zc} font-size="9.5" font-weight="600" style="font-family: var(--font-mono); text-transform: capitalize;">{zone}</text>
+                  <text x="60" y="62" text-anchor="middle" fill="var(--foreground)" font-size="32" font-weight="700" style="font-family: var(--font-mono);">{Math.round(s)}</text>
+                  <text x="60" y="79" text-anchor="middle" fill={zc} font-size="10" font-weight="600" style="font-family: var(--font-mono); text-transform: capitalize;">{zone}</text>
                 </svg>
-                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
-                  <span class="label" style="font-size: 0.62rem; color: var(--foreground-subtle); text-transform: none;">0 fear</span>
-                  <span class="label" style="font-size: 0.62rem; color: var(--foreground-subtle); text-transform: none;">100 greed</span>
-                  <span
-                    class="label"
-                    style="font-size: 0.66rem; color: var(--foreground-subtle); margin-top: 4px; text-transform: none;"
-                    title="Change vs 1 week / 1 month ago"
-                  >
-                    {#if d7}1w {d7}{/if}{#if d7 && d30} · {/if}{#if d30}1m {d30}{/if}
-                  </span>
-                  <span class="label" style="font-size: 0.6rem; color: var(--foreground-subtle); text-transform: none;">
-                    {fearGreed.timestamp ? new Date(fearGreed.timestamp).toLocaleDateString() : ""}
-                  </span>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+                  <div>
+                    <div class="label" style="font-size: 0.6rem; color: var(--foreground-muted); text-transform: none;">1 week</div>
+                    <div class="data" style="font-size: 0.95rem; font-weight: 600;">{#if fearGreed.previous_1_week != null}{s - fearGreed.previous_1_week >= 0 ? "+" : ""}{Math.round(s - fearGreed.previous_1_week)}{:else}—{/if}</div>
+                  </div>
+                  <div>
+                    <div class="label" style="font-size: 0.6rem; color: var(--foreground-muted); text-transform: none;">1 month</div>
+                    <div class="data" style="font-size: 0.95rem; font-weight: 600;">{#if fearGreed.previous_1_month != null}{s - fearGreed.previous_1_month >= 0 ? "+" : ""}{Math.round(s - fearGreed.previous_1_month)}{:else}—{/if}</div>
+                  </div>
+                  <div class="label" style="font-size: 0.58rem; color: var(--foreground-muted); text-transform: none;">updated {fearGreed.timestamp ? new Date(fearGreed.timestamp).toLocaleDateString() : ""}</div>
                 </div>
               </div>
               {#if fearGreed.history && fearGreed.history.length > 1}
