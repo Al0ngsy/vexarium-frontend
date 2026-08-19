@@ -198,6 +198,22 @@
       .catch(() => {});
   });
 
+  // --- Fear & Greed circular gauge geometry (SVG arcs, clockwise, y-down) ---
+  function polarX(cx: number, cy: number, r: number, deg: number): number {
+    return cx + r * Math.cos((deg * Math.PI) / 180);
+  }
+  function polarY(cx: number, cy: number, r: number, deg: number): number {
+    return cy + r * Math.sin((deg * Math.PI) / 180);
+  }
+  function arcPath(cx: number, cy: number, r: number, a0: number, a1: number): string {
+    const x0 = polarX(cx, cy, r, a0);
+    const y0 = polarY(cx, cy, r, a0);
+    const x1 = polarX(cx, cy, r, a1);
+    const y1 = polarY(cx, cy, r, a1);
+    const large = a1 - a0 > 180 ? 1 : 0;
+    return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  }
+
   async function runAnalysis() {
     const tf = untrack(() => indicatorTf);
     analysis = null;
@@ -858,58 +874,70 @@
                   : s < 75
                     ? "var(--verdict-hold)"
                     : "var(--verdict-strong-sell)"}
-              <div style="padding: 4px 0;">
-                <div
-                  style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;"
-                >
-                  <span
-                    class="data"
-                    style="font-size: 2rem; font-weight: 700; line-height: 1; color: {zc};"
-                    >{Math.round(s)}</span
-                  >
-                  <span class="label" style="font-size: 0.8rem; font-weight: 600; color: {zc}; text-transform: capitalize;">
-                    {zone}
-                  </span>
+              {@const d7 = fearGreed.previous_1_week != null ? (s - fearGreed.previous_1_week >= 0 ? "+" : "") + Math.round(s - fearGreed.previous_1_week) : ""}
+              {@const d30 = fearGreed.previous_1_month != null ? (s - fearGreed.previous_1_month >= 0 ? "+" : "") + Math.round(s - fearGreed.previous_1_month) : ""}
+              {@const A0 = 135}
+              {@const valAngle = A0 + Math.min(100, Math.max(0, s)) * 2.7}
+              {@const zones = [
+                { a0: A0, a1: A0 + 25 * 2.7, c: "#34d399" },
+                { a0: A0 + 25 * 2.7, a1: A0 + 45 * 2.7, c: "rgba(52, 211, 153, 0.45)" },
+                { a0: A0 + 45 * 2.7, a1: A0 + 55 * 2.7, c: "var(--verdict-hold)" },
+                { a0: A0 + 55 * 2.7, a1: A0 + 75 * 2.7, c: "rgba(248, 113, 113, 0.45)" },
+                { a0: A0 + 75 * 2.7, a1: A0 + 100 * 2.7, c: "#f87171" },
+              ]}
+              <div style="display: flex; gap: 14px; align-items: center; padding: 2px 0 6px;">
+                <svg viewBox="0 0 120 120" style="width: 132px; height: 132px; flex-shrink: 0; display: block;">
+                  {#each zones as z}
+                    <path d={arcPath(60, 60, 46, z.a0, z.a1)} fill="none" stroke={z.c} stroke-width="13" />
+                  {/each}
+                  <path
+                    d={arcPath(60, 60, 46, A0, valAngle)}
+                    fill="none"
+                    stroke="var(--foreground)"
+                    stroke-width="5"
+                    stroke-linecap="round"
+                  />
+                  {#if valAngle < 403}
+                    <circle cx={polarX(60, 60, 46, valAngle)} cy={polarY(60, 60, 46, valAngle)} r="4" fill="var(--foreground)" />
+                  {/if}
+                  <text x="60" y="63" text-anchor="middle" fill="var(--foreground)" font-size="30" font-weight="700" style="font-family: var(--font-mono);">{Math.round(s)}</text>
+                  <text x="60" y="80" text-anchor="middle" fill={zc} font-size="9.5" font-weight="600" style="font-family: var(--font-mono); text-transform: capitalize;">{zone}</text>
+                </svg>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+                  <span class="label" style="font-size: 0.62rem; color: var(--foreground-subtle); text-transform: none;">0 fear</span>
+                  <span class="label" style="font-size: 0.62rem; color: var(--foreground-subtle); text-transform: none;">100 greed</span>
                   <span
                     class="label"
-                    style="margin-left: auto; font-size: 0.62rem; color: var(--foreground-subtle); text-transform: none;"
+                    style="font-size: 0.66rem; color: var(--foreground-subtle); margin-top: 4px; text-transform: none;"
                     title="Change vs 1 week / 1 month ago"
                   >
-                    {#if fearGreed.previous_1_week != null}1w {s - fearGreed.previous_1_week >= 0 ? "+" : ""}{Math.round(s - fearGreed.previous_1_week)}{/if}{#if fearGreed.previous_1_week != null && fearGreed.previous_1_month != null} · {/if}{#if fearGreed.previous_1_month != null}1m {s - fearGreed.previous_1_month >= 0 ? "+" : ""}{Math.round(s - fearGreed.previous_1_month)}{/if}
+                    {#if d7}1w {d7}{/if}{#if d7 && d30} · {/if}{#if d30}1m {d30}{/if}
+                  </span>
+                  <span class="label" style="font-size: 0.6rem; color: var(--foreground-subtle); text-transform: none;">
+                    {fearGreed.timestamp ? new Date(fearGreed.timestamp).toLocaleDateString() : ""}
                   </span>
                 </div>
-                <div style="position: relative; height: 12px;">
-                  <div
-                    style="display: flex; height: 10px; border-radius: 5px; overflow: hidden; border: 1px solid var(--panel-border);"
-                  >
-                    <div style="flex: 25; background: #34d399;"></div>
-                    <div style="flex: 20; background: rgba(52, 211, 153, 0.45);"></div>
-                    <div style="flex: 10; background: var(--verdict-hold);"></div>
-                    <div style="flex: 20; background: rgba(248, 113, 113, 0.45);"></div>
-                    <div style="flex: 25; background: #f87171;"></div>
+              </div>
+              {#if fearGreed.history && fearGreed.history.length > 1}
+                {@const pts = fearGreed.history}
+                {@const line = pts
+                  .map(
+                    (p, i) =>
+                      `${(i / Math.max(1, pts.length - 1)) * 100},${100 - Math.min(100, Math.max(0, p.v))}`,
+                  )
+                  .join(" ")}
+                {@const area = `${line} 100,100 0,100`}
+                <div style="display: flex; gap: 6px; align-items: stretch; margin-top: 4px;" title="Fear & Greed trend, last 3 months (today {Math.round(s)})">
+                  <div style="display: flex; flex-direction: column; justify-content: space-between; height: 40px; font-family: var(--font-mono); font-size: 0.55rem; color: var(--foreground-subtle); text-align: right;">
+                    <span>100</span><span>75</span><span>50</span><span>25</span><span>0</span>
                   </div>
-                  <div
-                    style="position: absolute; top: -8px; bottom: -8px; left: {Math.min(100, Math.max(0, s))}%; width: 2px; background: var(--foreground); transform: translateX(-50%);"
-                  ></div>
-                </div>
-                <div
-                  style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.6rem; color: var(--foreground-subtle); margin-top: 6px;"
-                >
-                  <span>0 fear</span>
-                  <span>100 greed</span>
-                </div>
-                {#if fearGreed.history && fearGreed.history.length > 1}
-                  {@const pts = fearGreed.history}
-                  {@const line = pts
-                    .map(
-                      (p, i) =>
-                        `${(i / Math.max(1, pts.length - 1)) * 100},${100 - Math.min(100, Math.max(0, p.v))}`,
-                    )
-                    .join(" ")}
-                  {@const area = `${line} 100,100 0,100`}
-                  <div style="margin-top: 12px;" title="Fear & Greed trend, last 3 months (today {Math.round(s)})">
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width: 100%; height: 36px; display: block;">
+                  <div style="flex: 1; min-width: 0;">
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width: 100%; height: 40px; display: block;">
+                      <line x1="0" y1="0" x2="100" y2="0" style="stroke: var(--foreground-subtle);" stroke-width="1" vector-effect="non-scaling-stroke" />
+                      <line x1="0" y1="25" x2="100" y2="25" style="stroke: var(--panel-border);" stroke-width="1" vector-effect="non-scaling-stroke" />
                       <line x1="0" y1="50" x2="100" y2="50" style="stroke: var(--panel-border);" stroke-width="1" vector-effect="non-scaling-stroke" />
+                      <line x1="0" y1="75" x2="100" y2="75" style="stroke: var(--panel-border);" stroke-width="1" vector-effect="non-scaling-stroke" />
+                      <line x1="0" y1="100" x2="100" y2="100" style="stroke: var(--foreground-subtle);" stroke-width="1" vector-effect="non-scaling-stroke" />
                       <polygon points={area} style="fill: {zc};" fill-opacity="0.12" />
                       <polyline points={line} style="stroke: {zc};" fill="none" stroke-width="1.5" vector-effect="non-scaling-stroke" />
                     </svg>
@@ -918,8 +946,8 @@
                       <span>{pts[pts.length - 1]?.t ?? ""}</span>
                     </div>
                   </div>
-                {/if}
-              </div>
+                </div>
+              {/if}
             {/if}
           {:else if def.id === "company"}
             {#if !analysis}
