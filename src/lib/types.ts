@@ -120,6 +120,12 @@ export interface NewsArticle {
   created_at?: string | null;
   author?: string | null;
   symbols?: string[];
+  sentiment?: number | null; // per-article headline sentiment score
+}
+
+export interface MarketNews {
+  sentiment: { sentiment_score: number; article_count: number; summary: string };
+  articles: NewsArticle[];
 }
 
 export interface MainListing {

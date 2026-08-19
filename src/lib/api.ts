@@ -13,7 +13,8 @@ import type {
 	OptionsMatrixResponse,
 	OptionChanceResponse,
 	PricePoint,
-	FinnhubBundle
+	FinnhubBundle,
+	MarketNews
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -93,6 +94,13 @@ export async function getFinnhub(symbol: string): Promise<FinnhubBundle> {
 		{ cache: 'no-store' }
 	);
 	if (!resp.ok) throw new Error(`Finnhub failed: ${resp.status}`);
+	return resp.json();
+}
+
+/** Broad market headlines (Finnhub general news, 12h server cache, no symbol). */
+export async function getMarketNews(): Promise<MarketNews> {
+	const resp = await fetch(`${BASE_URL}/api/v1/analysis/market-news`, { cache: 'no-store' });
+	if (!resp.ok) throw new Error(`Market news failed: ${resp.status}`);
 	return resp.json();
 }
 

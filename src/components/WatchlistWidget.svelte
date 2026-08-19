@@ -46,59 +46,65 @@
 {:else}
 	<div class="flex flex-col" style="gap: 2px;">
 		{#each symbols as s}
-			<button
-				type="button"
-				class="flex items-center justify-between gap-3 rounded px-3 py-2 text-left"
-				style="background: transparent; border: none; color: var(--foreground); cursor: pointer;"
+			<div
+				class="watch-row"
+				role="button"
+				tabindex="0"
 				onclick={() => goto(`/s/${s.symbol}`)}
-				onmouseover={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
-				onmouseout={(e) => (e.currentTarget.style.background = 'transparent')}
+				onkeydown={(e) => {
+					if (e.key === 'Enter') goto(`/s/${s.symbol}`);
+				}}
 			>
-				<span class="data" style="color: var(--foreground); font-weight: 600;"
-					>{s.symbol}</span
-				>
-				{#if s.name}
-					<span class="label truncate" style="flex: 1; text-transform: none;">{s.name}</span>
-				{/if}
+				<span class="watch-sym">{s.symbol}</span>
+				<span class="watch-name">{s.name ?? ''}</span>
+
 				{#if quotes[s.symbol]}
 					{@const q = quotes[s.symbol]}
 					{@const pc = q.prevClose}
 					{@const d = pc ? q.price - pc : null}
 					{@const pct = pc && d !== null ? (d / pc) * 100 : null}
-					{@const deltaColor =
-						d === null
-							? 'var(--foreground-subtle)'
-							: d >= 0
-								? 'var(--verdict-strong-buy)'
-								: 'var(--verdict-strong-sell)'}
-					<span class="flex flex-col items-end" style="gap: 1px;">
+					<span class="watch-quote">
 						<span
-							class="data"
-							style="font-size: 0.75rem; transition: color 0.15s; {q.dir === 'up' ? 'color: var(--verdict-strong-buy);' : q.dir === 'down' ? 'color: var(--verdict-strong-sell);' : 'color: var(--foreground);'}"
+							class="watch-price"
+							style="color: {q.dir === 'up'
+								? 'var(--verdict-strong-buy)'
+								: q.dir === 'down'
+									? 'var(--verdict-strong-sell)'
+									: 'var(--foreground)'};"
 							>{formatPrice(q.price)}</span
 						>
-						<span class="label" style="font-size: 0.65rem; color: {deltaColor}; text-transform: none;">
-							{#if d !== null && pct !== null}
-								{d >= 0 ? '+' : ''}{formatPrice(d)} ({pct >= 0 ? '+' : ''}{pct.toFixed(2)}%)
-								<span style="color: var(--foreground-subtle);"> prev {formatPrice(pc)}</span>
-							{:else}
-								prev {formatPrice(pc)}
-							{/if}
-						</span>
+						{#if d !== null && pct !== null}
+							<span
+								class="watch-chg"
+								style="color: {d >= 0 ? 'var(--verdict-strong-buy)' : 'var(--verdict-strong-sell)'};"
+								>{d >= 0 ? '+' : ''}{formatPrice(d)} ({pct >= 0 ? '+' : ''}{pct.toFixed(2)}%)</span
+							>
+						{:else}
+							<span class="watch-chg q-muted">—</span>
+						{/if}
+						<span class="watch-prev q-muted">{pc != null ? `prev ${formatPrice(pc)}` : '—'}</span>
+					</span>
+				{:else}
+					<span class="watch-quote q-muted">
+						<span class="watch-price">—</span>
+						<span class="watch-chg">—</span>
+						<span class="watch-prev">—</span>
 					</span>
 				{/if}
-				<span
-					class="label"
-					style="color: var(--foreground-subtle);"
+
+				<button
+					type="button"
+					class="watch-del"
+					title="Remove {s.symbol}"
 					onclick={(e) => {
 						e.stopPropagation();
 						remove(s.symbol);
 					}}
-					title="Remove"
-					>✕</span
+					>✕</button
 				>
-			</button>
+			</div>
 		{/each}
+
 		{#if addMode}
 			<div class="flex gap-2 px-3 py-2">
 				<input
@@ -122,3 +128,88 @@
 		{/if}
 	</div>
 {/if}
+
+<style>
+	.watch-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 7px 8px;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: background 0.12s;
+	}
+	.watch-row:hover {
+		background: var(--surface-2);
+	}
+	.watch-row:focus-visible {
+		outline: 1px solid var(--accent-primary);
+		outline-offset: -1px;
+	}
+	.watch-sym {
+		font-family: var(--font-mono);
+		font-weight: 600;
+		font-size: 0.74rem;
+		color: var(--foreground);
+		width: 56px;
+		flex-shrink: 0;
+		text-transform: uppercase;
+	}
+	.watch-name {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 0.72rem;
+		text-transform: none;
+		color: var(--foreground-subtle);
+	}
+	/* Right-aligned mono number block: price / change / previous close. */
+	.watch-quote {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 1px;
+		font-family: var(--font-mono);
+		flex-shrink: 0;
+		line-height: 1.15;
+	}
+	.watch-price {
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: var(--foreground);
+		transition: color 0.15s;
+	}
+	.watch-chg {
+		font-size: 0.68rem;
+	}
+	.watch-prev {
+		font-size: 0.62rem;
+	}
+	.q-muted {
+		color: var(--foreground-subtle);
+	}
+	/* Ghost remove button: hidden until the row is hovered/focused. */
+	.watch-del {
+		background: none;
+		border: none;
+		color: var(--foreground-subtle);
+		font-size: 0.7rem;
+		line-height: 1;
+		padding: 4px 6px;
+		border-radius: 4px;
+		cursor: pointer;
+		opacity: 0;
+		flex-shrink: 0;
+		transition: opacity 0.12s;
+	}
+	.watch-row:hover .watch-del,
+	.watch-row:focus-within .watch-del {
+		opacity: 1;
+	}
+	.watch-del:hover {
+		color: var(--verdict-strong-sell);
+		background: var(--surface-2);
+	}
+</style>
