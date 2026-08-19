@@ -872,9 +872,10 @@
                   </span>
                   <span
                     class="label"
-                    style="margin-left: auto; font-size: 0.62rem; color: var(--foreground-muted); text-transform: none;"
+                    style="margin-left: auto; font-size: 0.62rem; color: var(--foreground-subtle); text-transform: none;"
+                    title="Change vs 1 week / 1 month ago"
                   >
-                    1w {Math.round(fearGreed.previous_1_week ?? 0)} · 1m {Math.round(fearGreed.previous_1_month ?? 0)}
+                    {#if fearGreed.previous_1_week != null}1w {s - fearGreed.previous_1_week >= 0 ? "+" : ""}{Math.round(s - fearGreed.previous_1_week)}{/if}{#if fearGreed.previous_1_week != null && fearGreed.previous_1_month != null} · {/if}{#if fearGreed.previous_1_month != null}1m {s - fearGreed.previous_1_month >= 0 ? "+" : ""}{Math.round(s - fearGreed.previous_1_month)}{/if}
                   </span>
                 </div>
                 <div style="position: relative; height: 12px;">
@@ -897,6 +898,27 @@
                   <span>0 fear</span>
                   <span>100 greed</span>
                 </div>
+                {#if fearGreed.history && fearGreed.history.length > 1}
+                  {@const pts = fearGreed.history}
+                  {@const line = pts
+                    .map(
+                      (p, i) =>
+                        `${(i / Math.max(1, pts.length - 1)) * 100},${100 - Math.min(100, Math.max(0, p.v))}`,
+                    )
+                    .join(" ")}
+                  {@const area = `${line} 100,100 0,100`}
+                  <div style="margin-top: 12px;" title="Fear & Greed trend, last 3 months (today {Math.round(s)})">
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width: 100%; height: 36px; display: block;">
+                      <line x1="0" y1="50" x2="100" y2="50" style="stroke: var(--panel-border);" stroke-width="1" vector-effect="non-scaling-stroke" />
+                      <polygon points={area} style="fill: {zc};" fill-opacity="0.12" />
+                      <polyline points={line} style="stroke: {zc};" fill="none" stroke-width="1.5" vector-effect="non-scaling-stroke" />
+                    </svg>
+                    <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.58rem; color: var(--foreground-subtle); margin-top: 2px;">
+                      <span>{pts[0]?.t ?? ""}</span>
+                      <span>{pts[pts.length - 1]?.t ?? ""}</span>
+                    </div>
+                  </div>
+                {/if}
               </div>
             {/if}
           {:else if def.id === "company"}

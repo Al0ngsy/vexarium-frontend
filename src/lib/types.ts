@@ -135,6 +135,7 @@ export interface FearGreed {
   previous_close?: number | null;
   previous_1_week?: number | null;
   previous_1_month?: number | null;
+  history?: { t: string; v: number }[]; // last ~90 daily scores for the sparkline
 }
 
 export interface MainListing {
