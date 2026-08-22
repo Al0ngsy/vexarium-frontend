@@ -1,5 +1,5 @@
 <script lang="ts">
-	import InfoPopover from './InfoPopover.svelte';
+	import IconTip from './IconTip.svelte';
 	import { store } from '$lib/contract.svelte';
 	import type { Greeks } from '$lib/types';
 
@@ -56,7 +56,7 @@
 			<div style={cell(g.key, '')}>
 				<div class="mb-1 flex items-center justify-between gap-1">
 					<span class="data" style="color: var(--accent-primary); font-size: 13px">{g.sym}</span>
-					<InfoPopover title={g.name.toUpperCase()} content={g.text} />
+					<IconTip title={g.name.toUpperCase()} content={g.text} />
 				</div>
 				<span class="label block" style="font-size: 9px; color: var(--foreground-muted)">{g.name}</span>
 				<span class="data" style="font-size: 13px; color: var(--foreground)">{payoff.greeks[g.key].toFixed(4)}</span>
@@ -65,7 +65,7 @@
 		<div style={cell('iv', '')}>
 			<div class="mb-1 flex items-center justify-between gap-1">
 				<span class="data" style="color: var(--accent-primary); font-size: 13px">σ</span>
-				<InfoPopover title="IMPLIED VOLATILITY" content="The market's forecast of future price movement, annualized. Higher IV = more expensive options." />
+				<IconTip title="IMPLIED VOLATILITY" content="The market's forecast of future price movement, annualized. Higher IV = more expensive options." />
 			</div>
 			<span class="label block" style="font-size: 9px; color: var(--foreground-muted)">Implied vol</span>
 			<span class="data" style="font-size: 13px; color: var(--foreground)">{(payoff.implied_volatility * 100).toFixed(1)}%</span>

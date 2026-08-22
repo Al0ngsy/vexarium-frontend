@@ -1,5 +1,5 @@
 <script lang="ts">
-	import InfoPopover from './InfoPopover.svelte';
+	import IconTip from './IconTip.svelte';
 	import { formatPrice } from '$lib/format';
 	import { store } from '$lib/contract.svelte';
 
@@ -23,7 +23,7 @@
 	<div class="flex flex-col gap-4">
 		<div>
 			<div class="mb-1 flex items-center justify-between">
-				<span class="label" style="color: var(--foreground-muted)">PROB OF PROFIT <InfoPopover title="CHANCE OF PROFIT" content="An ESTIMATE of how likely this trade is to make money, from a Black-Scholes model using the option's implied volatility. Not a guarantee." /></span>
+				<span class="label" style="color: var(--foreground-muted)">PROB OF PROFIT <IconTip title="CHANCE OF PROFIT" content="An ESTIMATE of how likely this trade is to make money, from a Black-Scholes model using the option's implied volatility. Not a guarantee." /></span>
 				<span class="data" style="color: {(chance.prob_profit ?? 0) >= 0.5 ? '#34d399' : '#fb923c'}">{(chance.prob_profit * 100).toFixed(0)}%</span>
 			</div>
 			<div class="h-1.5 w-full overflow-hidden rounded" style="background: var(--surface-3)">
@@ -32,7 +32,7 @@
 		</div>
 		<div>
 			<div class="mb-1 flex items-center justify-between">
-				<span class="label" style="color: var(--foreground-muted)">PROB ENDS ITM <InfoPopover title="PROBABILITY OF ITM" content="How likely the option ends 'in the money' (intrinsic value) by expiry." /></span>
+				<span class="label" style="color: var(--foreground-muted)">PROB ENDS ITM <IconTip title="PROBABILITY OF ITM" content="How likely the option ends 'in the money' (intrinsic value) by expiry." /></span>
 				<span class="data" style="color: var(--foreground)">{(chance.prob_itm * 100).toFixed(0)}%</span>
 			</div>
 			<div class="h-1.5 w-full overflow-hidden rounded" style="background: var(--surface-3)">

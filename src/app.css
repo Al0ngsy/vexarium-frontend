@@ -158,7 +158,7 @@ body {
 .tf-summary-card strong { font-size: .78rem; }
 .indicator-tip { position: relative; cursor: help; }
 .tip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tooltip { display: none; position: fixed; z-index: 50; width: min(300px, 75vw); padding: 10px 12px; background: var(--surface-3); border: 1px solid var(--panel-border-active); border-radius: 6px; box-shadow: 0 8px 24px #0008; color: var(--foreground); white-space: normal; font-size: .72rem; line-height: 1.45; pointer-events: none; max-height: calc(100vh - 16px); overflow-y: auto; }
+.tooltip { display: none; position: absolute; z-index: 50; width: min(300px, 75vw); padding: 10px 12px; background: var(--surface-3); border: 1px solid var(--panel-border-active); border-radius: 6px; box-shadow: 0 8px 24px #0008; color: var(--foreground); white-space: normal; font-size: .72rem; line-height: 1.45; pointer-events: none; max-height: calc(100vh - 16px); overflow-y: auto; }
 .indicator-tip:hover > .tooltip, .indicator-tip:focus-within > .tooltip { display: block; }
 /* Pin-on-hold: a progress bar fills the top edge over PIN_MS; when it
    completes the tooltip stays open (.pinned) with a close button. */

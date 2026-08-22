@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { StrategyCard as Strategy } from '$lib/types';
-	import InfoPopover from './InfoPopover.svelte';
+	import IconTip from './IconTip.svelte';
 	import PayoffChart from './PayoffChart.svelte';
 	import { BREAKEVEN_COLOR } from '$lib/chart-theme';
 
@@ -56,7 +56,7 @@
 <div class="panel flex flex-col p-4" style="border-color: var(--panel-border)">
 	<div class="mb-1 flex items-start justify-between gap-2">
 		<span class="label" style="color: var(--foreground)">{strategy.name}</span>
-		<InfoPopover title={strategy.name} content={explanation()} />
+		<IconTip title={strategy.name} content={explanation()} />
 	</div>
 	<p class="label mb-3" style="color: var(--foreground-muted); text-transform: none; line-height: 1.5">
 		{strategy.subtitle}
