@@ -76,7 +76,7 @@
 		'pl-matrix': {
 			title: 'How to read the P/L matrix',
 			content:
-				"Rows are future prices of the stock with the move in percent, columns are dates. Each cell estimates your contract's profit or loss at that price on that date, green for profit, red for loss. The highlighted row is closest to the current price. Drag the range slider to widen or narrow the price window."
+				"Rows are future prices of the stock with the move in percent, columns are dates. Each cell estimates your contract's profit or loss at that price on that date, green for profit, red for loss. The highlighted row is closest to the current price. Drag the range slider to widen or narrow the price window, and dates for more or fewer days. The graph view shows the same for the strike closest to the current price as a curve: green area above zero is profit, red below is loss."
 		}
 	};
 </script>

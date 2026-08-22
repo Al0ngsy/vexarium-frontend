@@ -24,6 +24,15 @@
 		// do NOT close: an opened popover persists while the pointer leaves.
 	}
 
+	// Close on scroll so the popover never drifts away from its anchor
+	// (the scrollable ancestor moves the content while the popover is fixed).
+	$effect(() => {
+		if (!open) return;
+		const onScroll = () => (open = false);
+		window.addEventListener('scroll', onScroll, true);
+		return () => window.removeEventListener('scroll', onScroll, true);
+	});
+
 	// Click-to-toggle popover (mobile friendly). Close on outside click.
 	function onClickOutside(e: MouseEvent) {
 		const el = e.target as HTMLElement;

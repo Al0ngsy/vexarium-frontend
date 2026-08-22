@@ -494,6 +494,11 @@ body {
 	gap: 6px;
 	margin-left: auto;
 }
+.widget-card .w-menu .w-info {
+	display: inline-flex;
+	align-items: center;
+	line-height: 0;
+}
 
 .widget-card .w-size {
 	font-family: var(--font-mono);

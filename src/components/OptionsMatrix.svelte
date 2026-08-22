@@ -178,7 +178,47 @@
 		</div>
 	</div>
 
-	{#if !matrix && loading}
+	<!-- Range, dates and metric mode: above the table/graph and outside
+	 the loading branch so the sliders stay mounted while refreshing. -->
+	{#if contractSymbol}
+			<!-- Range + metric mode: rendered outside the loading branch so the
+			     slider stays mounted while the matrix refreshes. -->
+			<div class="mt-2 flex flex-wrap items-center gap-4">
+				<div class="flex items-center gap-2">
+					<span class="label" style="white-space: nowrap">RANGE</span>
+					<input type="range" min="1" max="15" step="1" bind:value={range} onchange={handleRange} style="accent-color: var(--accent-primary); width: 140px;" />
+					<span class="data" style="font-size: 11px;">±{range}%</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<span class="label" style="white-space: nowrap">DATES</span>
+					<input type="range" min="2" max="16" step="1" bind:value={dates} onchange={handleRange} style="accent-color: var(--accent-primary); width: 140px;" />
+					<span class="data" style="font-size: 11px;">{dates} steps</span>
+				</div>
+			<div class="flex gap-1">
+				<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
+					<button type="button" onclick={() => (mode = 'pl')} class="px-2 py-1 label" style="border: 1px solid {mode === 'pl' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'pl' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">P/L $</button>
+					<span class="tooltip">Estimated profit or loss in dollars if the stock trades at that price on that date.</span>
+				</span>
+				<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
+					<button type="button" onclick={() => (mode = 'pl_pct')} class="px-2 py-1 label" style="border: 1px solid {mode === 'pl_pct' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'pl_pct' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">P/L %</button>
+					<span class="tooltip">The same profit or loss as a percentage of the premium paid.</span>
+				</span>
+				<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
+					<button type="button" onclick={() => (mode = 'value')} class="px-2 py-1 label" style="border: 1px solid {mode === 'value' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'value' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">VALUE</button>
+					<span class="tooltip">The estimated option value per contract at that price and date.</span>
+				</span>
+				<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
+					<button type="button" onclick={() => (mode = 'risk')} class="px-2 py-1 label" style="border: 1px solid {mode === 'risk' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'risk' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">% RISK</button>
+					<span class="tooltip">How much of the maximum possible loss is at stake at that price and date.</span>
+				</span>
+			</div>
+				{#if loading}
+					<span class="label" style="color: var(--foreground-muted)">Refreshing…</span>
+				{/if}
+				</div>
+				{/if}
+
+				{#if !matrix && loading}
 		<div class="flex h-40 items-center justify-center"><span class="label" style="color: var(--foreground-muted)">LOADING MATRIX…</span></div>
 	{:else if !matrix && error}
 		<p class="label" style="color: var(--accent-primary)">{error}</p>
@@ -246,6 +286,9 @@
 					</p>
 				{/if}
 			</div>
+			<p class="label mt-2" style="color: var(--foreground-muted); text-transform: none; line-height: 1.5; font-size: 11px;">
+				This curve is the strike closest to the current price. Green area = profit if the stock ends there by that date, red = loss. Each dot is one date column.
+			</p>
 		{/if}
 
 	{:else}
@@ -254,41 +297,5 @@
 		</p>
 	{/if}
 
-	{#if contractSymbol}
-		<!-- Range + metric mode: rendered outside the loading branch so the
-		     slider stays mounted while the matrix refreshes. -->
-		<div class="mt-2 flex flex-wrap items-center gap-4">
-			<div class="flex items-center gap-2">
-				<span class="label" style="white-space: nowrap">RANGE</span>
-				<input type="range" min="1" max="15" step="1" bind:value={range} onchange={handleRange} style="accent-color: var(--accent-primary); width: 140px;" />
-				<span class="data" style="font-size: 11px;">±{range}%</span>
-			</div>
-			<div class="flex items-center gap-2">
-				<span class="label" style="white-space: nowrap">DATES</span>
-				<input type="range" min="2" max="16" step="1" bind:value={dates} onchange={handleRange} style="accent-color: var(--accent-primary); width: 140px;" />
-				<span class="data" style="font-size: 11px;">{dates} steps</span>
-			</div>
-		<div class="flex gap-1">
-			<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
-				<button type="button" onclick={() => (mode = 'pl')} class="px-2 py-1 label" style="border: 1px solid {mode === 'pl' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'pl' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">P/L $</button>
-				<span class="tooltip">Estimated profit or loss in dollars if the stock trades at that price on that date.</span>
-			</span>
-			<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
-				<button type="button" onclick={() => (mode = 'pl_pct')} class="px-2 py-1 label" style="border: 1px solid {mode === 'pl_pct' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'pl_pct' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">P/L %</button>
-				<span class="tooltip">The same profit or loss as a percentage of the premium paid.</span>
-			</span>
-			<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
-				<button type="button" onclick={() => (mode = 'value')} class="px-2 py-1 label" style="border: 1px solid {mode === 'value' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'value' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">VALUE</button>
-				<span class="tooltip">The estimated option value per contract at that price and date.</span>
-			</span>
-			<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
-				<button type="button" onclick={() => (mode = 'risk')} class="px-2 py-1 label" style="border: 1px solid {mode === 'risk' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'risk' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">% RISK</button>
-				<span class="tooltip">How much of the maximum possible loss is at stake at that price and date.</span>
-			</span>
-		</div>
-			{#if loading}
-				<span class="label" style="color: var(--foreground-muted)">Refreshing…</span>
-			{/if}
-		</div>
-	{/if}
+	
 </div>

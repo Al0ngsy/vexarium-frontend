@@ -16,9 +16,10 @@
 		whyLoading = true;
 		whyError = null;
 		try {
-			const strike = store.getSelectedContract()?.strike_price ?? 0;
-			const res = await getStrategiesExplanation(store.symbol, strike, getToken() ?? undefined);
-			why = { name, text: res.analysis };
+			const contract = store.getSelectedContract();
+			const strike = contract?.strike_price ?? 0;
+			const r = await getStrategiesExplanation(store.symbol, strike, getToken() ?? undefined);
+			why = { name, text: r.analysis };
 		} catch (e) {
 			why = null;
 			whyError = e instanceof Error ? e.message : 'Explanation failed';
@@ -33,35 +34,50 @@
 		Select a contract to see strategy ideas.
 	</p>
 {:else if strategies.length > 0}
-	<div
-		class="grid gap-3"
-		style={why || whyLoading || whyError ? 'grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);' : ''}
-	>
+	<div class="grid gap-3" style="grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);">
 		<div class="flex min-w-0 gap-3 overflow-x-auto pb-2" style="scrollbar-width: thin;">
 			{#each strategies as s (s.name)}
 				<div style="min-width: 260px;">
-					<StrategyCard strategy={s} onWhy={(name) => void askWhy(name)} />
+					<StrategyCard strategy={s} />
 				</div>
 			{/each}
 		</div>
-		{#if whyLoading || why || whyError}
-			<div
-				class="panel p-3"
-				style="border-color: var(--panel-border); align-self: start; max-height: 360px; overflow-y: auto;"
-			>
-				{#if whyLoading}
-					<p class="label" style="color: var(--foreground-muted)">Explaining the picks…</p>
-				{:else if why}
-					<span class="label block mb-1" style="color: var(--accent-primary); font-size: 10px;">WHY {why.name}?</span>
-					<p class="label" style="color: var(--foreground); text-transform: none; line-height: 1.6; font-size: 11px;">{why.text}</p>
-				{:else if whyError}
-					<p class="label" style="color: var(--accent-primary)">{whyError}</p>
-				{/if}
+
+		<!-- Dedicated AI answer box next to the cards. -->
+		<div
+			class="panel p-3"
+			style="border-color: var(--panel-border); align-self: start; max-height: 380px; overflow-y: auto;"
+		>
+			<span class="label block mb-2" style="color: var(--accent-primary); font-size: 10px;">AI ANSWER</span>
+			<div class="flex flex-col gap-1">
+				{#each strategies as s (s.name)}
+					<button
+						type="button"
+						onclick={() => void askWhy(s.name)}
+						class="px-2 py-1 text-left label"
+						style="border: 1px solid {why?.name === s.name ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {why?.name === s.name ? 'var(--accent-primary)' : 'var(--foreground-muted)'}; background: transparent; cursor: pointer;"
+					>
+						Why {s.name.toLowerCase()}?
+					</button>
+				{/each}
 			</div>
-		{/if}
+			{#if whyLoading}
+				<p class="label mt-3" style="color: var(--foreground-muted)">Thinking…</p>
+			{:else if why}
+				<p class="label mt-3" style="color: var(--foreground); text-transform: none; line-height: 1.6; font-size: 11px;">
+					{why.text}
+				</p>
+			{:else if whyError}
+				<p class="label mt-3" style="color: var(--accent-primary)">{whyError}</p>
+			{:else}
+				<p class="label mt-3" style="color: var(--foreground-muted); text-transform: none; line-height: 1.5; font-size: 11px;">
+					Pick a strategy to get an AI explanation of why it fits the current picture.
+				</p>
+			{/if}
+		</div>
 	</div>
 {:else if store.strategiesLoading}
 	<p class="label" style="color: var(--foreground-muted)">Loading strategies…</p>
 {:else}
-	<p class="label" style="color: var(--foreground-muted)">{store.strategiesError ?? 'No strategies found for this contract.'}</p>
+	<p class="label" style="color: var(--accent-primary)">{store.strategiesError ?? 'No strategies found for this contract.'}</p>
 {/if}
