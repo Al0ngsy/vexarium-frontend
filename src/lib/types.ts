@@ -241,6 +241,11 @@ export interface PayoffRow {
   pl_pct: number;
 }
 
+export interface PayoffPoint {
+  price: number;
+  pl: number;
+}
+
 export interface OptionsPayoffResponse {
   symbol: string;
   greeks: Greeks;
@@ -305,7 +310,7 @@ export interface StrategyCard {
   max_loss: number | null;
   breakeven: number;
   return_on_risk: number | null;
-  payoff_curve: PayoffRow[];
+  payoff_curve: PayoffPoint[];
 }
 
 export interface StrategiesResponse {

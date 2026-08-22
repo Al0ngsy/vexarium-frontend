@@ -51,7 +51,7 @@ export const store = $state({
 		store.contractsError = null;
 		try {
 			const gte = new Date().toISOString().slice(0, 10);
-			const lte = new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+			const lte = new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString().slice(0, 10);
 			const resp = await getOptionChain(store.symbol, gte, lte, 10);
 			store.contracts = resp.contracts || [];
 			store.currentPrice = resp.current_price ?? null;
@@ -94,7 +94,7 @@ export const store = $state({
 		try {
 			const strike = parseStrike(sym);
 			const exp = parseExpiration(sym);
-			store.strategies = await getStrategies(store.symbol, 'hold', strike, exp.gte, exp.lte);
+			store.strategies = await getStrategies(store.symbol, strike, exp.gte, exp.lte);
 		} catch (e) {
 			store.strategiesError = e instanceof Error ? e.message : 'Strategies failed';
 		} finally {

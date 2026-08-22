@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import WidgetGrid from '../../../components/WidgetGrid.svelte';
 	import WidgetCard from '../../../components/WidgetCard.svelte';
@@ -12,8 +13,21 @@
 	import MatrixWidget from '../../../components/MatrixWidget.svelte';
 	import StrategyWidget from '../../../components/StrategyWidget.svelte';
 	import { OPTIONS_WIDGETS, loadEnabled, type WidgetDef } from '$lib/layout.svelte';
+	import { store } from '$lib/contract.svelte';
+	import { formatPrice } from '$lib/format';
 
 	const symbol = $derived(String(page.params.symbol || '').toUpperCase());
+
+	// Ensure the header has chain data even if the chain widget gets disabled
+	// (loadChain sets store.symbol synchronously, so a second call never fires).
+	onMount(() => {
+		if (store.symbol !== symbol) void store.loadChain(symbol);
+	});
+
+	const dayChange = $derived(store.dayChangePct);
+	const dayColor = $derived(
+		dayChange === null ? 'var(--foreground-muted)' : dayChange >= 0 ? '#34d399' : '#f87171'
+	);
 
 	let enabled = $state<Record<string, boolean>>({});
 	function initEnabled() {
@@ -34,19 +48,41 @@
 </script>
 
 <svelte:head>
-	<title>VEXARIUM — {symbol} OPTIONS</title>
+	<title>VEXARIUM · {symbol} OPTIONS</title>
 </svelte:head>
 
 <div>
 	<DisclaimerBanner />
 
+	<!-- Compact header strip: rendered from the shared contract store (no extra API call). -->
 	<div
-		class="mb-4 rounded-xl px-3 py-1.5 text-center"
-		style="background-color: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3);"
+		class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg px-4 py-2.5"
+		style="background: var(--surface); border: 1px solid var(--panel-border);"
 	>
-		<span class="label" style="color: var(--accent-primary); letter-spacing: 0.08em;">
-			🚧 OPTIONS WORKSPACE — UNDER CONSTRUCTION. SOME FEATURES ARE INCOMPLETE OR EXPERIMENTAL.
-		</span>
+		<div>
+			<div class="data" style="font-size: 1.05rem; font-weight: 600; color: var(--foreground)">{symbol}</div>
+			<div class="label" style="font-size: 10px; color: var(--foreground-subtle)">Options workspace</div>
+		</div>
+		<div class="data" style="font-size: 1.15rem; font-weight: 600; color: var(--foreground)">
+			{store.currentPrice !== null ? formatPrice(store.currentPrice) : '—'}
+		</div>
+		{#if dayChange !== null}
+			<span class="data" style="font-size: 12px; color: {dayColor}">
+				{dayChange >= 0 ? '▲ +' : '▼ −'}{Math.abs(dayChange).toFixed(2)}%
+			</span>
+		{/if}
+		{#if store.delayed}
+			<span
+				class="label"
+				style="color: #f59e0b; border: 1px solid rgba(245,158,11,0.33); padding: 2px 8px; border-radius: 4px"
+			>DELAYED</span>
+		{/if}
+		<a
+			href={`/s/${symbol}`}
+			class="btn"
+			style="margin-left: auto; background: var(--surface-2); border: 1px solid var(--panel-border); color: var(--foreground); padding: 6px 12px; border-radius: 8px; font-size: 12px; text-decoration: none;"
+		>Stock analysis</a
+		>
 	</div>
 
 	<WidgetGrid view="options" defs={OPTIONS_WIDGETS} {enabled} {onToggle}>

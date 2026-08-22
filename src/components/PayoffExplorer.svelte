@@ -36,6 +36,7 @@
 	const mid = $derived(currentPrice ? Math.round(currentPrice) : 0);
 
 	let price = $state(0);
+	let dte = $state(0); // target date offset in days from today
 	let value = $state<OptionValueAtPrice | null>(null);
 	let loading = $state(false);
 
@@ -46,6 +47,7 @@
 	$effect(() => {
 		if (contractSymbol && contractSymbol !== lastContract) {
 			lastContract = contractSymbol;
+			dte = 0;
 			if (currentPrice) {
 				price = Math.round(currentPrice);
 				loadValue(price);
@@ -53,11 +55,20 @@
 		}
 	});
 
+	const DAY_MS = 86400000;
+	// Days from today to the contract expiry; dates are 'YYYY-MM-DD' (UTC).
+	const daysToExpiry = $derived(
+		expiry ? Math.max(0, Math.round((new Date(expiry + 'T00:00:00').getTime() - Date.now()) / DAY_MS)) : 0
+	);
+	const targetDate = $derived(
+		dte > 0 ? new Date(Date.now() + dte * DAY_MS).toISOString().slice(0, 10) : undefined
+	);
+
 	async function loadValue(p: number) {
 		if (!contractSymbol) return;
 		loading = true;
 		try {
-			value = await getOptionValueAtPrice(symbol, contractSymbol, p);
+			value = await getOptionValueAtPrice(symbol, contractSymbol, p, targetDate);
 		} catch {
 			value = null;
 		} finally {
@@ -67,6 +78,16 @@
 
 	function onSlider() {
 		loadValue(price);
+	}
+
+	function onDateSlider() {
+		loadValue(price);
+	}
+
+	function fmtTargetDate(): string {
+		if (!targetDate) return 'Today';
+		const d = new Date(targetDate + 'T00:00:00');
+		return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${dte}d`;
 	}
 
 	// Build the payoff curve for the chart (intrinsic at expiry per price point).
@@ -135,6 +156,9 @@
 		<div class="absolute left-2 top-1 flex flex-col data" style="font-size: 9px; color: var(--foreground-subtle); line-height: 1.6">
 			<span>+${maxAbs.toFixed(0)}</span><span>$0</span><span>−${maxAbs.toFixed(0)}</span>
 		</div>
+		<div class="absolute right-2 top-1 label" style="font-size: 9px; color: var(--foreground-subtle)">
+			Payoff at expiry
+		</div>
 	</div>
 
 	<!-- Price slider -->
@@ -148,6 +172,16 @@
 			</span>
 		</span>
 	</div>
+
+	<!-- Target date slider: today -> expiry -->
+	{#if daysToExpiry > 0}
+		<div class="flex items-center gap-3">
+			<span class="label" style="white-space: nowrap">DATE</span>
+			<input type="range" min="0" max={daysToExpiry} step="1" bind:value={dte} oninput={onDateSlider} class="flex-1"
+				style="accent-color: var(--accent-primary)" />
+			<span class="data" style="min-width: 90px; text-align: right">{fmtTargetDate()}</span>
+		</div>
+	{/if}
 
 	<!-- Readouts -->
 	<div class="grid grid-cols-4 gap-2">
@@ -178,6 +212,6 @@
 	</div>
 
 	<p class="label" style="color: var(--foreground-subtle); text-transform: none; font-size: 10px">
-		ESTIMATE VIA BLACK-SCHOLES — NOT GUARANTEED.
+		ESTIMATE VIA BLACK-SCHOLES, NOT GUARANTEED.
 	</p>
 </div>

@@ -47,8 +47,8 @@
 	// Payoff curve points feed the mini chart (x = price, y = P/L).
 	const curve = $derived(
 		strategy.payoff_curve.map((p) => ({
-			price: p.estimated_option_price,
-			pl: p.estimated_pl
+			price: p.price,
+			pl: p.pl
 		}))
 	);
 </script>

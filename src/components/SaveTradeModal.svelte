@@ -6,17 +6,19 @@
 		open,
 		symbol,
 		entryPrice,
+		contract,
 		onClose
 	}: {
 		open: boolean;
 		symbol: string;
 		entryPrice?: number | null;
+		contract?: string | null;
 		onClose?: () => void;
 	} = $props();
 
 	let entry = $state(entryPrice ? String(entryPrice) : '');
 	let quantity = $state('1');
-	let type = $state<TradeType>('stock');
+	let type = $state<TradeType>(contract ? 'option' : 'stock');
 
 	const types: TradeType[] = ['stock', 'etf', 'index', 'option'];
 
@@ -31,7 +33,8 @@
 			type,
 			entryDate: new Date().toISOString(),
 			entryPrice: price,
-			quantity: qty
+			quantity: qty,
+			contract: contract ?? undefined
 		};
 		saveTrade(trade);
 		reset();
@@ -41,7 +44,7 @@
 	function reset() {
 		entry = entryPrice ? String(entryPrice) : '';
 		quantity = '1';
-		type = 'stock';
+		type = contract ? 'option' : 'stock';
 	}
 
 	function onKeydown(e: KeyboardEvent) {

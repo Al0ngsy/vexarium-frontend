@@ -179,14 +179,16 @@ export async function getOptionChance(
 
 export async function getStrategies(
 	symbol: string,
-	sentiment: string,
 	strike: number,
 	expirationGte: string,
-	expirationLte: string
+	expirationLte: string,
+	sentiment?: string
 ): Promise<StrategiesResponse> {
-	const resp = await fetch(
-		`${BASE_URL}/api/v1/options/${symbol}/strategies?sentiment=${sentiment}&strike=${strike}&expiration_gte=${expirationGte}&expiration_lte=${expirationLte}`
-	);
+	// Sentiment is optional: the backend derives direction from indicators
+	// (defaults to 'neutral' when omitted).
+	let url = `${BASE_URL}/api/v1/options/${symbol}/strategies?strike=${strike}&expiration_gte=${expirationGte}&expiration_lte=${expirationLte}`;
+	if (sentiment) url += `&sentiment=${sentiment}`;
+	const resp = await fetch(url);
 	if (!resp.ok) throw new Error(`Strategies failed: ${resp.status}`);
 	return resp.json();
 }

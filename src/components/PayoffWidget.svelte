@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PayoffExplorer from './PayoffExplorer.svelte';
+	import SaveTradeModal from './SaveTradeModal.svelte';
 	import { formatPrice } from '$lib/format';
 	import { store } from '$lib/contract.svelte';
 
@@ -8,6 +9,8 @@
 	const selected = $derived(store.getSelectedContract());
 	const payoff = $derived(store.payoff);
 	const isCall = $derived(selected ? selected.type.toLowerCase() === 'call' : null);
+
+	let showSave = $state(false);
 
 	function fmtPL(v: number): string {
 		return `${v >= 0 ? '+' : '−'}$${Math.abs(v).toFixed(2)}`;
@@ -23,6 +26,12 @@
 		Select a contract to see its payoff curve and timeline.
 	</p>
 {:else}
+	<div class="mb-2 flex items-center justify-between gap-2">
+		<span class="label" style="color: var(--foreground-muted)">{store.selectedSymbol}</span>
+		<button type="button" class="btn-primary" style="padding: 5px 12px; font-size: 12px; border-radius: 8px" onclick={() => (showSave = true)}>
+			Save trade
+		</button>
+	</div>
 	{#key store.selectedSymbol}
 		<PayoffExplorer
 			{symbol}
@@ -69,4 +78,12 @@
 			<p class="label" style="color: var(--foreground-muted)">No timeline for this contract.</p>
 		{/if}
 	</div>
+
+	<SaveTradeModal
+		open={showSave}
+		{symbol}
+		entryPrice={payoff?.premium ?? selected.last_price}
+		contract={selected.expiration_date}
+		onClose={() => (showSave = false)}
+	/>
 {/if}

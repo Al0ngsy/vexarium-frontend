@@ -68,7 +68,7 @@
 				<InfoPopover title="IMPLIED VOLATILITY" content="The market's forecast of future price movement, annualized. Higher IV = more expensive options." />
 			</div>
 			<span class="label block" style="font-size: 9px; color: var(--foreground-muted)">Implied vol</span>
-			<span class="data" style="font-size: 13px; color: var(--foreground)">{payoff.implied_volatility.toFixed(1)}%</span>
+			<span class="data" style="font-size: 13px; color: var(--foreground)">{(payoff.implied_volatility * 100).toFixed(1)}%</span>
 		</div>
 	</div>
 	<div class="mt-3 flex flex-wrap gap-4 border-t pt-2" style="border-color: var(--panel-border)">

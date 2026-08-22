@@ -23,6 +23,9 @@
 
 	const DAY_MS = 86400000;
 
+	// Client-side moneyness filter (distance sign flips for calls vs puts).
+	let filter = $state<'all' | 'itm' | 'otm'>('all');
+
 	function fmtPrice(v: number): string {
 		if (v === null || v === undefined || v === 0) return '—';
 		return `$${v.toFixed(2)}`;
@@ -45,19 +48,22 @@
 			return e;
 		}
 	}
-	function moneynessColor(c: OptionContract): string {
-		// ITM calls / OTM puts etc. colored by distance direction.
-		if (c.distance_pct > 0) return '#4ade80'; // call OTM (green) / put ITM
-		if (c.distance_pct < 0) return '#fb923c'; // call ITM / put OTM
-		return 'var(--foreground)';
-	}
 	// Distance sign flips meaning for calls vs puts.
 	function distColor(c: OptionContract): string {
 		if (c.distance_pct === 0) return 'var(--foreground-muted)';
 		// For a call: +distance = OTM (further above). For a put: +distance = ITM.
 		const isCall = c.type === 'call';
 		const otm = isCall ? c.distance_pct > 0 : c.distance_pct < 0;
-		return otm ? '#4ade80' : '#fb923c';
+		return otm ? '#34d399' : '#f59e0b';
+	}
+
+	// Moneyness test per side: true for ITM contracts.
+	function isItm(c: OptionContract): boolean {
+		return c.type === 'call' ? c.distance_pct < 0 : c.distance_pct > 0;
+	}
+	function filterSide(list: OptionContract[]): OptionContract[] {
+		if (filter === 'all') return list;
+		return list.filter((c) => (filter === 'itm' ? isItm(c) : !isItm(c)));
 	}
 
 	// Group contracts by expiration.
@@ -72,8 +78,8 @@
 		const keys = [...map.keys()].sort();
 		return keys.map((k) => {
 			const list = map.get(k)!;
-			const calls = list.filter((c) => c.type === 'call').sort((a, b) => a.strike_price - b.strike_price);
-			const puts = list.filter((c) => c.type === 'put').sort((a, b) => b.strike_price - a.strike_price);
+			const calls = filterSide(list.filter((c) => c.type === 'call')).sort((a, b) => a.strike_price - b.strike_price);
+			const puts = filterSide(list.filter((c) => c.type === 'put')).sort((a, b) => b.strike_price - a.strike_price);
 			return { expiry: k, calls, puts, dte: list[0]?.days_to_expiry ?? 0 };
 		});
 	});
@@ -86,6 +92,18 @@
 </script>
 
 <div class="flex flex-col gap-4">
+	<!-- Moneyness filter -->
+	<div class="flex gap-1">
+		{#each ['all', 'itm', 'otm'] as f}
+			<button
+				type="button"
+				onclick={() => (filter = f as typeof filter)}
+				class="px-2 py-1 label rounded"
+				style="border: 1px solid {filter === f ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {filter === f ? 'var(--accent-primary)' : 'var(--surface)'}; color: {filter === f ? 'var(--accent-white)' : 'var(--foreground-muted)'}; font-size: 10px;"
+			>{f.toUpperCase()}</button
+			>
+		{/each}
+	</div>
 	<!-- Column headers -->
 	<div class="label grid grid-cols-2 gap-2 px-1" style="color: var(--foreground-muted)">
 		<div class="grid grid-cols-5 gap-1 text-left">
@@ -117,7 +135,7 @@
 											type="button"
 											onclick={() => onSelect(call.symbol)}
 											class="grid w-full grid-cols-5 items-center gap-1 py-1 px-1 text-left"
-											style="border: 1px solid {selected === call.symbol ? 'var(--accent-primary)' : 'transparent'}; background: {selected === call.symbol ? 'rgba(200,30,30,0.08)' : 'transparent'};"
+											style="border: 1px solid {selected === call.symbol ? 'var(--accent-primary)' : 'transparent'}; background: {selected === call.symbol ? 'rgba(59,130,246,0.10)' : 'transparent'};"
 										>
 											<span class="data" style="font-size: 11px">{fmtPrice(call.bid)}</span>
 											<span class="data" style="font-size: 11px">{fmtPrice(call.ask)}</span>
@@ -147,7 +165,7 @@
 											type="button"
 											onclick={() => onSelect(put.symbol)}
 											class="grid w-full grid-cols-5 items-center gap-1 py-1 px-1 text-right"
-											style="border: 1px solid {selected === put.symbol ? 'var(--accent-primary)' : 'transparent'}; background: {selected === put.symbol ? 'rgba(200,30,30,0.08)' : 'transparent'};"
+											style="border: 1px solid {selected === put.symbol ? 'var(--accent-primary)' : 'transparent'}; background: {selected === put.symbol ? 'rgba(59,130,246,0.10)' : 'transparent'};"
 										>
 											<span class="data" style="font-size: 11px; color: var(--foreground-muted)">{fmtIV(put.implied_volatility)}</span>
 											<span class="data" style="font-size: 11px; color: var(--foreground-muted)">{fmtPrice(put.theoretical_value)}</span>

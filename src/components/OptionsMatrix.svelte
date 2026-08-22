@@ -56,6 +56,14 @@
 		return m || 1;
 	});
 
+	// Row closest to ATM: minimal |move_pct| (float equality never fires).
+	const atmStrike = $derived(
+		matrix && matrix.strikes.length > 0
+			? matrix.strikes.reduce((a, b) => (Math.abs(b.move_pct) < Math.abs(a.move_pct) ? b : a))
+					.strike
+			: null
+	);
+
 	function cellColor(pl: number): string {
 		const intensity = Math.min(Math.abs(pl) / maxAbs, 1);
 		if (pl >= 0) {
@@ -95,7 +103,7 @@
 <div class="flex flex-col gap-3">
 	<div class="flex flex-wrap items-center justify-between gap-3">
 		<span class="label" style="color: var(--foreground-muted)">
-			PROFIT / LOSS — {contractSymbol || 'SELECT A CONTRACT'}
+			PROFIT / LOSS, {contractSymbol || 'SELECT A CONTRACT'}
 		</span>
 		<div class="flex gap-1">
 			<button type="button" onclick={() => (view = 'table')}
@@ -123,7 +131,7 @@
 					</thead>
 					<tbody>
 						{#each matrix.strikes as row (row.strike)}
-							<tr style="border-bottom: 1px solid var(--border); background: {row.strike === matrix.current_price ? 'var(--surface-2)' : 'transparent'};">
+							<tr style="border-bottom: 1px solid var(--border); background: {row.strike === atmStrike ? 'var(--surface-2)' : 'transparent'};">
 								<td class="px-2 py-1" style="color: var(--foreground);">
 									{fmtStrike(row.strike)}
 									<span class="label" style="color: var(--foreground-subtle); font-size: 9px;"> {row.move_pct >= 0 ? '+' : '−'}{Math.abs(row.move_pct).toFixed(1)}%</span>
