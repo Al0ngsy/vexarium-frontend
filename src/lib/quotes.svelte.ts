@@ -62,9 +62,24 @@ function connect() {
 	};
 }
 
-/** Subscribe to live quotes for the given symbols (replaces the previous set). */
+// Backend SSE fan-out limit (quote_stream.py).
+const MAX_WATCH = 20;
+
+/**
+ * Subscribe to live quotes for the given symbols. Additive: unions the
+ * requested symbols with the current set, so SymbolStrip and the watchlist
+ * stay live simultaneously. Capped at MAX_WATCH (backend limit), keeping the
+ * most recently requested symbols; nothing removes subscriptions today.
+ */
 export function setWatch(symbols: string[]) {
-	const next = new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean));
+	const incoming = symbols.map((s) => s.trim().toUpperCase()).filter(Boolean);
+	const next = new Set([...wanted, ...incoming]);
+	// Cap at the backend limit, keeping the newest requests.
+	if (next.size > MAX_WATCH) {
+		const items = [...next];
+		next.clear();
+		for (const s of items.slice(items.length - MAX_WATCH)) next.add(s);
+	}
 	if (next.size === wanted.size && [...next].every((s) => wanted.has(s))) return;
 	wanted = next;
 	if (wanted.size === 0) {

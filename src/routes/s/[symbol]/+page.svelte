@@ -140,6 +140,7 @@
   let showSave = $state(false);
   let aiLoading = $state(false);
   let aiMessage = $state<string | null>(null);
+  let aiAbort: AbortController | null = null;
   let aboutOpen = $state(true);
   let checksOpen = $state(true);
   let aiOpen = $state(true);
@@ -237,21 +238,30 @@
   }
 
   async function runAI() {
+    aiAbort?.abort();
+    const ac = new AbortController();
+    aiAbort = ac;
+    const sym = symbol;
     aiLoading = true;
     aiMessage = null;
     try {
       await streamAIAnalysis(
-        symbol,
+        sym,
         assetType,
         (chunk) => {
+          // Ignore chunks from a run started for a previous symbol.
+          if (symbol !== sym) return;
           aiMessage = (aiMessage ?? "") + chunk;
         },
         getToken() ?? undefined,
+        ac.signal,
       );
     } catch (e) {
+      // Aborted runs are superseded by a newer run; never surface their error.
+      if (ac.signal.aborted) return;
       aiMessage = `AI analysis failed: ${e instanceof Error ? e.message : "unknown error"}`;
     } finally {
-      aiLoading = false;
+      if (ac === aiAbort) aiLoading = false;
     }
   }
 
@@ -265,6 +275,9 @@
     const sym = symbol;
     if (!sym) return;
     untrack(() => runAnalysis());
+    // Abort any in-flight AI stream when the symbol changes (or on unmount),
+    // so chunks from the old symbol never land on the new one.
+    return () => aiAbort?.abort();
   });
 
   // Quietly recompute the analysis when the indicator timeframe changes:

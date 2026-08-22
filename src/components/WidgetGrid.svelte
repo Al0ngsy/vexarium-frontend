@@ -34,21 +34,18 @@
 
   let gridEl: HTMLDivElement;
   let grid: GridStack | null = null;
-  // Non-reactive init-time snapshot — must NOT be a reactive dep of the
-  // init effect, or drags (which update persistence) would destroy the grid.
-  let positionsLoaded = false;
-  let savedAtInit: Record<string, WidgetPos> = {};
   const shown = $derived(defs.filter((d) => enabled[d.id] !== false));
 
-  // (Re)init gridstack whenever the widget set changes.
+  // (Re)init gridstack whenever the widget set changes. Positions are
+  // re-read fresh from localStorage on every init, never snapshotted, so
+  // toggling a widget after a drag restores the latest saved layout instead
+  // of snapping back to the mount-time copy. loadPositions is a plain read
+  // (not a reactive dep), so drag-driven persistence cannot re-trigger this
+  // effect and destroy the grid.
   $effect(() => {
     const visible = shown; // dependency
     if (!gridEl) return;
-    if (!positionsLoaded) {
-      savedAtInit = loadPositions(view);
-      positionsLoaded = true;
-    }
-    const saved = savedAtInit;
+    const saved = loadPositions(view);
     grid?.destroy(false);
     // Dynamic import: gridstack's ESM dist uses extension-less internal
     // imports that break Node ESM resolution during SSR. Client-only lib.

@@ -16,9 +16,17 @@
 		onClose?: () => void;
 	} = $props();
 
-	let entry = $state(entryPrice ? String(entryPrice) : '');
+	let entry = $state('');
 	let quantity = $state('1');
 	let type = $state<TradeType>(contract ? 'option' : 'stock');
+
+	// The modal is always mounted with a null entryPrice on first render, so
+	// a mount-time init never prefills. Refill whenever the modal opens or
+	// the price prop changes (also clears a price typed for a previous symbol).
+	$effect(() => {
+		if (!open) return;
+		entry = entryPrice ? String(entryPrice) : '';
+	});
 
 	const types: TradeType[] = ['stock', 'etf', 'index', 'option'];
 
