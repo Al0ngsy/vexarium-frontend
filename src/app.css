@@ -547,7 +547,8 @@ body {
   padding: 14px;
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .widget-toggle {
   width: 24px;

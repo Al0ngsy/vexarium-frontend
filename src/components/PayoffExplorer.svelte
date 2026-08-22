@@ -39,6 +39,7 @@
 	let dte = $state(0); // target date offset in days from today
 	let value = $state<OptionValueAtPrice | null>(null);
 	let loading = $state(false);
+	let boxW = $state(0);
 
 	// Initialize the slider only when the contract changes (not on every premium
 	// update). Keeping a stable key in the parent is the primary fix, but this
@@ -107,8 +108,10 @@
 		return m || 1;
 	});
 
-	// SVG geometry (viewBox 0 0 100 60).
-	const X = (px: number) => ((px - lo) / (hi - lo)) * 100;
+	// SVG geometry: viewBox width matches the container's real aspect so the
+	// curve is never stretched (container is 240px tall, w-full wide).
+	const viewW = $derived(boxW > 0 ? Math.max((60 * boxW) / 240, 60) : 100);
+	const X = (px: number) => ((px - lo) / (hi - lo)) * viewW;
 	const Y = (pl: number) => 30 - (pl / maxAbs) * 26;
 	const polyline = $derived(curve.map((p) => `${X(p.x).toFixed(1)},${Y(p.pl).toFixed(1)}`).join(' '));
 	const curX = $derived(X(price));
@@ -128,8 +131,8 @@
 	</div>
 
 	<!-- Payoff graph -->
-	<div class="relative" style="height: 240px; background: var(--surface); border: 1px solid var(--panel-border)">
-		<svg viewBox="0 0 100 60" preserveAspectRatio="none" class="h-full w-full"
+	<div class="relative" bind:clientWidth={boxW} style="height: 240px; background: var(--surface); border: 1px solid var(--panel-border)">
+		<svg viewBox={`0 0 ${viewW.toFixed(1)} 60`} preserveAspectRatio="none" class="h-full w-full"
 			onclick={(e) => {
 				const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
 				const frac = (e.clientX - rect.left) / rect.width;
@@ -138,7 +141,7 @@
 				loadValue(p);
 			}}>
 			<!-- zero line -->
-			<line x1="0" y1="30" x2="100" y2="30" stroke="var(--panel-border)" stroke-dasharray="2 2" />
+			<line x1="0" y1="30" x2={viewW.toFixed(1)} y2="30" stroke="var(--panel-border)" stroke-dasharray="2 2" />
 			<!-- payoff curve -->
 			<path d="M{polyline}" fill="none" stroke="#34d399" stroke-width="1.5" vector-effect="non-scaling-stroke" />
 			<!-- breakeven marker -->

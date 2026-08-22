@@ -22,6 +22,7 @@
 	let range = $state(5); // percent
 	let mode = $state<'pl' | 'pl_pct' | 'value' | 'risk'>('pl');
 	let view = $state<'table' | 'graph'>('table');
+	let boxW = $state(0);
 
 	$effect(() => {
 		if (contractSymbol) loadMatrix();
@@ -46,6 +47,9 @@
 		onRangeChange?.(range / 100);
 		loadMatrix();
 	}
+
+	// SVG viewBox width matching the real container aspect (240px tall).
+	const viewW = $derived(boxW > 0 ? Math.max((60 * boxW) / 240, 60) : 100);
 
 	// Max abs value for color intensity scaling.
 	const maxAbs = $derived.by(() => {
@@ -149,17 +153,17 @@
 		{:else}
 			<!-- GRAPH VIEW: payoff curve for the ATM strike across expiries -->
 			{@const m = matrix!}
-			<div class="relative" style="height: 240px; background: var(--surface); border: 1px solid var(--panel-border)">
+			<div class="relative" bind:clientWidth={boxW} style="height: 240px; background: var(--surface); border: 1px solid var(--panel-border)">
 				{#if m.strikes.length > 0}
 					{@const maxAbs = Math.max(
 						1,
 						...m.strikes.flatMap((r) => r.cells.map((c) => Math.abs(c.pl)))
 					)}
-					{@const X = (i: number, n: number) => (n === 1 ? 50 : (i / (n - 1)) * 100)}
+					{@const X = (i: number, n: number) => (n === 1 ? viewW / 2 : (i / (n - 1)) * viewW)}
 					{@const Y = (pl: number) => 30 - (pl / maxAbs) * 25}
 					<!-- zero line -->
-					<svg viewBox="0 0 100 60" preserveAspectRatio="none" class="h-full w-full">
-						<line x1="0" y1="30" x2="100" y2="30" stroke="var(--panel-border)" stroke-dasharray="2 2" />
+					<svg viewBox={`0 0 ${viewW.toFixed(1)} 60`} preserveAspectRatio="none" class="h-full w-full">
+						<line x1="0" y1="30" x2={viewW.toFixed(1)} y2="30" stroke="var(--panel-border)" stroke-dasharray="2 2" />
 						{#each m.expiries as exp, i}
 							{@const atm = m.strikes.reduce((a, b) =>
 								Math.abs(b.strike - m.current_price) < Math.abs(a.strike - m.current_price) ? b : a

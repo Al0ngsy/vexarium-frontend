@@ -20,8 +20,12 @@ export interface WidgetPos {
   h: number;
 }
 
-const KEY = (view: string) => `vexarium:layout:${view}`;
-const ON_KEY = (view: string) => `vexarium:layout:${view}:on`;
+// Versioned layout keys: bump a view's version to invalidate stale saved
+// positions when the default arrangement changes (options went to v2 when
+// the default grid was rearranged).
+const LAYOUT_VERSION: Record<string, number> = { analysis: 1, options: 2 };
+const KEY = (view: string) => `vexarium:layout:${view}:v${LAYOUT_VERSION[view] ?? 1}`;
+const ON_KEY = (view: string) => `vexarium:layout:${view}:v${LAYOUT_VERSION[view] ?? 1}:on`;
 
 // Default layouts per view (mock §4.1 / §4.2).
 export const ANALYSIS_WIDGETS: WidgetDef[] = [
@@ -135,53 +139,42 @@ export const OPTIONS_WIDGETS: WidgetDef[] = [
     x: 0,
     y: 0,
     w: 12,
-    h: 3,
+    h: 5,
     minW: 8,
-    minH: 2,
+    minH: 3,
   },
   {
     id: "payoff-explorer",
     title: "Payoff explorer",
     sub: "curve · timeline",
     x: 0,
-    y: 3,
-    w: 6,
-    h: 4,
-    minW: 4,
-    minH: 2,
+    y: 5,
+    w: 7,
+    h: 5,
+    minW: 5,
+    minH: 3,
   },
-  { id: "greeks", title: "Greeks", x: 6, y: 3, w: 3, h: 2, minW: 2, minH: 1 },
+  { id: "greeks", title: "Greeks", x: 7, y: 5, w: 5, h: 2, minW: 3, minH: 2 },
   {
     id: "probability",
     title: "Probability",
     sub: "PRO",
-    x: 9,
-    y: 3,
-    w: 3,
-    h: 2,
-    minW: 2,
-    minH: 1,
-  },
-  {
-    id: "pl-matrix",
-    title: "P/L matrix",
-    sub: "heatmap",
-    x: 0,
+    x: 7,
     y: 7,
-    w: 7,
-    h: 4,
-    minW: 4,
+    w: 5,
+    h: 3,
+    minW: 3,
     minH: 2,
   },
   {
     id: "strategies",
     title: "Strategy suggestions",
     sub: "bias-driven",
-    x: 7,
-    y: 7,
-    w: 5,
+    x: 0,
+    y: 10,
+    w: 7,
     h: 3,
-    minW: 3,
+    minW: 4,
     minH: 2,
   },
   {
@@ -189,11 +182,22 @@ export const OPTIONS_WIDGETS: WidgetDef[] = [
     title: "Watchlist",
     sub: "saved symbols",
     x: 7,
-    y: 11,
+    y: 10,
     w: 5,
-    h: 2,
+    h: 3,
     minW: 3,
-    minH: 1,
+    minH: 2,
+  },
+  {
+    id: "pl-matrix",
+    title: "P/L matrix",
+    sub: "heatmap",
+    x: 0,
+    y: 13,
+    w: 12,
+    h: 4,
+    minW: 6,
+    minH: 3,
   },
 ];
 
