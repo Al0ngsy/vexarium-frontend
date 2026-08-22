@@ -56,7 +56,7 @@
 				<span class="data" style="font-size: 13px; color: var(--foreground)">{formatPrice(chance.breakeven)}</span>
 			</div>
 		</div>
-		<p class="label" style="color: var(--foreground-subtle); font-size: 10px">ESTIMATE — NOT GUARANTEED.</p>
+		<p class="label" style="color: var(--foreground-subtle); font-size: 10px">ESTIMATE, NOT GUARANTEED.</p>
 	</div>
 {:else}
 	<p class="label" style="color: var(--foreground-muted)">

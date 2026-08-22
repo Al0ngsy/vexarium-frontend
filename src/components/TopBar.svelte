@@ -78,7 +78,7 @@
   {/if}
 
   <div class="topbar-right">
-    <span class="market-chip" title="US equities — New York">
+    <span class="market-chip" title="US equities, New York">
       <span
         class="dot"
         style="background: {market.open

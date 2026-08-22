@@ -71,7 +71,7 @@
 					</tbody>
 				</table>
 			</div>
-			<p class="label mt-2" style="color: var(--foreground-subtle); font-size: 10px">ESTIMATE — NOT GUARANTEED</p>
+			<p class="label mt-2" style="color: var(--foreground-subtle); font-size: 10px">ESTIMATE, NOT GUARANTEED</p>
 		{:else if store.payoffLoading}
 			<p class="label" style="color: var(--foreground-muted)">Loading…</p>
 		{:else}
