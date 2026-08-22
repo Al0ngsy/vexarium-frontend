@@ -153,12 +153,13 @@ export async function getOptionsMatrix(
 	symbol: string,
 	contractSymbol: string,
 	rangePct = 0.05,
-	quantity = 100
+	quantity = 100,
+	dates = 8
 ): Promise<OptionsMatrixResponse> {
 	const resp = await fetch(`${BASE_URL}/api/v1/options/${symbol}/matrix`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ contract_symbol: contractSymbol, range_pct: rangePct, quantity })
+		body: JSON.stringify({ contract_symbol: contractSymbol, range_pct: rangePct, quantity, dates })
 	});
 	if (!resp.ok) throw new Error(`Options matrix failed: ${resp.status}`);
 	return resp.json();

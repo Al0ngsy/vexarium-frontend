@@ -20,6 +20,7 @@
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let range = $state(5); // percent
+	let dates = $state(8); // date columns
 	let mode = $state<'pl' | 'pl_pct' | 'value' | 'risk'>('pl');
 	let view = $state<'table' | 'graph'>('table');
 	let boxW = $state(0);
@@ -33,7 +34,7 @@
 		loading = true;
 		error = null;
 		try {
-			matrix = await getOptionsMatrix(symbol, contractSymbol, range / 100);
+			matrix = await getOptionsMatrix(symbol, contractSymbol, range / 100, 100, dates);
 		} catch (e) {
 			// Keep the previous matrix visible on refresh errors; only a first
 			// load failure ends with matrix === null (error branch shows).
@@ -222,6 +223,11 @@
 				<span class="label" style="white-space: nowrap">RANGE</span>
 				<input type="range" min="1" max="15" step="1" bind:value={range} onchange={handleRange} style="accent-color: var(--accent-primary); width: 140px;" />
 				<span class="data" style="font-size: 11px;">±{range}%</span>
+			</div>
+			<div class="flex items-center gap-2">
+				<span class="label" style="white-space: nowrap">DATES</span>
+				<input type="range" min="2" max="16" step="1" bind:value={dates} onchange={handleRange} style="accent-color: var(--accent-primary); width: 140px;" />
+				<span class="data" style="font-size: 11px;">{dates} steps</span>
 			</div>
 			<div class="flex gap-1">
 				<button type="button" onclick={() => (mode = 'pl')} class="px-2 py-1 label" style="border: 1px solid {mode === 'pl' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'pl' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">P/L $</button>
