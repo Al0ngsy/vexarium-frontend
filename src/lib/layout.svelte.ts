@@ -21,9 +21,9 @@ export interface WidgetPos {
 }
 
 // Versioned layout keys: bump a view's version to invalidate stale saved
-// positions when the default arrangement changes (options went to v2 when
-// the default grid was rearranged).
-const LAYOUT_VERSION: Record<string, number> = { analysis: 1, options: 2 };
+// positions when the default arrangement changes (options v3: chain 7x8
+// with payoff beside it).
+const LAYOUT_VERSION: Record<string, number> = { analysis: 1, options: 3 };
 const KEY = (view: string) => `vexarium:layout:${view}:v${LAYOUT_VERSION[view] ?? 1}`;
 const ON_KEY = (view: string) => `vexarium:layout:${view}:v${LAYOUT_VERSION[view] ?? 1}:on`;
 
@@ -159,30 +159,30 @@ export const OPTIONS_WIDGETS: WidgetDef[] = [
     sub: "expiry · strikes",
     x: 0,
     y: 0,
-    w: 12,
-    h: 5,
-    minW: 8,
-    minH: 3,
+    w: 7,
+    h: 8,
+    minW: 5,
+    minH: 5,
   },
   {
     id: "payoff-explorer",
     title: "Payoff explorer",
     sub: "curve · timeline",
-    x: 0,
-    y: 5,
-    w: 7,
-    h: 5,
-    minW: 5,
-    minH: 3,
+    x: 7,
+    y: 0,
+    w: 5,
+    h: 8,
+    minW: 4,
+    minH: 5,
   },
-  { id: "greeks", title: "Greeks", x: 7, y: 5, w: 5, h: 2, minW: 3, minH: 2 },
+  { id: "greeks", title: "Greeks", x: 0, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
   {
     id: "probability",
     title: "Probability",
     sub: "PRO",
-    x: 7,
-    y: 7,
-    w: 5,
+    x: 6,
+    y: 8,
+    w: 6,
     h: 3,
     minW: 3,
     minH: 2,

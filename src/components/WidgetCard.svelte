@@ -2,18 +2,21 @@
 	import type { Snippet } from 'svelte';
 	import type { WidgetDef } from '$lib/layout.svelte';
 	import { liveSizes } from '$lib/layout.svelte';
+	import InfoPopover from './InfoPopover.svelte';
 
 	// One gridstack item: drag handle head + toggle + body slot.
 	let {
 		def,
 		enabled,
 		onToggle,
-		children
+		children,
+		info = null
 	}: {
 		def: WidgetDef;
 		enabled: boolean;
 		onToggle: (id: string) => void;
 		children: Snippet;
+		info?: { title: string; content: string } | null;
 	} = $props();
 
 	// Current grid footprint (w×h in grid units); live-updates on drag/resize
@@ -39,6 +42,11 @@
 					>{def.title}{#if def.sub}<span class="sub">{def.sub}</span>{/if}</span
 				>
 				<div class="w-menu">
+					{#if info}
+						<span class="w-info" title="How to use this widget">
+							<InfoPopover title={info.title} content={info.content} />
+						</span>
+					{/if}
 					<span class="w-size" title="Grid size (columns × rows)">{size.w}×{size.h}</span>
 					<button
 						class="widget-toggle {enabled ? '' : 'off'}"

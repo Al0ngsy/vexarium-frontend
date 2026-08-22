@@ -33,27 +33,32 @@
 {:else if store.contracts.length === 0}
 	<p class="label" style="color: var(--foreground-muted)">NO OPTIONS AVAILABLE FOR {symbol.toUpperCase()}.</p>
 {:else}
-	<div class="mb-3 flex flex-wrap gap-1">
-		{#each expiries as e}
-			<button
-				type="button"
-				onclick={() => store.setActiveExpiry(e)}
-				class="px-3 py-1 label rounded"
-				style="border: 1px solid {store.activeExpiry === e ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {store.activeExpiry === e ? 'var(--accent-primary)' : 'var(--surface)'}; color: {store.activeExpiry === e ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
-			>{fmtExpiry(e)}</button
-			>
-		{/each}
-		{#if store.delayed}
-			<span class="label ml-2 self-center" style="color: #fbbf24; border: 1px solid rgba(251,191,36,0.33); padding: 2px 6px; border-radius: 4px">DELAYED</span>
-		{/if}
+	<div class="flex h-full flex-col">
+		<div class="mb-3 flex shrink-0 flex-wrap gap-1">
+			{#each expiries as e}
+				<button
+					type="button"
+					onclick={() => store.setActiveExpiry(e)}
+					class="px-3 py-1 label rounded"
+					style="border: 1px solid {store.activeExpiry === e ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {store.activeExpiry === e ? 'var(--accent-primary)' : 'var(--surface)'}; color: {store.activeExpiry === e ? 'var(--accent-white)' : 'var(--foreground-muted)'};"
+					>{fmtExpiry(e)}</button
+				>
+			{/each}
+			{#if store.delayed}
+				<span class="label ml-2 self-center" style="color: #fbbf24; border: 1px solid rgba(251,191,36,0.33); padding: 2px 6px; border-radius: 4px">DELAYED</span>
+			{/if}
+		</div>
+		<!-- Inner scroller: the chain table scrolls here, the selector above stays pinned. -->
+		<div class="min-h-0 flex-1 overflow-y-auto pr-1">
+			<OptionsChain
+				contracts={chains}
+				currentPrice={currentPrice}
+				selected={store.selectedSymbol}
+				onSelect={(s) => void store.selectContract(s)}
+			/>
+			{#if store.contractsLoading}
+				<p class="label mt-2" style="color: var(--foreground-muted)">Refreshing…</p>
+			{/if}
+		</div>
 	</div>
-	<OptionsChain
-		contracts={chains}
-		currentPrice={currentPrice}
-		selected={store.selectedSymbol}
-		onSelect={(s) => void store.selectContract(s)}
-	/>
-	{#if store.contractsLoading}
-		<p class="label mt-2" style="color: var(--foreground-muted)">Refreshing…</p>
-	{/if}
 {/if}

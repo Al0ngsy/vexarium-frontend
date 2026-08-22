@@ -45,6 +45,20 @@
 	function onEnable(id: string) {
 		enabled[id] = true;
 	}
+
+	// Per-widget "how to use" info shown in the card header.
+	const WIDGET_INFO: Record<string, { title: string; content: string }> = {
+		'options-chain': {
+			title: 'How to use the options chain',
+			content:
+				'Pick an expiry from the chips to see that expiration. Each row pairs a call (left) and a put (right) around the strike. ITM and OTM filter by moneyness. Click a row to select the contract, the payoff, greeks, probability and matrix widgets then react to it. Quotes are delayed and indicative.'
+		},
+		'pl-matrix': {
+			title: 'How to read the P/L matrix',
+			content:
+				"Rows are future prices of the stock with the move in percent, columns are dates. Each cell estimates your contract's profit or loss at that price on that date, green for profit, red for loss. The highlighted row is closest to the current price. Drag the range slider to widen or narrow the price window."
+		}
+	};
 </script>
 
 <svelte:head>
@@ -87,7 +101,7 @@
 
 	<WidgetGrid view="options" defs={OPTIONS_WIDGETS} {enabled} {onToggle}>
 		{#snippet children({ def }: { def: WidgetDef })}
-			<WidgetCard {def} enabled={enabled[def.id] !== false} {onToggle}>
+			<WidgetCard {def} enabled={enabled[def.id] !== false} {onToggle} info={WIDGET_INFO[def.id] ?? null}>
 				<div style="height: 100%;">
 					{#if def.id === 'options-chain'}
 						<OptionsChainWidget {symbol} />

@@ -92,25 +92,28 @@
 </script>
 
 <div class="flex flex-col gap-4">
-	<!-- Moneyness filter -->
-	<div class="flex gap-1">
-		{#each ['all', 'itm', 'otm'] as f}
-			<button
-				type="button"
-				onclick={() => (filter = f as typeof filter)}
-				class="px-2 py-1 label rounded"
-				style="border: 1px solid {filter === f ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {filter === f ? 'var(--accent-primary)' : 'var(--surface)'}; color: {filter === f ? 'var(--accent-white)' : 'var(--foreground-muted)'}; font-size: 10px;"
-			>{f.toUpperCase()}</button
-			>
-		{/each}
-	</div>
-	<!-- Column headers -->
-	<div class="label grid grid-cols-2 gap-2 px-1" style="color: var(--foreground-muted)">
-		<div class="grid grid-cols-5 gap-1 text-left">
-			<span>BID</span><span>ASK</span><span>LAST</span><span>THEO</span><span>IV</span>
+	<!-- Moneyness filter + column headers: pinned while the chain scrolls. -->
+	<div
+		style="position: sticky; top: 0; z-index: 5; background: var(--surface); padding: 2px 0 6px 0;"
+	>
+		<div class="flex gap-1">
+			{#each ['all', 'itm', 'otm'] as f}
+				<button
+					type="button"
+					onclick={() => (filter = f as typeof filter)}
+					class="px-2 py-1 label rounded"
+					style="border: 1px solid {filter === f ? 'var(--accent-primary)' : 'var(--panel-border)'}; background: {filter === f ? 'var(--accent-primary)' : 'var(--surface)'}; color: {filter === f ? 'var(--accent-white)' : 'var(--foreground-muted)'}; font-size: 10px;"
+					>{f.toUpperCase()}</button
+				>
+			{/each}
 		</div>
-		<div class="grid grid-cols-5 gap-1 text-right">
-			<span>IV</span><span>THEO</span><span>LAST</span><span>ASK</span><span>BID</span>
+		<div class="label mt-1 grid grid-cols-2 gap-2 px-1" style="color: var(--foreground-muted)">
+			<div class="grid grid-cols-5 gap-1 text-left">
+				<span>BID</span><span>ASK</span><span>LAST</span><span>THEO</span><span>IV</span>
+			</div>
+			<div class="grid grid-cols-5 gap-1 text-right">
+				<span>IV</span><span>THEO</span><span>LAST</span><span>ASK</span><span>BID</span>
+			</div>
 		</div>
 	</div>
 

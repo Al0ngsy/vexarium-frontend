@@ -51,7 +51,8 @@
 {:else if store.payoffLoading && !payoff}
 	<p class="label" style="color: var(--foreground-muted)">Loading…</p>
 {:else if payoff}
-	<div class="grid grid-cols-3 gap-2">
+	<!-- Boxes reflow with widget width: 3+ columns wide, 2 columns narrow. -->
+	<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px;">
 		{#each ITEMS as g}
 			<div style={cell(g.key, '')}>
 				<div class="mb-1 flex items-center justify-between gap-1">

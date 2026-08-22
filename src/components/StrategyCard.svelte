@@ -4,7 +4,7 @@
 	import PayoffChart from './PayoffChart.svelte';
 	import { BREAKEVEN_COLOR } from '$lib/chart-theme';
 
-	let { strategy }: { strategy: Strategy } = $props();
+	let { strategy, onWhy }: { strategy: Strategy; onWhy?: (name: string) => void } = $props();
 
 	// Beginner-friendly explanations keyed by strategy name.
 	const EXPLANATIONS: Record<string, string> = {
@@ -86,4 +86,13 @@
 			<span class="data" style="color: {BREAKEVEN_COLOR}">{fmt(strategy.breakeven)}</span>
 		</div>
 	</div>
+	{#if onWhy}
+		<button
+			type="button"
+			onclick={() => onWhy(strategy.name)}
+			class="label mt-3 self-start rounded px-2 py-1"
+			style="border: 1px solid var(--panel-border); background: var(--surface-2); color: var(--foreground-muted); font-size: 10px;"
+			>Why this pick?</button
+		>
+	{/if}
 </div>

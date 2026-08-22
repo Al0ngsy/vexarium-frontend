@@ -35,7 +35,8 @@
 		try {
 			matrix = await getOptionsMatrix(symbol, contractSymbol, range / 100);
 		} catch (e) {
-			matrix = null;
+			// Keep the previous matrix visible on refresh errors; only a first
+			// load failure ends with matrix === null (error branch shows).
 			error = e instanceof Error ? e.message : 'Matrix failed';
 		} finally {
 			loading = false;
@@ -117,11 +118,14 @@
 		</div>
 	</div>
 
-	{#if loading}
+	{#if !matrix && loading}
 		<div class="flex h-40 items-center justify-center"><span class="label" style="color: var(--foreground-muted)">LOADING MATRIX…</span></div>
-	{:else if error}
+	{:else if !matrix && error}
 		<p class="label" style="color: var(--accent-primary)">{error}</p>
 	{:else if matrix && matrix.strikes.length > 0}
+		{#if error}
+			<p class="label" style="color: var(--accent-primary)">{error}</p>
+		{/if}
 		{#if view === 'table'}
 			<div class="overflow-x-auto">
 				<table class="w-full" style="border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
@@ -204,7 +208,15 @@
 			</div>
 		{/if}
 
-		<!-- Range + metric mode -->
+	{:else}
+		<p class="label" style="color: var(--foreground-subtle); text-transform: none">
+			Select a contract to see the P/L matrix.
+		</p>
+	{/if}
+
+	{#if contractSymbol}
+		<!-- Range + metric mode: rendered outside the loading branch so the
+		     slider stays mounted while the matrix refreshes. -->
 		<div class="mt-2 flex flex-wrap items-center gap-4">
 			<div class="flex items-center gap-2">
 				<span class="label" style="white-space: nowrap">RANGE</span>
@@ -217,10 +229,9 @@
 				<button type="button" onclick={() => (mode = 'value')} class="px-2 py-1 label" style="border: 1px solid {mode === 'value' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'value' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">VALUE</button>
 				<button type="button" onclick={() => (mode = 'risk')} class="px-2 py-1 label" style="border: 1px solid {mode === 'risk' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'risk' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">% RISK</button>
 			</div>
+			{#if loading}
+				<span class="label" style="color: var(--foreground-muted)">Refreshing…</span>
+			{/if}
 		</div>
-	{:else}
-		<p class="label" style="color: var(--foreground-subtle); text-transform: none">
-			Select a contract to see the P/L matrix.
-		</p>
 	{/if}
 </div>
