@@ -78,6 +78,9 @@
   {/if}
 
   <div class="topbar-right">
+    <a href="/legal/disclaimer" class="disc-link" title="Informational only"
+      >Not financial advice</a
+    >
     <span class="market-chip" title="US equities, New York">
       <span
         class="dot"
@@ -118,5 +121,15 @@
     .market-chip {
       display: none;
     }
+  }
+
+  .disc-link {
+    color: var(--foreground-subtle);
+    font-size: 11px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .disc-link:hover {
+    color: var(--accent-primary);
   }
 </style>
