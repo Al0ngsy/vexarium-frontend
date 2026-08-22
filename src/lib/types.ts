@@ -28,6 +28,8 @@ export interface AnalysisResponse {
   timeframe?: string;
   current_price: number | null;
   day_change_pct?: number | null;
+  /** Year-to-date change in percent (e.g. 12.4 = +12.4%); added by the BE. */
+  ytd_change_pct?: number | null;
   overall: OverallVerdict;
   indicators: IndicatorResult[];
   analyzed_at?: string | null;

@@ -124,7 +124,7 @@
     </div>
     {#if watchlist.length === 0}
       <p class="label" style="color: var(--foreground-muted)">
-        EMPTY — SAVE SYMBOLS FROM ANY ANALYSIS PAGE.
+        Empty: save symbols from any analysis page.
       </p>
     {:else}
       <div class="flex flex-col gap-2">

@@ -41,7 +41,7 @@
 
 	<!-- Footer -->
 	<footer class="app-footer">
-		<span>VEXARIUM — INFORMATIONAL ONLY, NOT FINANCIAL ADVICE</span>
+		<span>VEXARIUM: informational only, not financial advice</span>
 		<nav>
 			<a href="/legal/impressum">Impressum</a>
 			<a href="/legal/disclaimer">Disclaimer</a>

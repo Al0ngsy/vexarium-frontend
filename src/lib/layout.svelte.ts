@@ -129,6 +129,27 @@ export const ANALYSIS_WIDGETS: WidgetDef[] = [
     minW: 3,
     minH: 3,
   },
+  {
+    id: "patterns",
+    title: "Patterns",
+    sub: "recent crossovers",
+    x: 3,
+    y: 17,
+    w: 4,
+    h: 3,
+    minW: 2,
+    minH: 2,
+  },
+  {
+    id: "stats",
+    title: "Key statistics",
+    x: 7,
+    y: 17,
+    w: 4,
+    h: 3,
+    minW: 2,
+    minH: 2,
+  },
 ];
 
 export const OPTIONS_WIDGETS: WidgetDef[] = [

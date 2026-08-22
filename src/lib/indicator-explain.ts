@@ -79,9 +79,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 		reason: (v, s) => {
 			const r = num(v);
 			if (r === null) return 'No reading available.';
-			if (s === 'pass') return r < 30 ? 'Oversold — sellers may be exhausted, a bounce is often near.' : 'Healthy momentum — not overbought, room to keep moving.';
-			if (s === 'fail') return r > 70 ? 'Overbought — buyers may be exhausted, a pullback is often near.' : 'Momentum is weak — price is losing upward drive.';
-			return r >= 30 && r <= 70 ? 'Neutral zone — no strong signal either way.' : 'Approaching an extreme — watch for a turn.';
+			if (s === 'pass') return r < 30 ? 'Oversold: sellers may be exhausted, a bounce is often near.' : 'Healthy momentum: not overbought, room to keep moving.';
+			if (s === 'fail') return r > 70 ? 'Overbought: buyers may be exhausted, a pullback is often near.' : 'Momentum is weak: price is losing upward drive.';
+			return r >= 30 && r <= 70 ? 'Neutral zone: no strong signal either way.' : 'Approaching an extreme: watch for a turn.';
 		}
 	},
 	'SMA(50)/EMA(200)': {
@@ -100,15 +100,15 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 			const sma = num(d?.sma50);
 			const ema = num(d?.ema200);
 			if (p === null || sma === null || ema === null) return 'No reading available.';
-			if (st === 'pass') return 'Price is above both averages — the trend is up.';
-			if (st === 'fail') return 'Price is below both averages — the trend is down.';
+			if (st === 'pass') return 'Price is above both averages: the trend is up.';
+			if (st === 'fail') return 'Price is below both averages: the trend is down.';
 			return p > sma
-				? 'Above the 50-day but below the 200-day — a recovering trend that has not confirmed yet.'
-				: 'Below the 50-day but above the 200-day — a pullback inside a longer uptrend.';
+				? 'Above the 50-day but below the 200-day: a recovering trend that has not confirmed yet.'
+				: 'Below the 50-day but above the 200-day: a pullback inside a longer uptrend.';
 		}
 	},
 	'MACD(12,26,9)': {
-		what: 'Shows whether short-term momentum is stronger or weaker than long-term momentum. The histogram is the gap between the two lines — positive = bulls in control, negative = bears in control.',
+		what: 'Shows whether short-term momentum is stronger or weaker than long-term momentum. The histogram is the gap between the two lines: positive = bulls in control, negative = bears in control.',
 		format: (v) => {
 			const d = v as Record<string, unknown> | null;
 			if (!d) return '—';
@@ -120,9 +120,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 			const m = num(d?.macd);
 			const sig = num(d?.signal);
 			if (h === null || m === null || sig === null) return 'No reading available.';
-			if (s === 'pass') return h > 0 ? 'Momentum is positive and the MACD line is above its signal — bulls in control.' : 'Momentum is turning positive — early sign of a shift.';
-			if (s === 'fail') return h < 0 ? 'Momentum is negative and the MACD line is below its signal — bears in control.' : 'Momentum is fading — early sign of weakness.';
-			return h > 0 ? 'Positive momentum, but the lines are close — the signal is not decisive yet.' : 'Negative momentum, but the lines are close — the signal is not decisive yet.';
+			if (s === 'pass') return h > 0 ? 'Momentum is positive and the MACD line is above its signal: bulls in control.' : 'Momentum is turning positive: early sign of a shift.';
+			if (s === 'fail') return h < 0 ? 'Momentum is negative and the MACD line is below its signal: bears in control.' : 'Momentum is fading: early sign of weakness.';
+			return h > 0 ? 'Positive momentum, but the lines are close: the signal is not decisive yet.' : 'Negative momentum, but the lines are close: the signal is not decisive yet.';
 		}
 	},
 	'Bollinger(20,2)': {
@@ -140,9 +140,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 			const d = v as Record<string, unknown> | null;
 			const b = num(d?.pct_b);
 			if (b === null) return 'No reading available.';
-			if (s === 'pass') return b < 0.2 ? 'Price is near the bottom of its recent range — often a better entry point.' : 'Price is below the middle of the band — relatively cheap vs recent history.';
-			if (s === 'fail') return b > 0.8 ? 'Price is near the top of its recent range — often a worse entry point.' : 'Price is above the middle of the band — relatively expensive vs recent history.';
-			return 'Price is in the middle of the band — fairly valued vs recent history.';
+			if (s === 'pass') return b < 0.2 ? 'Price is near the bottom of its recent range: often a better entry point.' : 'Price is below the middle of the band: relatively cheap vs recent history.';
+			if (s === 'fail') return b > 0.8 ? 'Price is near the top of its recent range: often a worse entry point.' : 'Price is above the middle of the band: relatively expensive vs recent history.';
+			return 'Price is in the middle of the band: fairly valued vs recent history.';
 		}
 	},
 	'Stochastic(14,3)': {
@@ -151,9 +151,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 		reason: (v, s) => {
 			const r = num(v);
 			if (r === null) return 'No reading available.';
-			if (s === 'pass') return r < 20 ? 'Oversold — the price is near the bottom of its recent range, a bounce is often near.' : 'Below 40 — momentum is turning up from a low level.';
-			if (s === 'fail') return r > 80 ? 'Overbought — the price is near the top of its recent range, a pullback is often near.' : 'Above 60 — momentum is fading from a high level.';
-			return 'Neutral zone — no strong signal either way.';
+			if (s === 'pass') return r < 20 ? 'Oversold: the price is near the bottom of its recent range, a bounce is often near.' : 'Below 40: momentum is turning up from a low level.';
+			if (s === 'fail') return r > 80 ? 'Overbought: the price is near the top of its recent range, a pullback is often near.' : 'Above 60: momentum is fading from a high level.';
+			return 'Neutral zone: no strong signal either way.';
 		}
 	},
 	'ATR(14)': {
@@ -173,9 +173,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 			const c = num(d?.close);
 			if (a === null || c === null || c <= 0) return 'No reading available.';
 			const p = (a / c) * 100;
-			if (p < 2) return 'Low volatility — the stock moves less than 2% per day on average. Calmer, but less opportunity.';
-			if (p > 5) return 'High volatility — the stock moves more than 5% per day on average. Expect bigger swings in either direction.';
-			return 'Moderate volatility — typical day-to-day movement.';
+			if (p < 2) return 'Low volatility: the stock moves less than 2% per day on average. Calmer, but less opportunity.';
+			if (p > 5) return 'High volatility: the stock moves more than 5% per day on average. Expect bigger swings in either direction.';
+			return 'Moderate volatility: typical day-to-day movement.';
 		}
 	},
 	'ADX(25)': {
@@ -184,8 +184,8 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 		reason: (v, s) => {
 			const r = num(v);
 			if (r === null) return 'No reading available.';
-			if (s === 'pass') return r >= 25 ? 'A strong trend is underway — trend-following signals are more reliable.' : 'A trend is forming — early but present.';
-			if (s === 'fail') return r < 20 ? 'No real trend — the market is chopping sideways. Directional signals are unreliable.' : 'Trend strength is fading.';
+			if (s === 'pass') return r >= 25 ? 'A strong trend is underway: trend-following signals are more reliable.' : 'A trend is forming: early but present.';
+			if (s === 'fail') return r < 20 ? 'No real trend: the market is chopping sideways. Directional signals are unreliable.' : 'Trend strength is fading.';
 			return 'Trend strength is building but not confirmed yet.';
 		}
 	},
@@ -201,9 +201,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 		reason: (v, s) => {
 			const d = v as Record<string, unknown> | null;
 			const t = d?.trend;
-			if (s === 'pass') return t === 'rising' ? 'Volume is flowing in on up-days — the move is backed by real buying.' : 'Volume is starting to accumulate.';
-			if (s === 'fail') return t === 'falling' ? 'Volume is leaving on down-days — rallies are not being supported by buyers.' : 'Volume is starting to drain.';
-			return 'Volume flow is flat — no clear confirmation either way.';
+			if (s === 'pass') return t === 'rising' ? 'Volume is flowing in on up-days: the move is backed by real buying.' : 'Volume is starting to accumulate.';
+			if (s === 'fail') return t === 'falling' ? 'Volume is leaving on down-days: rallies are not being supported by buyers.' : 'Volume is starting to drain.';
+			return 'Volume flow is flat: no clear confirmation either way.';
 		}
 	},
 	'VWAP': {
@@ -221,9 +221,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 			const c = num(d?.close);
 			if (w === null || c === null || w <= 0) return 'No reading available.';
 			const diff = ((c - w) / w) * 100;
-			if (s === 'pass') return `Price is ${diff.toFixed(1)}% above today's average — buyers are in control.`;
-			if (s === 'fail') return `Price is ${Math.abs(diff).toFixed(1)}% below today's average — sellers are in control.`;
-			return 'Price is sitting right at today\'s average — a tug-of-war between buyers and sellers.';
+			if (s === 'pass') return `Price is ${diff.toFixed(1)}% above today's average: buyers are in control.`;
+			if (s === 'fail') return `Price is ${Math.abs(diff).toFixed(1)}% below today's average: sellers are in control.`;
+			return 'Price is sitting right at today\'s average: a tug-of-war between buyers and sellers.';
 		}
 	},
 	'Ichimoku': {
@@ -242,9 +242,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 			const t = num(d?.cloud_top);
 			const b = num(d?.cloud_bottom);
 			if (c === null || t === null || b === null) return 'No reading available.';
-			if (s === 'pass') return 'Price is above the cloud — the trend is up, and the cloud below acts as support.';
-			if (s === 'fail') return 'Price is below the cloud — the trend is down, and the cloud above acts as resistance.';
-			return 'Price is inside the cloud — the market is undecided, no clear trend.';
+			if (s === 'pass') return 'Price is above the cloud: the trend is up, and the cloud below acts as support.';
+			if (s === 'fail') return 'Price is below the cloud: the trend is down, and the cloud above acts as resistance.';
+			return 'Price is inside the cloud: the market is undecided, no clear trend.';
 		}
 	},
 	'CCI(20)': {
@@ -253,9 +253,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 		reason: (v, s) => {
 			const r = num(v);
 			if (r === null) return 'No reading available.';
-			if (s === 'pass') return r < -100 ? 'Deeply oversold — the price has fallen well below its normal range; a bounce is often near.' : 'Oversold — the price is below its typical range, sellers may be running out of steam.';
-			if (s === 'fail') return r > 100 ? 'Overbought — the price has run well above its normal range; a pullback is often near.' : 'Overbought — the price is stretched above its typical range, buyers may be exhausted.';
-			return 'Near the middle of its range — no strong signal either way.';
+			if (s === 'pass') return r < -100 ? 'Deeply oversold: the price has fallen well below its normal range; a bounce is often near.' : 'Oversold: the price is below its typical range, sellers may be running out of steam.';
+			if (s === 'fail') return r > 100 ? 'Overbought: the price has run well above its normal range; a pullback is often near.' : 'Overbought: the price is stretched above its typical range, buyers may be exhausted.';
+			return 'Near the middle of its range: no strong signal either way.';
 		}
 	},
 	'Williams %R(14)': {
@@ -264,9 +264,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 		reason: (v, s) => {
 			const r = num(v);
 			if (r === null) return 'No reading available.';
-			if (s === 'pass') return r < -80 ? 'Oversold — the price is near the bottom of its 14-day range, a bounce is often near.' : 'Below -60 — momentum is turning up from a low level.';
-			if (s === 'fail') return r > -20 ? 'Overbought — the price is near the top of its 14-day range, a pullback is often near.' : 'Above -40 — momentum is fading from a high level.';
-			return 'Neutral zone — no strong signal either way.';
+			if (s === 'pass') return r < -80 ? 'Oversold: the price is near the bottom of its 14-day range, a bounce is often near.' : 'Below -60: momentum is turning up from a low level.';
+			if (s === 'fail') return r > -20 ? 'Overbought: the price is near the top of its 14-day range, a pullback is often near.' : 'Above -40: momentum is fading from a high level.';
+			return 'Neutral zone: no strong signal either way.';
 		}
 	},
 	'MFI(14)': {
@@ -275,9 +275,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 		reason: (v, s) => {
 			const r = num(v);
 			if (r === null) return 'No reading available.';
-			if (s === 'pass') return r < 20 ? 'Oversold with heavy outflow — sellers may be exhausted, a bounce is often near.' : 'Money flow is weak — an early sign that selling pressure is easing.';
-			if (s === 'fail') return r > 80 ? 'Overbought with heavy inflow — buyers may be exhausted, a pullback is often near.' : 'Money flow is strong — buyers may be running out of steam.';
-			return 'Money flow is balanced — no clear signal either way.';
+			if (s === 'pass') return r < 20 ? 'Oversold with heavy outflow: sellers may be exhausted, a bounce is often near.' : 'Money flow is weak: an early sign that selling pressure is easing.';
+			if (s === 'fail') return r > 80 ? 'Overbought with heavy inflow: buyers may be exhausted, a pullback is often near.' : 'Money flow is strong: buyers may be running out of steam.';
+			return 'Money flow is balanced: no clear signal either way.';
 		}
 	},
 	'ROC(12)': {
@@ -289,13 +289,13 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 		reason: (v, s) => {
 			const r = num(v);
 			if (r === null) return 'No reading available.';
-			if (s === 'pass') return r > 5 ? 'Strong momentum — the price has climbed more than 5% in 12 days.' : 'Positive momentum — the price is rising over the last 12 days.';
-			if (s === 'fail') return r < -5 ? 'Sharp decline — the price has dropped more than 5% in 12 days.' : 'Negative momentum — the price is falling over the last 12 days.';
-			return 'Nearly flat — the price has barely moved over the last 12 days.';
+			if (s === 'pass') return r > 5 ? 'Strong momentum: the price has climbed more than 5% in 12 days.' : 'Positive momentum: the price is rising over the last 12 days.';
+			if (s === 'fail') return r < -5 ? 'Sharp decline: the price has dropped more than 5% in 12 days.' : 'Negative momentum: the price is falling over the last 12 days.';
+			return 'Nearly flat: the price has barely moved over the last 12 days.';
 		}
 	},
 	'PSAR': {
-		what: 'Parabolic SAR draws dots that trail the price. Dots below the price = uptrend. Dots above = downtrend. When the dots flip sides, it signals the trend may have changed — handy for knowing when to stay in or get out.',
+		what: 'Parabolic SAR draws dots that trail the price. Dots below the price = uptrend. Dots above = downtrend. When the dots flip sides, it signals the trend may have changed: handy for knowing when to stay in or get out.',
 		format: (v) => {
 			const d = v as Record<string, unknown> | null;
 			if (!d) return '—';
@@ -306,9 +306,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 			const d = v as Record<string, unknown> | null;
 			const p = num(d?.psar);
 			if (p === null) return 'No reading available.';
-			if (s === 'pass') return 'Dots are below the price — an uptrend is in place. It stays up until the dots flip above the price.';
-			if (s === 'fail') return 'Dots are above the price — a downtrend is in place. It stays down until the dots flip below the price.';
-			return 'No clear trend — the dots are not giving a signal yet.';
+			if (s === 'pass') return 'Dots are below the price: an uptrend is in place. It stays up until the dots flip above the price.';
+			if (s === 'fail') return 'Dots are above the price: a downtrend is in place. It stays down until the dots flip below the price.';
+			return 'No clear trend: the dots are not giving a signal yet.';
 		}
 	},
 	'CMO(14)': {
@@ -317,9 +317,9 @@ const EXPLAIN: Record<string, IndicatorExplain> = {
 		reason: (v, s) => {
 			const r = num(v);
 			if (r === null) return 'No reading available.';
-			if (s === 'pass') return r < -50 ? 'Deeply negative — selling has been extreme; a bounce is often near.' : 'Negative but recovering — sellers were in control, buyers are stepping in.';
-			if (s === 'fail') return r > 50 ? 'Strongly positive — buying has been extreme; a pullback is often near.' : 'Positive but fading — buyers were in control, sellers are stepping in.';
-			return 'Balanced — buyers and sellers are roughly even over the last 14 days.';
+			if (s === 'pass') return r < -50 ? 'Deeply negative: selling has been extreme; a bounce is often near.' : 'Negative but recovering: sellers were in control, buyers are stepping in.';
+			if (s === 'fail') return r > 50 ? 'Strongly positive: buying has been extreme; a pullback is often near.' : 'Positive but fading: buyers were in control, sellers are stepping in.';
+			return 'Balanced: buyers and sellers are roughly even over the last 14 days.';
 		}
 	}
 };

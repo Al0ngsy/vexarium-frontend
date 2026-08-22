@@ -54,14 +54,14 @@
     "SECTOR / INDUSTRY": "The broad business category (sector) and specific area (industry) the company operates in. Helps compare it to similar businesses.",
     "HEADQUARTERS": "Where the company is based. Useful for a quick sense of size and jurisdiction.",
     "EMPLOYEES": "How many people work for the company. A rough proxy for the scale of its operations.",
-    "CEO": "The Chief Executive Officer — the top boss responsible for running the company.",
-    "CEO PAY / YR": "The CEO's total yearly compensation. Big pay isn't good or bad on its own — it matters whether the CEO's interests align with shareholders'.",
+    "CEO": "The Chief Executive Officer, the top boss responsible for running the company.",
+    "CEO PAY / YR": "The CEO's total yearly compensation. Big pay isn't good or bad on its own; it matters whether the CEO's interests align with shareholders'.",
     "NEXT EARNINGS": "When the company next reports its quarterly profit (earnings). Stock prices often jump around this date.",
     "MARKET CAP": "The total dollar value of ALL the company's shares combined (price × shares). Bigger = larger, more established company.",
     "P/E RATIO": "The price you pay for each $1 of the company's yearly profit. A lower P/E usually means cheaper relative to earnings; a high P/E can mean high expected growth.",
     "FORWARD P/E": "The P/E ratio using expected future earnings instead of the last year's. Gives a sense of whether the price already accounts for growth.",
     "P/S RATIO": "Price paid per $1 of sales (revenue). Useful for young companies that aren't profitable yet.",
-    "NET MARGIN": "The % of every sales dollar the company keeps as profit after all costs. Higher is better — more of each sale is pure profit.",
+    "NET MARGIN": "The % of every sales dollar the company keeps as profit after all costs. Higher is better; more of each sale is pure profit.",
     "GROSS MARGIN": "The % of sales left after paying the direct cost of making the product. Shows how strong the underlying business is before overhead.",
     "RETURN ON EQUITY": "How much profit the company makes for each $1 shareholders own. High ROE = the business efficiently turns owners' money into profit.",
     "RETURN ON ASSETS": "Profit generated for each $1 of the company's total assets. Higher = uses its resources more efficiently.",
@@ -69,7 +69,7 @@
     "EARNINGS GROWTH": "How fast profit (earnings) is growing. Growing earnings often push the stock price up over time.",
     "DIVIDEND YIELD": "The annual cash dividend paid as a % of the share price. Income you get just for holding the stock. 0% means it pays no dividend.",
     "SHARES OUT": "How many total shares of the company exist. Combined with the price, this gives the market cap.",
-    "52-WEEK RANGE": "The highest and lowest the stock price has been in the last year. Buying near the low of the range is usually cheaper than near the high.",
+    "52-week range: where the price traded this year": "The highest and lowest the stock price has been in the last year. Buying near the low of the range is usually cheaper than near the high.",
   };
 </script>
 
@@ -171,7 +171,7 @@
   <!-- Valuation -->
   <div class="mt-2">
     <span class="label block mb-2" style="color: var(--foreground-subtle)"
-      >VALUATION — WHAT YOU PAY FOR THE STOCK</span
+      >Valuation: what you pay for the stock</span
     >
     <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {#if has(company.market_cap)}
@@ -232,7 +232,7 @@
   <!-- Profitability & growth -->
   <div class="mt-2">
     <span class="label block mb-2" style="color: var(--foreground-subtle)"
-      >PROFITABILITY &amp; GROWTH — HOW WELL IT EARNS</span
+      >Profitability and growth: how well it earns</span
     >
     <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {#if has(company.profit_margin)}
@@ -355,7 +355,7 @@
       style="border: 1px solid var(--panel-border); background: var(--surface)"
     >
       <span class="label block mb-2" style="color: var(--foreground-subtle)"
-        ><MetricTip text="52-WEEK RANGE — WHERE THE PRICE TRADED THIS YEAR" tip={METRIC_TIPS["52-WEEK RANGE"]} /></span
+        ><MetricTip text="52-week range: where the price traded this year" tip={METRIC_TIPS["52-week range: where the price traded this year"]} /></span
       >
       <div class="flex flex-wrap items-center gap-3">
         <span class="data" style="font-size: 12px; color: var(--foreground)"

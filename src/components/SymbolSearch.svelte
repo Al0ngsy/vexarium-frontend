@@ -188,12 +188,12 @@
             style="border: 2px solid var(--panel-border); border-top-color: var(--accent-primary);"
           ></span>
           <span class="label" style="color: var(--foreground-muted)"
-            >WAKING SERVER — FETCHING DATA…</span
+            >Waking server: fetching data…</span
           >
         </div>
       {:else if searchFailed && grouped.length === 0}
         <div class="px-3 py-2.5 label" style="color: var(--accent-primary)">
-          SERVER UNREACHABLE — IT'S STILL WAKING UP. TRY AGAIN IN A MOMENT.
+          Server unreachable: it's still waking up. Try again in a moment.
         </div>
       {:else}
         {#each grouped as group, gi}
@@ -204,7 +204,7 @@
             class="px-3 py-1.5 label"
             style="background-color: var(--surface-3); color: var(--accent-primary); border-bottom: 1px solid var(--panel-border);"
           >
-            {group.label} — {group.items.length}
+            {group.label}: {group.items.length}
           </div>
           {#each group.items as asset, ai}
             {@const rowIndex = groupOffset + 1 + ai}

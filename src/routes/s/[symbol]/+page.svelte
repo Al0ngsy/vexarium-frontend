@@ -141,10 +141,6 @@
   let aiLoading = $state(false);
   let aiMessage = $state<string | null>(null);
   let aiAbort: AbortController | null = null;
-  let aboutOpen = $state(true);
-  let checksOpen = $state(true);
-  let aiOpen = $state(true);
-  let newsOpen = $state(false);
 
   // Finnhub enrichment (insider / earnings / peers) — symbol-scoped, not
   // timeframe-scoped; 12h server cache. Failure just leaves widgets empty.
@@ -171,6 +167,278 @@
     (analysis?.asset_type as "stock" | "etf" | "index") ?? "stock",
   );
 
+// ---- comparison overlay (P1) -------------------------------------------
+  // Lazy v1: one comparator at a time (SPY or a Finnhub peer). With a
+  // comparator active, both series are normalized to 100 at the window start
+  // (the fetched series start) so they share one relative scale.
+  let compareSymbol = $state("SPY");
+  let compareBars = $state<PricePoint[] | null>(null);
+  const compareOptions = $derived.by(() => {
+    const opts = new Set<string>();
+    if (symbol !== "SPY") opts.add("SPY");
+    for (const p of finnhub?.peers ?? []) {
+      const s = p.trim().toUpperCase();
+      if (s && s !== symbol) opts.add(s);
+    }
+    return [...opts];
+  });
+  $effect(() => {
+    const sym = symbol;
+    const cs = compareSymbol;
+    const tf = chartTf;
+    if (!sym || !cs || cs === sym) {
+      // Comparing against the symbol itself makes no sense; fall back to SPY.
+      if (cs === sym) compareSymbol = "SPY";
+      compareBars = null;
+      return;
+    }
+    compareBars = null;
+    getBars(cs, tf, 300)
+      .then((points) => {
+        if (symbol === sym && compareSymbol === cs && chartTf === tf)
+          compareBars = points;
+      })
+      .catch(() => {}); // comparator load failure = just no overlay line
+  });
+
+  // Bars actually shown in the chart: live bars when present, else the
+  // analysis payload's price series (the pre-bars fallback).
+  const mainSeries = $derived(
+    chartBars && chartBars.length > 0
+      ? chartBars
+      : analysis?.price_series && analysis.price_series.length > 0
+        ? analysis.price_series
+        : null
+  );
+  const chartPriceSeries = $derived.by(() => {
+    const base = mainSeries;
+    if (!base || base.length === 0 || !compareSymbol) return base ?? [];
+    const s0 = base[0].close;
+    if (!s0) return base;
+    const k = 100 / s0;
+    return base.map((p) => ({
+      ...p,
+      open: p.open * k,
+      high: p.high * k,
+      low: p.low * k,
+      close: p.close * k,
+    }));
+  });
+  const comparePoints = $derived.by(() => {
+    if (!compareSymbol || !compareBars || compareBars.length === 0) return [];
+    const s0 = compareBars[0].close;
+    if (!s0) return [];
+    const k = 100 / s0;
+    return compareBars.map((p) => ({ t: p.t, v: p.close * k }));
+  });
+  const compareLegend = $derived.by(() => {
+    if (!compareSymbol) return null;
+    const base = mainSeries;
+    const cb = compareBars;
+    if (!base || base.length === 0 || !cb || cb.length === 0) return null;
+    return {
+      symPct: (base[base.length - 1].close / base[0].close - 1) * 100,
+      cmpPct: (cb[cb.length - 1].close / cb[0].close - 1) * 100,
+    };
+  });
+
+  // ---- pattern flags (P4) -------------------------------------------------
+  // Crossovers and sign flips detected client-side from the indicator series
+  // already in the /analysis payload; a missing series skips its flag.
+  type PatternFlag = {
+    label: string;
+    dir: "bullish" | "bearish";
+    ago: number; // bars since the event (0 = current, not bar-counted)
+  };
+  const patternFlags = $derived.by((): PatternFlag[] => {
+    const flags: PatternFlag[] = [];
+    const bars = mainSeries;
+    const series = analysis?.indicator_series ?? [];
+    if (!bars || bars.length === 0) return flags;
+
+    const closes = bars.map((b) => b.close);
+    const tIdx = new Map(bars.map((b, i) => [b.t, i]));
+    const byT = (pts: { t: string; v: number }[]): (number | null)[] => {
+      const out: (number | null)[] = new Array(bars.length).fill(null);
+      for (const p of pts) {
+        const i = tIdx.get(p.t);
+        if (i !== undefined && p.v != null) out[i] = p.v;
+      }
+      return out;
+    };
+    // Most recent line-vs-close side flip (SMA/PSAR style), scanning backward.
+    const flipVsPrice = (
+      vals: (number | null)[],
+      tag: string,
+      belowBullish: boolean,
+    ): PatternFlag | null => {
+      for (let i = vals.length - 1; i >= 1; i--) {
+        const v = vals[i];
+        const vp = vals[i - 1];
+        const c = closes[i];
+        const cp = closes[i - 1];
+        if (v == null || vp == null || c == null || cp == null) continue;
+        const below = v < c;
+        const wasBelow = vp < cp;
+        if (below && !wasBelow)
+          return {
+            label: belowBullish
+              ? `${tag} flipped below price`
+              : `${tag} crossed below price`,
+            dir: belowBullish ? "bullish" : "bearish",
+            ago: vals.length - 1 - i,
+          };
+        if (!below && wasBelow)
+          return {
+            label: belowBullish
+              ? `${tag} flipped above price`
+              : `${tag} crossed above price`,
+            dir: belowBullish ? "bearish" : "bullish",
+            ago: vals.length - 1 - i,
+          };
+      }
+      return null;
+    };
+    // Most recent sign flip of a zero-centered oscillator (MACD histogram).
+    const signFlip = (
+      v: number[],
+      bullLabel: string,
+      bearLabel: string,
+    ): PatternFlag | null => {
+      for (let i = v.length - 1; i >= 1; i--) {
+        if ((v[i] > 0 && v[i - 1] <= 0) || (v[i] < 0 && v[i - 1] >= 0))
+          return {
+            label: v[i] > 0 ? bullLabel : bearLabel,
+            dir: v[i] > 0 ? "bullish" : "bearish",
+            ago: v.length - 1 - i,
+          };
+      }
+      return null;
+    };
+
+    const sma = series.find((s) => s.name.toUpperCase().includes("SMA"));
+    if (sma) {
+      const f = flipVsPrice(byT(sma.points), "SMA vs price", false);
+      if (f) {
+        f.label = f.dir === "bullish" ? "Golden cross (SMA over price)" : "Death cross (SMA under price)";
+        flags.push(f);
+      }
+    }
+    const macd = series.find((s) => s.name.toUpperCase().includes("MACD"));
+    if (macd) {
+      const v = macd.points
+        .filter((p) => p.v != null)
+        .map((p) => p.v as number);
+      const f = signFlip(v, "MACD histogram turned positive", "MACD histogram turned negative");
+      if (f) flags.push(f);
+    }
+    const psar = series.find((s) => /(^|[^A-Z])SAR/i.test(s.name));
+    if (psar) {
+      const f = flipVsPrice(byT(psar.points), "PSAR", true);
+      if (f) flags.push(f);
+    }
+    const rsi = series.find((s) => s.name.toUpperCase().includes("RSI"));
+    if (rsi) {
+      const v = rsi.points
+        .filter((p) => p.v != null)
+        .map((p) => p.v as number);
+      for (let i = v.length - 1; i >= 1; i--) {
+        const cur = v[i];
+        const prev = v[i - 1];
+        if (prev < 30 && cur >= 30) {
+          flags.push({ label: "RSI crossed above 30, leaving oversold", dir: "bullish", ago: v.length - 1 - i });
+          break;
+        }
+        if (prev > 70 && cur <= 70) {
+          flags.push({ label: "RSI crossed below 70, leaving overbought", dir: "bullish", ago: v.length - 1 - i });
+          break;
+        }
+        if (prev > 30 && cur <= 30) {
+          flags.push({ label: "RSI crossed below 30 into oversold", dir: "bearish", ago: v.length - 1 - i });
+          break;
+        }
+        if (prev < 70 && cur >= 70) {
+          flags.push({ label: "RSI crossed above 70 into overbought", dir: "bearish", ago: v.length - 1 - i });
+          break;
+        }
+      }
+    }
+    const co = analysis?.company;
+    const price = analysis?.current_price ?? closes[closes.length - 1];
+    if (co && price) {
+      if (co.high_52w && co.high_52w > 0 && (co.high_52w - price) / co.high_52w <= 0.03)
+        flags.push({
+          label: `Near 52-week high (${(((co.high_52w - price) / co.high_52w) * 100).toFixed(1)}% below)`,
+          dir: "bullish",
+          ago: 0,
+        });
+      else if (co.low_52w && co.low_52w > 0 && (price - co.low_52w) / co.low_52w <= 0.03)
+        flags.push({
+          label: `Near 52-week low (${(((price - co.low_52w) / co.low_52w) * 100).toFixed(1)}% above)`,
+          dir: "bearish",
+          ago: 0,
+        });
+    }
+    return flags;
+  });
+
+  // ---- key statistics (P5) ------------------------------------------------
+  // Rendered straight from the /analysis payload; rows for missing fields
+  // are hidden, nothing is invented.
+  const statsRows = $derived.by(() => {
+    if (!analysis) return [];
+    const co = analysis.company;
+    const cur = analysis.current_price;
+    const curSym = co?.currency ?? null;
+    const rows: { k: string; v: string; color?: string }[] = [];
+    const fmtBig = (v: number) =>
+      Math.abs(v) >= 1e12
+        ? `$${(v / 1e12).toFixed(2)}T`
+        : Math.abs(v) >= 1e9
+          ? `$${(v / 1e9).toFixed(2)}B`
+          : Math.abs(v) >= 1e6
+            ? `$${(v / 1e6).toFixed(1)}M`
+            : `$${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+    const dirColor = (v: number) => (v >= 0 ? "#34d399" : "#f87171");
+    const fmtPriceNoCur = (v: number) =>
+      formatPrice(v, curSym).replace(/^[^\d-]+/, "");
+    if (co?.market_cap != null)
+      rows.push({ k: "Market cap", v: fmtBig(co.market_cap) });
+    if (co?.pe_ratio != null) rows.push({ k: "P/E", v: `${co.pe_ratio.toFixed(1)}x` });
+    if (co?.ps_ratio != null) rows.push({ k: "P/S", v: `${co.ps_ratio.toFixed(1)}x` });
+    if (co?.dividend_yield != null)
+      rows.push({ k: "Dividend yield", v: `${(co.dividend_yield * 100).toFixed(1)}%` });
+    if (co?.high_52w && co.high_52w > 0 && cur != null) {
+      const off = (cur / co.high_52w - 1) * 100;
+      rows.push({ k: "% off 52-week high", v: `${off.toFixed(1)}%`, color: dirColor(off) });
+    }
+    if (analysis.ytd_change_pct != null)
+      rows.push({
+        k: "YTD change",
+        v: `${analysis.ytd_change_pct >= 0 ? "+" : ""}${analysis.ytd_change_pct.toFixed(1)}%`,
+        color: dirColor(analysis.ytd_change_pct),
+      });
+    if (co?.low_52w != null && co?.high_52w != null)
+      rows.push({
+        k: "52-week range",
+        v: `${fmtPriceNoCur(co.low_52w)}–${fmtPriceNoCur(co.high_52w)}`,
+      });
+    if (co?.shares_outstanding != null) {
+      const s = co.shares_outstanding;
+      rows.push({
+        k: "Shares outstanding",
+        v:
+          Math.abs(s) >= 1e9
+            ? `${(s / 1e9).toFixed(2)}B`
+            : Math.abs(s) >= 1e6
+              ? `${(s / 1e6).toFixed(1)}M`
+              : s.toLocaleString(),
+      });
+    }
+    return rows;
+  });
+
+  
   // Broad market headlines (Finnhub general news) — independent of the symbol;
   // 12h server cache. Shown in the news widget next to the stock-specific feed.
   let marketNews = $state<import("$lib/types").MarketNews | null>(null);
@@ -500,7 +768,7 @@
 </script>
 
 <svelte:head>
-  <title>VEXARIUM — {symbol} ANALYSIS</title>
+  <title>VEXARIUM: {symbol} analysis</title>
 </svelte:head>
 
 <div>
@@ -553,6 +821,16 @@
                     <option value={tf}>{tf}</option>
                   {/each}
                 </select>
+                <select
+                  class="tf-select"
+                  aria-label="Compare against"
+                  bind:value={compareSymbol}
+                >
+                  <option value="">None</option>
+                  {#each compareOptions as p}
+                    <option value={p}>{p}</option>
+                  {/each}
+                </select>
                 {#if chartHint}
                   <span
                     style="background: var(--surface-3); color: var(--foreground-muted); border: 1px solid var(--panel-border); border-radius: 10px; padding: 2px 10px; font-size: 0.68rem;"
@@ -560,6 +838,33 @@
                   >
                 {/if}
               </div>
+              {#if compareLegend}
+                <div
+                  class="flex items-center justify-end gap-3"
+                  style="font-size: 0.66rem; color: var(--foreground-muted);"
+                >
+                  <span style="font-family: var(--font-mono);">{symbol}
+                    <span
+                      style="color: {compareLegend.symPct >= 0
+                        ? '#34d399'
+                        : '#f87171'};"
+                      >{compareLegend.symPct >= 0
+                        ? "+"
+                        : ""}{compareLegend.symPct.toFixed(1)}%</span
+                    ></span
+                  >
+                  <span style="font-family: var(--font-mono);">{compareSymbol}
+                    <span
+                      style="color: {compareLegend.cmpPct >= 0
+                        ? '#34d399'
+                        : '#f87171'};"
+                      >{compareLegend.cmpPct >= 0
+                        ? "+"
+                        : ""}{compareLegend.cmpPct.toFixed(1)}%</span
+                    ></span
+                  >
+                </div>
+              {/if}
               <div style="position: relative; flex: 1; min-height: 0;">
                 {#if barsLoading && (chartBars?.length ?? 0) > 0}
                   <span
@@ -569,9 +874,13 @@
                 {/if}
                 {#if (chartBars?.length ?? 0) > 0}
                   <IndicatorChart
-                    series={{ name: "PRICE", kind: "overlay", points: [] }}
-                    priceSeries={chartBars ?? []}
-                    dataKey={`${symbol}:${chartTf}`}
+                    series={{
+                      name: compareSymbol ? `vs ${compareSymbol}` : "PRICE",
+                      kind: "overlay",
+                      points: comparePoints,
+                    }}
+                    priceSeries={chartPriceSeries}
+                    dataKey={`${symbol}:${chartTf}:${compareSymbol || "none"}`}
                     height={260}
                   />
                 {:else if barsLoading}
@@ -585,9 +894,13 @@
                   </div>
                 {:else if (analysis?.price_series?.length ?? 0) > 0}
                   <IndicatorChart
-                    series={{ name: "PRICE", kind: "overlay", points: [] }}
-                    priceSeries={analysis?.price_series ?? []}
-                    dataKey={`${symbol}:${chartTf}`}
+                    series={{
+                      name: compareSymbol ? `vs ${compareSymbol}` : "PRICE",
+                      kind: "overlay",
+                      points: comparePoints,
+                    }}
+                    priceSeries={chartPriceSeries}
+                    dataKey={`${symbol}:${chartTf}:${compareSymbol || "none"}`}
                     height={260}
                   />
                 {:else}
@@ -654,7 +967,7 @@
               <div class="plainbox">
                 <div class="k">What this means for you</div>
                 <p>
-                  {VERDICT_LABELS[verdict]} — {bullCount} of {totalChecks}
+                  {VERDICT_LABELS[verdict].toLowerCase()}, {bullCount} of {totalChecks}
                   checks are bullish, {neutralCount} neutral, {bearCount} bearish.
                   {clientScore > 0
                     ? "The overall bias is positive."
@@ -941,6 +1254,64 @@
                   </div>
                 </div>
               {/if}
+              <div
+                class="label"
+                style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--panel-border); font-size: 0.68rem; color: var(--foreground-muted); text-transform: none;"
+              >
+                Market mood: <span style="color: {zc};">{zone.toLowerCase()}</span> · this stock: <span style="color: {vColor};">{VERDICT_LABELS[verdict].toLowerCase()}</span>
+              </div>
+            {/if}
+          {:else if def.id === "patterns"}
+            {#if !analysis}
+              {@render loadingNotice()}
+            {:else if patternFlags.length === 0}
+              <p class="label" style="color: var(--foreground-muted);">
+                No recent patterns
+              </p>
+            {:else}
+              <div class="flex flex-col" style="gap: 6px;">
+                {#each patternFlags as f}
+                  <div
+                    style="display: flex; align-items: center; gap: 8px; font-size: 0.72rem;"
+                  >
+                    <span
+                      style="flex-shrink: 0; font-size: 0.58rem; padding: 1px 7px; border-radius: 4px; border: 1px solid {f.dir === 'bullish'
+                        ? '#34d399'
+                        : '#f87171'}; color: {f.dir === 'bullish'
+                        ? '#34d399'
+                        : '#f87171'};"
+                      >{f.dir === "bullish" ? "Bullish" : "Bearish"}</span
+                    >
+                    <span style="color: var(--foreground); min-width: 0;">{f.label}</span>
+                    {#if f.ago > 0}
+                      <span
+                        class="label"
+                        style="color: var(--foreground-subtle); margin-left: auto; flex-shrink: 0;"
+                        >{f.ago} bars ago</span
+                      >
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          {:else if def.id === "stats"}
+            {#if !analysis}
+              {@render loadingNotice()}
+            {:else if statsRows.length === 0}
+              <p class="label" style="color: var(--foreground-muted);">
+                No statistics available
+              </p>
+            {:else}
+              <div class="grid grid-cols-2 gap-3">
+                {#each statsRows as row}
+                  <div class="vital">
+                    <div class="k">{row.k}</div>
+                    <div class="v" style="color: {row.color ?? 'var(--foreground)'};">
+                      {row.v}
+                    </div>
+                  </div>
+                {/each}
+              </div>
             {/if}
           {:else if def.id === "company"}
             {#if !analysis}
