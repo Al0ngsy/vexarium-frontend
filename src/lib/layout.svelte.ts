@@ -21,9 +21,9 @@ export interface WidgetPos {
 }
 
 // Versioned layout keys: bump a view's version to invalidate stale saved
-// positions when the default arrangement changes (options v4: greeks 4x3,
-// watchlist below it, strategies 8x7).
-const LAYOUT_VERSION: Record<string, number> = { analysis: 1, options: 4 };
+// positions when the default arrangement changes (options v5: matrix moved
+// up beside the watchlist, strategies full-width at the bottom).
+const LAYOUT_VERSION: Record<string, number> = { analysis: 1, options: 5 };
 const KEY = (view: string) => `vexarium:layout:${view}:v${LAYOUT_VERSION[view] ?? 1}`;
 const ON_KEY = (view: string) => `vexarium:layout:${view}:v${LAYOUT_VERSION[view] ?? 1}:on`;
 
@@ -183,20 +183,9 @@ export const OPTIONS_WIDGETS: WidgetDef[] = [
     x: 4,
     y: 8,
     w: 8,
-    h: 3,
+    h: 5,
     minW: 3,
     minH: 2,
-  },
-  {
-    id: "strategies",
-    title: "Strategy suggestions",
-    sub: "bias-driven",
-    x: 4,
-    y: 11,
-    w: 8,
-    h: 7,
-    minW: 4,
-    minH: 3,
   },
   {
     id: "watchlist",
@@ -205,7 +194,7 @@ export const OPTIONS_WIDGETS: WidgetDef[] = [
     x: 0,
     y: 11,
     w: 4,
-    h: 4,
+    h: 6,
     minW: 3,
     minH: 2,
   },
@@ -213,11 +202,22 @@ export const OPTIONS_WIDGETS: WidgetDef[] = [
     id: "pl-matrix",
     title: "P/L matrix",
     sub: "heatmap",
-    x: 0,
-    y: 18,
-    w: 12,
+    x: 4,
+    y: 13,
+    w: 8,
     h: 4,
-    minW: 6,
+    minW: 4,
+    minH: 3,
+  },
+  {
+    id: "strategies",
+    title: "Strategy suggestions",
+    sub: "bias-driven",
+    x: 0,
+    y: 17,
+    w: 12,
+    h: 5,
+    minW: 4,
     minH: 3,
   },
 ];

@@ -33,23 +33,33 @@
 		Select a contract to see strategy ideas.
 	</p>
 {:else if strategies.length > 0}
-	<div class="flex gap-3 overflow-x-auto pb-2" style="scrollbar-width: thin;">
-		{#each strategies as s (s.name)}
-			<div style="min-width: 260px;">
-				<StrategyCard strategy={s} onWhy={(name) => void askWhy(name)} />
-			</div>
-		{/each}
-	</div>
-	{#if whyLoading}
-		<p class="label mt-2" style="color: var(--foreground-muted)">Explaining the picks…</p>
-	{:else if why}
-		<div class="panel mt-2 p-3" style="border-color: var(--panel-border);">
-			<span class="label block mb-1" style="color: var(--accent-primary); font-size: 10px;">WHY {why.name}?</span>
-			<p class="label" style="color: var(--foreground); text-transform: none; line-height: 1.6; font-size: 11px;">{why.text}</p>
+	<div
+		class="grid gap-3"
+		style={why || whyLoading || whyError ? 'grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);' : ''}
+	>
+		<div class="flex min-w-0 gap-3 overflow-x-auto pb-2" style="scrollbar-width: thin;">
+			{#each strategies as s (s.name)}
+				<div style="min-width: 260px;">
+					<StrategyCard strategy={s} onWhy={(name) => void askWhy(name)} />
+				</div>
+			{/each}
 		</div>
-	{:else if whyError}
-		<p class="label mt-2" style="color: var(--accent-primary)">{whyError}</p>
-	{/if}
+		{#if whyLoading || why || whyError}
+			<div
+				class="panel p-3"
+				style="border-color: var(--panel-border); align-self: start; max-height: 360px; overflow-y: auto;"
+			>
+				{#if whyLoading}
+					<p class="label" style="color: var(--foreground-muted)">Explaining the picks…</p>
+				{:else if why}
+					<span class="label block mb-1" style="color: var(--accent-primary); font-size: 10px;">WHY {why.name}?</span>
+					<p class="label" style="color: var(--foreground); text-transform: none; line-height: 1.6; font-size: 11px;">{why.text}</p>
+				{:else if whyError}
+					<p class="label" style="color: var(--accent-primary)">{whyError}</p>
+				{/if}
+			</div>
+		{/if}
+	</div>
 {:else if store.strategiesLoading}
 	<p class="label" style="color: var(--foreground-muted)">Loading strategies…</p>
 {:else}

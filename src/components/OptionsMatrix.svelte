@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getOptionsMatrix } from '$lib/api';
+	import { positionTip, clearTip } from '$lib/tooltip';
 	import type { OptionsMatrixResponse } from '$lib/types';
 
 	// OptionStrat-inspired P/L matrix: rows = strikes
@@ -68,6 +69,64 @@
 			? matrix.strikes.reduce((a, b) => (Math.abs(b.move_pct) < Math.abs(a.move_pct) ? b : a))
 					.strike
 			: null
+	);
+
+	// Graph-view geometry: the ATM row's P/L across the date columns, plus
+	// profit/loss area fills split at the zero line.
+	const graphMax = $derived.by(() => {
+		const m = matrix;
+		if (!m) return 1;
+		let mx = 1;
+		for (const r of m.strikes) for (const c of r.cells) mx = Math.max(mx, Math.abs(c.pl));
+		return mx || 1;
+	});
+
+	const graphPts = $derived.by(() => {
+		const m = matrix;
+		if (!m || m.strikes.length === 0) return [] as { x: number; y: number; pl: number }[];
+		const n = m.expiries.length;
+		const atm = m.strikes.reduce((a, b) =>
+			Math.abs(b.strike - m.current_price) < Math.abs(a.strike - m.current_price) ? b : a
+		);
+		return m.expiries.map((exp, i) => {
+			const cell = atm.cells.find((c) => c.expiry === exp);
+			const pl = cell ? cell.pl : 0;
+			const x = n === 1 ? viewW / 2 : (i / (n - 1)) * viewW;
+			const y = 30 - (pl / graphMax) * 25;
+			return { x, y, pl };
+		});
+	});
+
+	function buildAreas(pts: { x: number; y: number; pl: number }[], sign: number): string[] {
+		const paths: string[] = [];
+		let seg: { x: number; y: number; pl: number }[] = [];
+		for (const p of pts) {
+			const inSign = sign > 0 ? p.pl >= 0 : p.pl <= 0;
+			if (inSign) {
+				seg.push(p);
+			} else if (seg.length) {
+				// Linearly interpolate the zero crossing between the last
+				// in-sign point and this out-of-sign point.
+				const q = seg[seg.length - 1];
+				const t = q.pl / (q.pl - p.pl);
+				seg.push({ x: q.x + (p.x - q.x) * t, y: 30, pl: 0 });
+				paths.push(areaPath(seg));
+				seg = [];
+			}
+		}
+		if (seg.length > 1) paths.push(areaPath(seg));
+		return paths;
+	}
+
+	function areaPath(seg: { x: number; y: number }[]): string {
+		const pts = seg.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+		return `M ${seg[0].x.toFixed(1)},30 L ${pts} L ${seg[seg.length - 1].x.toFixed(1)},30 Z`;
+	}
+
+	const profitAreas = $derived(buildAreas(graphPts, 1));
+	const lossAreas = $derived(buildAreas(graphPts, -1));
+	const graphLine = $derived(
+		graphPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
 	);
 
 	function cellColor(pl: number): string {
@@ -156,50 +215,30 @@
 				</table>
 			</div>
 		{:else}
-			<!-- GRAPH VIEW: payoff curve for the ATM strike across expiries -->
-			{@const m = matrix!}
+			<!-- GRAPH VIEW: ATM payoff curve across dates with profit/loss areas -->
 			<div class="relative" bind:clientWidth={boxW} style="height: 240px; background: var(--surface); border: 1px solid var(--panel-border)">
-				{#if m.strikes.length > 0}
-					{@const maxAbs = Math.max(
-						1,
-						...m.strikes.flatMap((r) => r.cells.map((c) => Math.abs(c.pl)))
-					)}
-					{@const X = (i: number, n: number) => (n === 1 ? viewW / 2 : (i / (n - 1)) * viewW)}
-					{@const Y = (pl: number) => 30 - (pl / maxAbs) * 25}
-					<!-- zero line -->
+				{#if graphPts.length > 0}
 					<svg viewBox={`0 0 ${viewW.toFixed(1)} 60`} preserveAspectRatio="none" class="h-full w-full">
-						<line x1="0" y1="30" x2={viewW.toFixed(1)} y2="30" stroke="var(--panel-border)" stroke-dasharray="2 2" />
-						{#each m.expiries as exp, i}
-							{@const atm = m.strikes.reduce((a, b) =>
-								Math.abs(b.strike - m.current_price) < Math.abs(a.strike - m.current_price) ? b : a
-							)}
-							{@const cell = atm.cells.find((c) => c.expiry === exp)}
-							<circle
-								cx={X(i, m.expiries.length)}
-								cy={Y(cell ? cell.pl : 0)}
-								r="1.6"
-								fill={(cell ? cell.pl : 0) >= 0 ? '#34d399' : '#f87171'}
-							/>
+						{#each lossAreas as d}
+							<path d={d} fill="rgba(248,113,113,0.18)" stroke="none" />
 						{/each}
-						{#if m.expiries.length > 1}
-							<path
-								d={m.expiries
-									.map((exp, i) => {
-										const atm = m.strikes.reduce((a, b) =>
-											Math.abs(b.strike - m.current_price) < Math.abs(a.strike - m.current_price) ? b : a
-										);
-										const cell = atm.cells.find((c) => c.expiry === exp);
-										const x = X(i, m.expiries.length);
-										const y = Y(cell ? cell.pl : 0);
-										return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
-									})
-									.join(' ')}
-								fill="none" stroke="var(--accent-primary)" stroke-width="1.5" vector-effect="non-scaling-stroke"
-							/>
+						{#each profitAreas as d}
+							<path d={d} fill="rgba(52,211,153,0.18)" stroke="none" />
+						{/each}
+						<!-- zero line -->
+						<line x1="0" y1="30" x2={viewW.toFixed(1)} y2="30" stroke="var(--panel-border)" stroke-dasharray="2 2" />
+						{#if graphLine}
+							<path d={graphLine} fill="none" stroke="var(--accent-primary)" stroke-width="1.5" vector-effect="non-scaling-stroke" />
 						{/if}
+						{#each graphPts as p}
+							<circle cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="2" fill={p.pl >= 0 ? '#34d399' : '#f87171'} />
+						{/each}
 					</svg>
 					<div class="absolute inset-x-4 bottom-1 flex justify-between label" style="font-size: 9px; color: var(--foreground-subtle)">
-						{#each m.expiries as exp}<span>{fmtExpiry(exp)}</span>{/each}
+						{#each matrix!.expiries as exp}<span>{fmtExpiry(exp)}</span>{/each}
+					</div>
+					<div class="absolute left-2 top-1 flex flex-col data" style="font-size: 9px; color: var(--foreground-subtle); line-height: 1.6">
+						<span>+{graphMax.toFixed(0)}</span><span>$0</span><span>−{graphMax.toFixed(0)}</span>
 					</div>
 				{:else}
 					<p class="label" style="color: var(--foreground-subtle); text-transform: none">
@@ -229,12 +268,24 @@
 				<input type="range" min="2" max="16" step="1" bind:value={dates} onchange={handleRange} style="accent-color: var(--accent-primary); width: 140px;" />
 				<span class="data" style="font-size: 11px;">{dates} steps</span>
 			</div>
-			<div class="flex gap-1">
+		<div class="flex gap-1">
+			<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
 				<button type="button" onclick={() => (mode = 'pl')} class="px-2 py-1 label" style="border: 1px solid {mode === 'pl' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'pl' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">P/L $</button>
+				<span class="tooltip">Estimated profit or loss in dollars if the stock trades at that price on that date.</span>
+			</span>
+			<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
 				<button type="button" onclick={() => (mode = 'pl_pct')} class="px-2 py-1 label" style="border: 1px solid {mode === 'pl_pct' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'pl_pct' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">P/L %</button>
+				<span class="tooltip">The same profit or loss as a percentage of the premium paid.</span>
+			</span>
+			<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
 				<button type="button" onclick={() => (mode = 'value')} class="px-2 py-1 label" style="border: 1px solid {mode === 'value' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'value' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">VALUE</button>
+				<span class="tooltip">The estimated option value per contract at that price and date.</span>
+			</span>
+			<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
 				<button type="button" onclick={() => (mode = 'risk')} class="px-2 py-1 label" style="border: 1px solid {mode === 'risk' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'risk' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">% RISK</button>
-			</div>
+				<span class="tooltip">How much of the maximum possible loss is at stake at that price and date.</span>
+			</span>
+		</div>
 			{#if loading}
 				<span class="label" style="color: var(--foreground-muted)">Refreshing…</span>
 			{/if}
