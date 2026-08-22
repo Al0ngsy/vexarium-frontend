@@ -1,5 +1,5 @@
 import { getOptionChain, getOptionPayoff, getOptionChance, getStrategies } from './api';
-import { getToken, isPro } from './auth.svelte';
+import { getToken } from './auth.svelte';
 import type {
 	OptionChanceResponse,
 	OptionContract,
@@ -100,15 +100,12 @@ export const store = $state({
 		} finally {
 			store.strategiesLoading = false;
 		}
-		if (isPro()) {
-			try {
-				store.chance = await getOptionChance(store.symbol, sym, getToken() ?? undefined);
-			} catch (e) {
-				store.chance = null;
-				store.chanceError = e instanceof Error ? e.message : null;
-			}
-		} else {
-			store.chanceError = 'PRO_FEATURE';
+		// DEV: Pro gate removed during development; re-add the isPro() branch before launch.
+		try {
+			store.chance = await getOptionChance(store.symbol, sym, getToken() ?? undefined);
+		} catch (e) {
+			store.chance = null;
+			store.chanceError = e instanceof Error ? e.message : null;
 		}
 	}
 });

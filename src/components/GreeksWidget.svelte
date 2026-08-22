@@ -1,6 +1,5 @@
 <script lang="ts">
 	import InfoPopover from './InfoPopover.svelte';
-	import { formatPrice } from '$lib/format';
 	import { store } from '$lib/contract.svelte';
 	import type { Greeks } from '$lib/types';
 
@@ -70,16 +69,6 @@
 			</div>
 			<span class="label block" style="font-size: 9px; color: var(--foreground-muted)">Implied vol</span>
 			<span class="data" style="font-size: 13px; color: var(--foreground)">{(payoff.implied_volatility * 100).toFixed(1)}%</span>
-		</div>
-	</div>
-	<div class="mt-3 flex flex-wrap gap-4 border-t pt-2" style="border-color: var(--panel-border)">
-		<div>
-			<span class="label block" style="font-size: 9px; color: var(--foreground-muted)">PREMIUM</span>
-			<span class="data" style="font-size: 12px; color: var(--foreground)">{formatPrice(payoff.premium)}</span>
-		</div>
-		<div>
-			<span class="label block" style="font-size: 9px; color: var(--foreground-muted)">BREAKEVEN</span>
-			<span class="data" style="font-size: 12px; color: var(--foreground)">{formatPrice(payoff.breakeven)}</span>
 		</div>
 	</div>
 {:else if store.payoffError}

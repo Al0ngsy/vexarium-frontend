@@ -2,7 +2,7 @@
 	import StrategyCard from './StrategyCard.svelte';
 	import { store } from '$lib/contract.svelte';
 	import { getStrategiesExplanation } from '$lib/api';
-	import { isPro, getToken } from '$lib/auth.svelte';
+	import { getToken } from '$lib/auth.svelte';
 
 	const strategies = $derived(store.strategies?.strategies ?? []);
 
@@ -12,11 +12,7 @@
 
 	async function askWhy(name: string) {
 		if (!store.selectedSymbol) return;
-		if (!isPro()) {
-			why = null;
-			whyError = 'PRO_FEATURE';
-			return;
-		}
+		// DEV: Pro gate removed during development; re-add the isPro() check before launch.
 		whyLoading = true;
 		whyError = null;
 		try {
@@ -51,11 +47,6 @@
 			<span class="label block mb-1" style="color: var(--accent-primary); font-size: 10px;">WHY {why.name}?</span>
 			<p class="label" style="color: var(--foreground); text-transform: none; line-height: 1.6; font-size: 11px;">{why.text}</p>
 		</div>
-	{:else if whyError === 'PRO_FEATURE'}
-		<p class="label mt-2" style="color: var(--foreground-muted); text-transform: none;">
-			Strategy explanations are a <span style="color: var(--accent-primary); font-weight: 700">PRO</span> feature.
-			<a href="/pricing" class="btn-primary" style="padding: 2px 10px; margin-left: 8px; font-size: 10px;">UPGRADE</a>
-		</p>
 	{:else if whyError}
 		<p class="label mt-2" style="color: var(--accent-primary)">{whyError}</p>
 	{/if}

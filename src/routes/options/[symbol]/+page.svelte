@@ -53,6 +53,26 @@
 			content:
 				'Pick an expiry from the chips to see that expiration. Each row pairs a call (left) and a put (right) around the strike. ITM and OTM filter by moneyness. Click a row to select the contract, the payoff, greeks, probability and matrix widgets then react to it. Quotes are delayed and indicative.'
 		},
+		'payoff-explorer': {
+			title: 'How to use the payoff explorer',
+			content:
+				'The green line shows how much money this option would be worth at expiry for every possible stock price. The vertical blue line marks the current price. Drag the PRICE slider, or click anywhere on the chart, to see the option value and your profit or loss at that price. The DATE slider moves the day forward, showing how time decay shrinks the value. The timeline below lists the estimated price and P/L day by day. All numbers are Black-Scholes estimates, not guarantees.'
+		},
+		greeks: {
+			title: 'What are the greeks?',
+			content:
+				'Greeks measure how an option price reacts to changes. Delta: price move per $1 in the stock. Gamma: how fast delta itself changes. Theta: value lost per day (time decay). Vega: sensitivity to implied volatility. Rho: sensitivity to interest rates. Each cell has its own info icon with a plain-English explanation.'
+		},
+		probability: {
+			title: 'What does chance of profit mean?',
+			content:
+				"Prob of profit estimates how likely this trade is to end up making money, using the market's implied volatility in a Black-Scholes model. Prob ends ITM is the chance the option finishes in the money, meaning it still has value at expiry. Expected value compares the fair price with what you pay. These are estimates, not guarantees."
+		},
+		strategies: {
+			title: 'How strategies are picked',
+			content:
+				'The suggestions are built from the technical indicators of the stock, for example a bullish setup leads to calls and a bearish one to puts. Each card shows the payoff chart, max profit, max loss and breakeven. Click "Why this pick?" on a card for an AI explanation of why it fits the current picture.'
+		},
 		'pl-matrix': {
 			title: 'How to read the P/L matrix',
 			content:

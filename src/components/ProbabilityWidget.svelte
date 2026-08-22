@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { isPro } from '$lib/auth.svelte';
 	import InfoPopover from './InfoPopover.svelte';
 	import { formatPrice } from '$lib/format';
 	import { store } from '$lib/contract.svelte';
 
-	const pro = $derived(isPro());
+	// DEV: the Pro gate was removed during development; before launch re-add
+	// the isPro() branch that shows the upgrade panel for free users.
 	const chance = $derived(store.chance);
 
 	function barWidth(p: number): string {
@@ -15,14 +15,7 @@
 	}
 </script>
 
-{#if !pro}
-	<div class="flex flex-col items-center gap-3 p-6 text-center">
-		<p class="label" style="color: var(--foreground-muted); text-transform: none; line-height: 1.6">
-			Chance of profit is a <span style="color: var(--accent-primary); font-weight: 700">PRO</span> feature.
-		</p>
-		<a href="/pricing" class="btn-primary px-4 py-2">UPGRADE</a>
-	</div>
-{:else if !store.selectedSymbol}
+{#if !store.selectedSymbol}
 	<p class="label" style="color: var(--foreground-muted); text-transform: none">
 		Select a contract to estimate its chance of profit.
 	</p>

@@ -36,7 +36,6 @@
 		<PayoffExplorer
 			{symbol}
 			contractSymbol={store.selectedSymbol}
-			contract={store.selectedSymbol}
 			currentPrice={store.currentPrice}
 			strike={selected.strike_price}
 			isCall={isCall}

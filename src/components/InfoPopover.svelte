@@ -8,9 +8,21 @@
 	} = $props();
 
 	let open = $state(false);
+	let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 
 	let btn = $state<HTMLButtonElement | undefined>();
 	let panel = $state<HTMLDivElement | undefined>();
+
+	// Hover opens after a short delay; once open it stays (permanent) until
+	// dismissed with an outside click or the button. Click also toggles.
+	function onEnter() {
+		clearTimeout(hoverTimer);
+		hoverTimer = setTimeout(() => (open = true), 500);
+	}
+	function onLeave() {
+		clearTimeout(hoverTimer);
+		// do NOT close: an opened popover persists while the pointer leaves.
+	}
 
 	// Click-to-toggle popover (mobile friendly). Close on outside click.
 	function onClickOutside(e: MouseEvent) {
@@ -50,7 +62,12 @@
 	});
 </script>
 
-<span class="relative inline-block align-middle" data-popover>
+<span
+	class="relative inline-block align-middle"
+	data-popover
+	onmouseenter={onEnter}
+	onmouseleave={onLeave}
+>
 	<button
 		bind:this={btn}
 		class="inline-flex h-4 w-4 items-center justify-center rounded-full"

@@ -11,7 +11,6 @@
 	let {
 		symbol,
 		contractSymbol,
-		contract,
 		currentPrice,
 		strike,
 		isCall,
@@ -21,7 +20,6 @@
 	}: {
 		symbol: string;
 		contractSymbol: string;
-		contract: string | null;
 		currentPrice: number | null;
 		strike: number | null;
 		isCall: boolean | null;
@@ -123,11 +121,22 @@
 </script>
 
 <div class="flex flex-col gap-4">
-	<!-- Contract strip -->
-	<div class="flex flex-wrap items-center gap-2">
-		<span class="data" style="font-size: 12px; color: var(--foreground-muted)">{contractSymbol || '—'}</span>
-		<span class="label" style="color: var(--foreground-muted)">PREMIUM {formatPrice(premium)}</span>
-		<span class="label" style="color: var(--foreground-muted)">BREAKEVEN {formatPrice(breakeven)}</span>
+	<!-- Contract strip: friendly description first, raw OCC for reference. -->
+	<div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+		<span class="data" style="font-size: 13px; color: var(--foreground)">
+			{isCall === null ? 'Option' : isCall ? 'Call' : 'Put'}
+			{#if strike != null} {formatPrice(strike)}{/if}
+		</span>
+		{#if expiry}
+			<span class="label" style="color: var(--foreground-muted)">expires {expiry} · {daysToExpiry}d</span>
+		{/if}
+		<span class="label" style="color: var(--foreground-muted)">
+			premium <span class="data" style="color: var(--foreground)">{formatPrice(premium)}</span>
+		</span>
+		<span class="label" style="color: var(--foreground-muted)">
+			breakeven <span class="data" style="color: var(--foreground)">{formatPrice(breakeven)}</span>
+		</span>
+		<span class="label" style="color: var(--foreground-subtle); font-size: 10px; font-family: var(--font-mono)">{contractSymbol}</span>
 	</div>
 
 	<!-- Payoff graph -->
