@@ -217,7 +217,7 @@ export const OPTIONS_WIDGETS: WidgetDef[] = [
     y: 17,
     w: 12,
     h: 5,
-    minW: 4,
+    minW: 5,
     minH: 3,
   },
 ];

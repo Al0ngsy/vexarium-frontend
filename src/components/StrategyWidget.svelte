@@ -3,6 +3,7 @@
 	import { store } from '$lib/contract.svelte';
 	import { getStrategiesExplanation } from '$lib/api';
 	import { getToken } from '$lib/auth.svelte';
+	import { renderAIMarkdown } from '$lib/markdown';
 
 	const strategies = $derived(store.strategies?.strategies ?? []);
 
@@ -43,8 +44,10 @@
 		Select a contract to see strategy ideas.
 	</p>
 {:else if strategies.length > 0}
-	<div class="grid gap-3" style="grid-template-columns: minmax(0, 1fr) 320px; align-items: start;">
-		<div class="grid min-w-0 gap-3" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+	<!-- Cards keep a fixed width, the AI answer box takes all remaining space
+	     and grows as the widget is resized. -->
+	<div class="grid gap-3" style="grid-template-columns: minmax(260px, 400px) minmax(0, 1fr); align-items: start;">
+		<div class="grid gap-3" style="grid-template-columns: 1fr;">
 			{#each strategies as s (s.name)}
 				<StrategyCard strategy={s} />
 			{/each}
@@ -53,7 +56,7 @@
 		<!-- Dedicated AI answer box next to the cards. -->
 		<div
 			class="panel p-3"
-			style="border-color: var(--panel-border); max-height: 380px; overflow-y: auto;"
+			style="border-color: var(--panel-border); max-height: 420px; overflow-y: auto;"
 		>
 			<span class="label block mb-2" style="color: var(--accent-primary); font-size: 10px;">AI ANSWER</span>
 			<div class="flex flex-col gap-1">
@@ -74,9 +77,9 @@
 					Asking the AI, usually around 15 seconds…
 				</p>
 			{:else if why}
-				<p class="label mt-3" style="color: var(--foreground); text-transform: none; line-height: 1.6; font-size: 11px;">
-					{why.text}
-				</p>
+				<div class="mt-3 ai-body" style="font-size: 11.5px;">
+					{@html renderAIMarkdown(why.text)}
+				</div>
 			{:else if whyError}
 				<p class="label mt-3" style="color: var(--accent-primary); text-transform: none; line-height: 1.5; font-size: 11px;">
 					{whyError}
