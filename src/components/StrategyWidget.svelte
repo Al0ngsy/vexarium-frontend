@@ -68,7 +68,9 @@
 		let body = text;
 		let footer = '';
 		if (i !== -1) {
-			body = text.slice(0, i).replace(/\s*--+\s*$/g, '').trimEnd();
+			// Strip separator junk the LLM may leave before the footer: dashes,
+			// stray **/__ bold markers, and trailing whitespace.
+			body = text.slice(0, i).replace(/[ 	\r\n\-*_]+$/g, '');
 			footer = marker;
 		}
 		const lines = body.split('\n');
