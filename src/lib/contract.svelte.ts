@@ -94,7 +94,11 @@ export const store = $state({
 		try {
 			const strike = parseStrike(sym);
 			const exp = parseExpiration(sym);
-			store.strategies = await getStrategies(store.symbol, strike, exp.gte, exp.lte);
+			const contract = store.contracts.find((c) => c.symbol === sym);
+			const dte = contract?.expiration_date
+				? Math.max(0, Math.round((new Date(contract.expiration_date).getTime() - Date.now()) / 86400000))
+				: undefined;
+			store.strategies = await getStrategies(store.symbol, strike, exp.gte, exp.lte, undefined, dte);
 		} catch (e) {
 			store.strategiesError = e instanceof Error ? e.message : 'Strategies failed';
 		} finally {
