@@ -25,8 +25,8 @@
 		);
 	}
 
-	function fmt(v: number | null): string {
-		if (v === null || v === undefined) return '—';
+	function fmt(v: number | null, unlimited = false): string {
+		if (v === null || v === undefined) return unlimited ? '∞' : '—';
 		return `$${v.toFixed(2)}`;
 	}
 
@@ -75,7 +75,7 @@
 		</div>
 		<div>
 			<span class="label block">MAX PROFIT</span>
-			<span class="data" style="color: var(--foreground)">{fmt(strategy.max_profit)}</span>
+			<span class="data" style="color: var(--foreground)">{fmt(strategy.max_profit, strategy.name.toUpperCase() === 'LONG CALL')}</span>
 		</div>
 		<div>
 			<span class="label block">MAX LOSS</span>
