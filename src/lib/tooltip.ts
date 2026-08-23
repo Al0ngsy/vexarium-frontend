@@ -38,6 +38,9 @@ function ensureProgressBar(tip: HTMLElement): void {
 }
 
 function pinTip(anchor: HTMLElement, tip: HTMLElement): void {
+	// Belt and braces: only pin when the cursor is still on the anchor.
+	// A focus or a late timer must never leave a permanent popup behind.
+	if (!anchor.matches(":hover")) return;
 	tip.classList.add("pinned");
 	let close = tip.querySelector<HTMLButtonElement>(".tip-close");
 	if (!close) {
