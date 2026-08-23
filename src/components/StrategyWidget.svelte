@@ -14,10 +14,23 @@
 	// Session cache: repeat "why" clicks on the same strategy are instant.
 	const whyCache = new Map<string, string>();
 
-	async function askWhy(name: string) {
+	// Every strategy the engine knows; explore = those not already suggested.
+	const ALL_STRATEGIES = [
+		'LONG CALL',
+		'LONG PUT',
+		'BULL CALL SPREAD',
+		'BEAR PUT SPREAD',
+		'COVERED CALL',
+		'CASH-SECURED PUT',
+		'SHORT PUT'
+	];
+	const explore = $derived(ALL_STRATEGIES.filter((n) => !strategies.some((s) => s.name === n)));
+
+	async function askWhy(name: string, exploreStrategy?: string) {
 		if (!store.selectedSymbol) return;
 		// DEV: Pro gate removed during development; re-add the isPro() check before launch.
-		const cached = whyCache.get(name);
+		const cacheKey = exploreStrategy ?? name;
+		const cached = whyCache.get(cacheKey);
 		if (cached !== undefined) {
 			why = { name, text: cached };
 			return;
@@ -27,8 +40,8 @@
 		try {
 			const contract = store.getSelectedContract();
 			const strike = contract?.strike_price ?? 0;
-			const r = await getStrategiesExplanation(store.symbol, strike, getToken() ?? undefined);
-			whyCache.set(name, r.analysis);
+			const r = await getStrategiesExplanation(store.symbol, strike, getToken() ?? undefined, exploreStrategy);
+			whyCache.set(cacheKey, r.analysis);
 			why = { name, text: r.analysis };
 		} catch (e) {
 			why = null;
@@ -72,6 +85,22 @@
 					</button>
 				{/each}
 			</div>
+			{#if explore.length > 0}
+				<span class="label block mt-2 mb-1" style="color: var(--foreground-subtle); font-size: 9px;">EXPLORE MORE</span>
+				<div class="flex flex-col gap-1">
+					{#each explore as n (n)}
+						<button
+							type="button"
+							disabled={whyLoading}
+							onclick={() => void askWhy(n, n)}
+							class="px-2 py-1 text-left label"
+							style="border: 1px dashed {why?.name === n ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {why?.name === n ? 'var(--accent-primary)' : 'var(--foreground-muted)'}; background: transparent; cursor: {whyLoading ? 'wait' : 'pointer'};"
+						>
+							Why {n.toLowerCase()} now?
+						</button>
+					{/each}
+				</div>
+			{/if}
 			{#if whyLoading}
 				<p class="label mt-3" style="color: var(--foreground-muted); text-transform: none; line-height: 1.5; font-size: 11px;">
 					Asking the AI, usually around 15 seconds…

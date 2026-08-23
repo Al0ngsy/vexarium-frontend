@@ -194,18 +194,22 @@ export async function getStrategies(
 	return resp.json();
 }
 
-/** Pro-gated LLM explanation of why the recommended strategies fit this symbol/strike. */
+/** Pro-gated LLM explanation of why the recommended strategies fit this symbol/strike.
+ * Pass `strategy` to explore a specific strategy instead of the recommendations. */
 export async function getStrategiesExplanation(
 	symbol: string,
 	strike: number,
-	token?: string
+	token?: string,
+	strategy?: string
 ): Promise<{ symbol: string; strategies: unknown[]; analysis: string; model: string }> {
 	let url = `${BASE_URL}/api/v1/analysis/options-strategies`;
 	if (token) url += `?token=${encodeURIComponent(token)}`;
+	const body: Record<string, unknown> = { symbol, strike };
+	if (strategy) body.strategy = strategy;
 	const resp = await fetch(url, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ symbol, strike })
+		body: JSON.stringify(body)
 	});
 	if (resp.status === 403) throw new Error('PRO_FEATURE');
 	if (!resp.ok) throw new Error(`Strategy explanation failed: ${resp.status}`);
