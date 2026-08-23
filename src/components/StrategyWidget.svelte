@@ -1,7 +1,7 @@
 <script lang="ts">
 	import StrategyCard from './StrategyCard.svelte';
 	import { store } from '$lib/contract.svelte';
-	import { getStrategiesExplanation } from '$lib/api';
+	import { streamOptionsStrategiesExplanation } from '$lib/api';
 	import { getToken } from '$lib/auth.svelte';
 	import { renderAIMarkdown } from '$lib/markdown';
 
@@ -37,12 +37,21 @@
 		}
 		whyLoading = true;
 		whyError = null;
+		why = { name, text: '' };
 		try {
 			const contract = store.getSelectedContract();
 			const strike = contract?.strike_price ?? 0;
-			const r = await getStrategiesExplanation(store.symbol, strike, getToken() ?? undefined, exploreStrategy);
-			whyCache.set(cacheKey, r.analysis);
-			why = { name, text: r.analysis };
+			const full = await streamOptionsStrategiesExplanation(
+				store.symbol,
+				strike,
+				(chunk) => {
+					why = { name, text: (why?.text ?? '') + chunk };
+				},
+				getToken() ?? undefined,
+				exploreStrategy
+			);
+			whyCache.set(cacheKey, full);
+			why = { name, text: full };
 		} catch (e) {
 			why = null;
 			whyError = e instanceof Error ? e.message : 'Explanation failed';
@@ -50,6 +59,29 @@
 			whyLoading = false;
 		}
 	}
+
+	// Split the answer into a big blue headline, the markdown body, and the
+	// boxed disclaimer footer (same presentation as the stock AI opinion).
+	function splitAnswer(text: string): { headline: string; body: string; footer: string } {
+		const marker = 'This is not financial advice. AI can make/will make mistakes.';
+		const i = text.lastIndexOf(marker);
+		let body = text;
+		let footer = '';
+		if (i !== -1) {
+			body = text.slice(0, i).replace(/\s*--+\s*$/g, '').trimEnd();
+			footer = marker;
+		}
+		const lines = body.split('\n');
+		let headline = '';
+		const first = lines[0]?.trim() ?? '';
+		if (first && (first.startsWith('## ') || first.startsWith('**'))) {
+			headline = first.replace(/^##\s*/, '').replace(/^\*\*|\*\*$/g, '');
+			body = lines.slice(1).join('\n').trim();
+		}
+		return { headline, body, footer };
+	}
+
+	const answerParts = $derived(why ? splitAnswer(why.text) : null);
 </script>
 
 {#if !store.selectedSymbol}
@@ -103,20 +135,29 @@
 			{/if}
 			{#if whyLoading}
 				<p class="label mt-3" style="color: var(--foreground-muted); text-transform: none; line-height: 1.5; font-size: 11px;">
-					Asking the AI, usually around 15 seconds…
+					Asking the AI, streaming the answer…
 				</p>
-			{:else if why}
-				<div class="mt-3 ai-body" style="font-size: 11.5px;">
-					{@html renderAIMarkdown(why.text)}
-				</div>
 			{:else if whyError}
 				<p class="label mt-3" style="color: var(--accent-primary); text-transform: none; line-height: 1.5; font-size: 11px;">
 					{whyError}
 				</p>
-			{:else}
+			{:else if !why}
 				<p class="label mt-3" style="color: var(--foreground-muted); text-transform: none; line-height: 1.5; font-size: 11px;">
 					Pick a strategy to get an AI explanation of why it fits the current picture.
 				</p>
+			{/if}
+			{#if why && answerParts}
+				{#if answerParts.headline}
+					<div class="ai-headline">{answerParts.headline}</div>
+				{/if}
+				{#if answerParts.body}
+					<div class="ai-body" style="font-size: 11.5px;">
+						{@html renderAIMarkdown(answerParts.body)}
+					</div>
+				{/if}
+				{#if answerParts.footer}
+					<div class="ai-disclaimer">{answerParts.footer}</div>
+				{/if}
 			{/if}
 		</div>
 	</div>
@@ -125,3 +166,27 @@
 {:else}
 	<p class="label" style="color: var(--accent-primary)">{store.strategiesError ?? 'No strategies found for this contract.'}</p>
 {/if}
+
+<style>
+	/* Same visual language as the stock AI opinion: big blue headline,
+	   styled markdown body, boxed disclaimer footer. */
+	.ai-headline {
+		margin-top: 12px;
+		color: var(--accent-primary);
+		font-family: var(--font-display);
+		font-size: 15px;
+		font-weight: 700;
+		letter-spacing: 0.01em;
+	}
+	.ai-disclaimer {
+		margin-top: 12px;
+		padding: 8px 10px;
+		border-top: 1px solid var(--panel-border);
+		border-bottom: 1px solid var(--panel-border);
+		color: var(--foreground-muted);
+		font-size: 10px;
+		line-height: 1.5;
+		text-align: center;
+		text-transform: none;
+	}
+</style>

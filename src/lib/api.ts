@@ -216,6 +216,63 @@ export async function getStrategiesExplanation(
 	return resp.json();
 }
 
+/** Stream the options-strategy explanation over SSE (same event shape as
+ * streamAIAnalysis): onChunk gets each progressive piece, resolves with the
+ * full text when the stream completes. */
+export async function streamOptionsStrategiesExplanation(
+	symbol: string,
+	strike: number,
+	onChunk: (text: string) => void,
+	token?: string,
+	strategy?: string,
+	signal?: AbortSignal
+): Promise<string> {
+	let url = `${BASE_URL}/api/v1/analysis/options-strategies/stream`;
+	if (token) url += `?token=${encodeURIComponent(token)}`;
+	const body: Record<string, unknown> = { symbol, strike };
+	if (strategy) body.strategy = strategy;
+	const resp = await fetch(url, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body),
+		signal
+	});
+	if (resp.status === 403) throw new Error('PRO_FEATURE');
+	if (!resp.ok) throw new Error(`Strategy explanation failed: ${resp.status}`);
+	if (!resp.body) throw new Error('Streaming not supported');
+
+	const reader = resp.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = '';
+	let full = '';
+
+	const processEvent = (line: string) => {
+		if (!line.startsWith('data: ')) return;
+		const payload = line.slice(6).trim();
+		if (!payload) return;
+		try {
+			const ev = JSON.parse(payload);
+			if (typeof ev.chunk === 'string' && ev.chunk) {
+				full += ev.chunk;
+				onChunk(ev.chunk);
+			}
+		} catch {
+			// ignore malformed keepalive lines
+		}
+	};
+
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		buffer += decoder.decode(value, { stream: true });
+		const lines = buffer.split('\n');
+		buffer = lines.pop() ?? '';
+		for (const line of lines) processEvent(line.trimEnd());
+	}
+	for (const line of buffer.split('\n')) processEvent(line.trimEnd());
+	return full;
+}
+
 export async function getStance(trade: SavedTrade, currentPrice = 0): Promise<StanceResponse> {
 	const resp = await fetch(`${BASE_URL}/api/v1/portfolio/stance`, {
 		method: 'POST',
