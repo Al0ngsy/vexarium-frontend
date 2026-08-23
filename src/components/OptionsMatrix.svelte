@@ -145,10 +145,11 @@
 		if (mode === 'pl') return `${cell.pl >= 0 ? '+' : '−'}${Math.abs(cell.pl).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 		if (mode === 'pl_pct') return `${(cell.pl_pct * 100).toFixed(1)}%`;
 		if (mode === 'value') return `$${cell.option_value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-		// risk: % of max loss
+		// risk: % of the max loss realized. Profitable cells have nothing at
+		// stake and show 0% (never a positive "risk" for gains).
 		const maxLoss = matrix?.strikes.reduce((m, r) => Math.min(m, r.cells.reduce((c, x) => Math.min(c, x.pl), 0)), 0) ?? 0;
-		if (maxLoss >= 0) return '0%';
-		return `${Math.min(100, Math.abs(cell.pl / maxLoss) * 100).toFixed(0)}%`;
+		if (maxLoss >= 0 || cell.pl >= 0) return '0%';
+		return `${Math.min(100, (cell.pl / maxLoss) * 100).toFixed(0)}%`;
 	}
 
 	function fmtExpiry(exp: string): string {
@@ -209,7 +210,7 @@
 				</span>
 				<span class="indicator-tip" onmouseenter={(e) => positionTip(e.currentTarget)} onmouseleave={(e) => clearTip(e.currentTarget)}>
 					<button type="button" onclick={() => (mode = 'risk')} class="px-2 py-1 label" style="border: 1px solid {mode === 'risk' ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {mode === 'risk' ? 'var(--accent-primary)' : 'var(--foreground-muted)'};">% RISK</button>
-					<span class="tooltip">How much of the maximum possible loss is at stake at that price and date.</span>
+					<span class="tooltip">How much of the maximum possible loss has materialized at that price and date. Profitable cells show 0%.</span>
 				</span>
 			</div>
 				{#if loading}
