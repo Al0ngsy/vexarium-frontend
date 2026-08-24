@@ -232,12 +232,14 @@ export async function streamOptionsStrategiesExplanation(
 	onChunk: (text: string) => void,
 	token?: string,
 	strategy?: string,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	timeframe?: string
 ): Promise<string> {
 	let url = `${BASE_URL}/api/v1/analysis/options-strategies/stream`;
 	if (token) url += `?token=${encodeURIComponent(token)}`;
 	const body: Record<string, unknown> = { symbol, strike };
 	if (strategy) body.strategy = strategy;
+	if (timeframe) body.timeframe = timeframe;
 	const resp = await fetch(url, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },

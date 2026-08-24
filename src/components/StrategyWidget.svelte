@@ -29,7 +29,13 @@
 	async function askWhy(name: string, exploreStrategy?: string) {
 		if (!store.selectedSymbol) return;
 		// DEV: Pro gate removed during development; re-add the isPro() check before launch.
-		const cacheKey = exploreStrategy ?? name;
+		// Session cache keyed by everything that changes the answer: symbol,
+		// strike, the verdict timeframe, and the strategy name. Without the
+		// timeframe, toggling 1d/1w would replay a stale explanation.
+		const contract = store.getSelectedContract();
+		const strike = contract?.strike_price ?? 0;
+		const tf = store.strategies?.timeframe ?? '';
+		const cacheKey = `${store.symbol}|${strike}|${tf}|${exploreStrategy ?? name}`;
 		const cached = whyCache.get(cacheKey);
 		if (cached !== undefined) {
 			why = { name, text: cached };
@@ -39,8 +45,6 @@
 		whyError = null;
 		why = { name, text: '' };
 		try {
-			const contract = store.getSelectedContract();
-			const strike = contract?.strike_price ?? 0;
 			const full = await streamOptionsStrategiesExplanation(
 				store.symbol,
 				strike,
@@ -48,7 +52,9 @@
 					why = { name, text: (why?.text ?? '') + chunk };
 				},
 				getToken() ?? undefined,
-				exploreStrategy
+				exploreStrategy,
+				undefined,
+				tf || undefined
 			);
 			whyCache.set(cacheKey, full);
 			why = { name, text: full };
