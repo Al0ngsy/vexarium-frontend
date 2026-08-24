@@ -318,6 +318,7 @@ export interface StrategyCard {
 export interface StrategiesResponse {
   symbol: string;
   sentiment: string;
+  timeframe: string;
   strategies: StrategyCard[];
 }
 

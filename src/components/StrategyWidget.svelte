@@ -84,6 +84,15 @@
 	}
 
 	const answerParts = $derived(why ? splitAnswer(why.text) : null);
+
+	const TF_LABEL: Record<string, string> = {
+		'1h': '1 hour',
+		'1d': '1 day',
+		'1w': '1 week',
+		'1mo': '1 month'
+	};
+	const TF_OPTIONS = ['auto', '1h', '1d', '1w', '1mo'];
+	const tfUsed = $derived(store.strategies?.timeframe ?? '');
 </script>
 
 {#if !store.selectedSymbol}
@@ -91,6 +100,25 @@
 		Select a contract to see strategy ideas.
 	</p>
 {:else if strategies.length > 0}
+	<!-- Disclosure + horizon override: the verdict is judged on the timeframe
+	     matched to the contract's days-to-expiry, or a user-picked one. -->
+	<div class="flex flex-wrap items-center gap-2 mb-3">
+		<span class="label" style="color: var(--foreground-muted); text-transform: none; font-size: 10px;">
+			Judged on {TF_LABEL[tfUsed] ?? tfUsed} momentum
+			{store.strategyTf === 'auto' ? ' (matched to this contract)' : ' (your choice)'}.
+		</span>
+		{#each TF_OPTIONS as tf (tf)}
+			<button
+				type="button"
+				disabled={store.strategiesLoading}
+				onclick={() => void store.setStrategyTf(tf)}
+				class="px-2 py-0.5 label"
+				style="border: 1px solid {store.strategyTf === tf ? 'var(--accent-primary)' : 'var(--panel-border)'}; color: {store.strategyTf === tf ? 'var(--accent-primary)' : 'var(--foreground-muted)'}; background: transparent; cursor: {store.strategiesLoading ? 'wait' : 'pointer'}; border-radius: 4px; font-size: 10px; text-transform: none;"
+			>
+				{tf === 'auto' ? 'auto' : tf}
+			</button>
+		{/each}
+	</div>
 	<!-- Cards keep a fixed width, the AI answer box takes all remaining space
 	     and grows as the widget is resized. -->
 	<div class="grid gap-3" style="grid-template-columns: minmax(260px, 400px) minmax(0, 1fr); align-items: start;">

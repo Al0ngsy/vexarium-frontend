@@ -184,15 +184,18 @@ export async function getStrategies(
 	expirationGte: string,
 	expirationLte: string,
 	sentiment?: string,
-	dte?: number
+	dte?: number,
+	timeframe?: string
 ): Promise<StrategiesResponse> {
 	// Sentiment is optional: the backend derives direction from indicators
 	// (defaults to 'neutral' when omitted). `dte` (days to expiry of the
 	// selected contract) lets the backend match the verdict timeframe to the
-	// contract horizon instead of always judging on 1d bars.
+	// contract horizon instead of always judging on 1d bars. An explicit
+	// `timeframe` (1h/1d/1w/1mo) overrides the DTE-matched default.
 	let url = `${BASE_URL}/api/v1/options/${symbol}/strategies?strike=${strike}&expiration_gte=${expirationGte}&expiration_lte=${expirationLte}`;
 	if (sentiment) url += `&sentiment=${sentiment}`;
 	if (dte !== undefined) url += `&dte=${dte}`;
+	if (timeframe) url += `&timeframe=${timeframe}`;
 	const resp = await fetch(url);
 	if (!resp.ok) throw new Error(`Strategies failed: ${resp.status}`);
 	return resp.json();

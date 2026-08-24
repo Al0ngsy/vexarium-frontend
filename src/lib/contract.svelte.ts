@@ -26,6 +26,7 @@ export const store = $state({
 	strategies: null as StrategiesResponse | null,
 	strategiesLoading: false,
 	strategiesError: null as string | null,
+	strategyTf: 'auto' as string, // user override for the verdict timeframe
 	chance: null as OptionChanceResponse | null,
 	chanceError: null as string | null,
 
@@ -92,13 +93,7 @@ export const store = $state({
 			store.payoffLoading = false;
 		}
 		try {
-			const strike = parseStrike(sym);
-			const exp = parseExpiration(sym);
-			const contract = store.contracts.find((c) => c.symbol === sym);
-			const dte = contract?.expiration_date
-				? Math.max(0, Math.round((new Date(contract.expiration_date).getTime() - Date.now()) / 86400000))
-				: undefined;
-			store.strategies = await getStrategies(store.symbol, strike, exp.gte, exp.lte, undefined, dte);
+			await store.loadStrategies(sym);
 		} catch (e) {
 			store.strategiesError = e instanceof Error ? e.message : 'Strategies failed';
 		} finally {
@@ -111,8 +106,42 @@ export const store = $state({
 			store.chance = null;
 			store.chanceError = e instanceof Error ? e.message : null;
 		}
-	}
-});
+		},
+
+		// Fetch the strategy suggestions for the selected contract. `store.strategyTf`
+		// is 'auto' (DTE-matched horizon) or an explicit 1h/1d/1w/1mo override.
+		async loadStrategies(sym: string) {
+			const strike = parseStrike(sym);
+			const exp = parseExpiration(sym);
+			const contract = store.contracts.find((c) => c.symbol === sym);
+			const dte = contract?.expiration_date
+				? Math.max(0, Math.round((new Date(contract.expiration_date).getTime() - Date.now()) / 86400000))
+				: undefined;
+			store.strategies = await getStrategies(
+				store.symbol,
+				strike,
+				exp.gte,
+				exp.lte,
+				undefined,
+				dte,
+				store.strategyTf === 'auto' ? undefined : store.strategyTf
+			);
+		},
+
+		async setStrategyTf(tf: string) {
+			if (tf === store.strategyTf || !store.selectedSymbol) return;
+			store.strategyTf = tf;
+			store.strategiesLoading = true;
+			store.strategiesError = null;
+			try {
+				await store.loadStrategies(store.selectedSymbol);
+			} catch (e) {
+				store.strategiesError = e instanceof Error ? e.message : 'Strategies failed';
+			} finally {
+				store.strategiesLoading = false;
+			}
+		}
+		});
 
 function atmContract(): OptionContract | null {
 	if (!store.currentPrice) return store.contracts[0] ?? null;
