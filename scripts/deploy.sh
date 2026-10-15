@@ -4,7 +4,8 @@
 #
 #   yarn deploy
 #
-# Builds with the production API URL, then uploads to Cloudflare Pages via
+# Runs yarn check and yarn test first (abort on failure), builds with the
+# production API URL, then uploads to Cloudflare Pages via
 # wrangler (direct upload — the Pages project is not git-connected).
 #
 # Secrets are read from, in order of preference:
@@ -42,6 +43,13 @@ if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
   echo "ERROR: CLOUDFLARE_API_TOKEN not set (env, ../deploy-secrets.env, or ./.env)." >&2
   exit 1
 fi
+
+# --- Quality gate ----------------------------------------------------------
+# Nothing is built or uploaded unless type check and tests pass (set -e aborts).
+echo "==> Type check (yarn check)"
+yarn check
+echo "==> Tests (yarn test)"
+yarn test
 
 # --- Build -----------------------------------------------------------------
 echo "==> Building frontend (VITE_API_URL=$VITE_API_URL)"
