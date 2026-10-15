@@ -6,6 +6,7 @@ import type {
 	StanceResponse,
 	StrategiesResponse,
 	SavedTrade,
+	TradeType,
 	AssetType,
 	AIAnalysisResponse,
 	AssetInfo,
@@ -49,10 +50,15 @@ export interface RequestOptions {
 	body?: unknown;
 	query?: Query;
 	signal?: AbortSignal;
-	/** true (default): send the stored session token as `Authorization: Bearer`
-	 * when there is one. false: never send credentials. string: use exactly this
-	 * token (e.g. verifying a fresh login before it is stored). */
+	/** false (default): never send credentials. An Authorization header turns a
+	 * simple cross-origin GET into a preflighted one, so only endpoints that
+	 * read the user opt in. true: send the stored session token as
+	 * `Authorization: Bearer` when there is one. string: use exactly this token
+	 * (e.g. verifying a fresh login before it is stored). */
 	auth?: boolean | string;
+	/** false: a 401 does not drop the stored session. For endpoints that answer
+	 * 401 for a wrong password the user just typed. Default true. */
+	logoutOn401?: boolean;
 	/** Prefix of ApiError.message, e.g. "Analysis failed". */
 	label?: string;
 	cache?: RequestCache;
@@ -81,7 +87,7 @@ function detailOf(payload: unknown): string | null {
 
 /** Fetch with auth header + error mapping; returns the raw (ok) response. */
 async function send(path: string, opts: RequestOptions = {}): Promise<Response> {
-	const { method = 'GET', body, query, signal, auth = true, label = 'Request failed', cache } = opts;
+	const { method = 'GET', body, query, signal, auth = false, logoutOn401 = true, label = 'Request failed', cache } = opts;
 	const explicit = typeof auth === 'string' ? auth : null;
 	const token = explicit ?? (auth ? getSessionToken() : null);
 
@@ -106,7 +112,7 @@ async function send(path: string, opts: RequestOptions = {}): Promise<Response> 
 	}
 	// A rejected stored token means the session is gone: log out. An explicit
 	// token (fresh login being verified) is the caller's business.
-	if (resp.status === 401 && token && explicit === null) clearSessionToken();
+	if (resp.status === 401 && token && explicit === null && logoutOn401) clearSessionToken();
 	throw new ApiError(`${label}: ${detail ?? resp.status}`, resp.status, detail);
 }
 
@@ -176,20 +182,122 @@ export function register(email: string, password: string): Promise<AuthResponse>
 	return request('/api/v1/auth/register', {
 		method: 'POST',
 		body: { email, password },
-		auth: false,
 		label: 'Registration failed'
 	});
 }
 
-export function getMe(token?: string): Promise<{ id: number; email: string; tier: string }> {
-	return request('/api/v1/auth/me', { auth: token ?? true, label: 'Session expired' });
+export interface Me {
+	id: number;
+	email: string;
+	tier: string;
+	subscription_status: string | null;
+	current_period_end: string | null;
+	created_at: string;
 }
 
-export function createCheckoutSession(token?: string): Promise<{ checkout_url: string }> {
+export function login(email: string, password: string): Promise<AuthResponse> {
+	return request('/api/v1/auth/login', {
+		method: 'POST',
+		body: { email, password },
+		label: 'Login failed'
+	});
+}
+
+export function getMe(token?: string, signal?: AbortSignal): Promise<Me> {
+	return request('/api/v1/auth/me', { auth: token ?? true, signal, label: 'Session expired' });
+}
+
+export function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+	return request('/api/v1/auth/change-password', {
+		method: 'POST',
+		body: { current_password: currentPassword, new_password: newPassword },
+		auth: true,
+		logoutOn401: false,
+		label: 'Password change failed'
+	});
+}
+
+export function deleteAccount(password: string): Promise<void> {
+	return request('/api/v1/auth/me', {
+		method: 'DELETE',
+		body: { password },
+		auth: true,
+		logoutOn401: false,
+		label: 'Account deletion failed'
+	});
+}
+
+export function requestPasswordReset(email: string): Promise<void> {
+	return request('/api/v1/auth/password-reset/request', {
+		method: 'POST',
+		body: { email },
+		label: 'Password reset failed'
+	});
+}
+
+export function confirmPasswordReset(token: string, newPassword: string): Promise<void> {
+	return request('/api/v1/auth/password-reset/confirm', {
+		method: 'POST',
+		body: { token, new_password: newPassword },
+		label: 'Password reset failed'
+	});
+}
+
+// --- Billing --------------------------------------------------------------
+
+export function createCheckoutSession(): Promise<{ checkout_url: string }> {
 	return request('/api/v1/billing/checkout', {
 		method: 'POST',
-		auth: token ?? true,
+		auth: true,
 		label: 'Checkout failed'
+	});
+}
+
+/** Stripe customer portal. 400 when the user has no Stripe customer yet. */
+export function createPortalSession(): Promise<{ portal_url: string }> {
+	return request('/api/v1/billing/portal', {
+		method: 'POST',
+		auth: true,
+		label: 'Billing portal failed'
+	});
+}
+
+// --- Trades ---------------------------------------------------------------
+
+export interface TradeCreate {
+	symbol: string;
+	trade_type: TradeType;
+	entry_date: string;
+	entry_price: number;
+	quantity: number;
+	contract?: string;
+	notes?: string;
+}
+
+export interface TradeOut extends TradeCreate {
+	id: number;
+	user_id: number;
+	created_at: string | null;
+}
+
+export function listTrades(signal?: AbortSignal): Promise<TradeOut[]> {
+	return request('/api/v1/trades', { auth: true, signal, label: 'Loading trades failed' });
+}
+
+export function createTrade(trade: TradeCreate): Promise<TradeOut> {
+	return request('/api/v1/trades', {
+		method: 'POST',
+		body: trade,
+		auth: true,
+		label: 'Saving trade failed'
+	});
+}
+
+export function deleteTradeById(id: number): Promise<void> {
+	return request(`/api/v1/trades/${id}`, {
+		method: 'DELETE',
+		auth: true,
+		label: 'Deleting trade failed'
 	});
 }
 
@@ -322,6 +430,7 @@ export function getOptionChance(
 	return request<OptionChanceResponse>(`/api/v1/options/${encodeURIComponent(symbol)}/chance`, {
 		query: { contract_symbol: contractSymbol },
 		signal,
+		auth: true,
 		label: 'Options chance failed'
 	}).catch(proGate);
 }
@@ -367,7 +476,7 @@ export function getStrategiesExplanation(
 	if (strategy) body.strategy = strategy;
 	return request<{ symbol: string; strategies: unknown[]; analysis: string; model: string }>(
 		'/api/v1/analysis/options-strategies',
-		{ method: 'POST', body, signal, label: 'Strategy explanation failed' }
+		{ method: 'POST', body, signal, auth: true, label: 'Strategy explanation failed' }
 	).catch(proGate);
 }
 
@@ -390,6 +499,7 @@ export async function streamOptionsStrategiesExplanation(
 		method: 'POST',
 		body,
 		signal,
+		auth: true,
 		label: 'Strategy explanation failed'
 	}).catch(proGate);
 	if (!resp.body) throw new Error('Streaming not supported');
@@ -424,6 +534,7 @@ export function getAIAnalysis(
 		method: 'POST',
 		body: { symbol, asset_type: assetType, timeframe },
 		signal,
+		auth: true,
 		label: 'AI analysis failed'
 	});
 }
@@ -444,6 +555,7 @@ export async function streamAIAnalysis(
 		method: 'POST',
 		body: { symbol, asset_type: assetType, timeframe },
 		signal,
+		auth: true,
 		label: 'AI analysis failed'
 	});
 	if (!resp.body) return getAIAnalysis(symbol, assetType, signal, timeframe).then((r) => r.analysis);
@@ -463,8 +575,7 @@ export async function searchAssets(q: string): Promise<AssetInfo[] | null> {
 	try {
 		const data = await request<AssetSearchResponse>('/api/v1/assets/search', {
 			query: { q },
-			signal: AbortSignal.timeout(60_000),
-			auth: false
+			signal: AbortSignal.timeout(60_000)
 		});
 		return data.assets || [];
 	} catch {

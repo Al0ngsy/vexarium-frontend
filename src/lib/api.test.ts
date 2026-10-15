@@ -2,7 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	ApiError,
 	analyze,
+	changePassword,
+	confirmPasswordReset,
 	createCheckoutSession,
+	createPortalSession,
+	createTrade,
+	deleteAccount,
+	deleteTradeById,
 	getAIAnalysis,
 	getBars,
 	getFearGreed,
@@ -18,7 +24,10 @@ import {
 	getStrategies,
 	getStrategiesExplanation,
 	isAbortError,
+	listTrades,
+	login,
 	register,
+	requestPasswordReset,
 	request,
 	searchAssets,
 	streamAIAnalysis,
@@ -65,10 +74,10 @@ afterEach(() => {
 });
 
 describe('request(): headers and URL', () => {
-	it('sends the stored token as Authorization: Bearer and never in the URL', async () => {
+	it('auth: true sends the stored token as Authorization: Bearer and never in the URL', async () => {
 		setSessionToken(TOKEN);
 		const fetchMock = mockFetch();
-		await request('/api/v1/thing', { query: { a: 1 } });
+		await request('/api/v1/thing', { query: { a: 1 }, auth: true });
 		const { url, headers } = lastCall(fetchMock);
 		expect(headers.get('Authorization')).toBe(`Bearer ${TOKEN}`);
 		expect(url).toBe(`${BASE}/api/v1/thing?a=1`);
@@ -76,15 +85,17 @@ describe('request(): headers and URL', () => {
 		expect(url).not.toContain('token');
 	});
 
-	it('sends no Authorization header without a session', async () => {
+	it('sends no Authorization header with auth: true but no session', async () => {
 		const fetchMock = mockFetch();
-		await request('/api/v1/thing');
+		await request('/api/v1/thing', { auth: true });
 		expect(lastCall(fetchMock).headers.has('Authorization')).toBe(false);
 	});
 
-	it('auth: false never sends the stored token', async () => {
+	it('is anonymous by default, even with a stored token (no CORS preflight)', async () => {
 		setSessionToken(TOKEN);
 		const fetchMock = mockFetch();
+		await request('/api/v1/public');
+		expect(lastCall(fetchMock).headers.has('Authorization')).toBe(false);
 		await request('/api/v1/public', { auth: false });
 		expect(lastCall(fetchMock).headers.has('Authorization')).toBe(false);
 	});
@@ -158,21 +169,22 @@ describe('request(): errors', () => {
 		const cleared = vi.fn();
 		const off = onSessionCleared(cleared);
 		mockFetch(() => json({ detail: 'Invalid or expired token' }, 401));
-		await expect(request('/x')).rejects.toMatchObject({ status: 401 });
+		await expect(request('/x', { auth: true })).rejects.toMatchObject({ status: 401 });
 		expect(getSessionToken()).toBeNull();
 		expect(cleared).toHaveBeenCalledOnce();
 		off();
 	});
 
-	it('does not log out on 401 without a token, with auth: false, or with an explicit token', async () => {
+	it('does not log out on 401 without a token, anonymously, with logoutOn401: false or with an explicit token', async () => {
 		const cleared = vi.fn();
 		const off = onSessionCleared(cleared);
 		mockFetch(() => json({ detail: 'no' }, 401));
 
-		await expect(request('/x')).rejects.toBeInstanceOf(ApiError);
+		await expect(request('/x', { auth: true })).rejects.toBeInstanceOf(ApiError);
 
 		setSessionToken(TOKEN);
 		await expect(request('/x', { auth: false })).rejects.toBeInstanceOf(ApiError);
+		await expect(request('/x', { auth: true, logoutOn401: false })).rejects.toBeInstanceOf(ApiError);
 		await expect(getMe('other-token')).rejects.toBeInstanceOf(ApiError);
 		expect(getSessionToken()).toBe(TOKEN);
 		expect(cleared).not.toHaveBeenCalled();
@@ -182,9 +194,9 @@ describe('request(): errors', () => {
 	it('does not log out on other errors (403, 500)', async () => {
 		setSessionToken(TOKEN);
 		mockFetch(() => json({ detail: 'x' }, 500));
-		await expect(request('/x')).rejects.toBeInstanceOf(ApiError);
+		await expect(request('/x', { auth: true })).rejects.toBeInstanceOf(ApiError);
 		mockFetch(() => json({ detail: 'x' }, 403));
-		await expect(request('/x')).rejects.toBeInstanceOf(ApiError);
+		await expect(request('/x', { auth: true })).rejects.toBeInstanceOf(ApiError);
 		expect(getSessionToken()).toBe(TOKEN);
 	});
 
@@ -246,10 +258,23 @@ describe('endpoint functions', () => {
 		quantity: 1
 	} as SavedTrade;
 
-	it('send the bearer header and put no token in any URL', async () => {
+	it('only the user-aware endpoints send the bearer header; no token in any URL', async () => {
 		setSessionToken(TOKEN);
 		const fetchMock = mockFetch(() => json({}));
-		const calls: [string, () => Promise<unknown>][] = [
+		const authed: [string, () => Promise<unknown>][] = [
+			['getOptionChance', () => getOptionChance('AAPL', 'AAPL260116C00200000')],
+			['getStrategiesExplanation', () => getStrategiesExplanation('AAPL', 200, 'LONG CALL')],
+			['getAIAnalysis', () => getAIAnalysis('AAPL')],
+			['getMe', () => getMe()],
+			['changePassword', () => changePassword('old', 'newpassword')],
+			['deleteAccount', () => deleteAccount('pw')],
+			['createCheckoutSession', () => createCheckoutSession()],
+			['createPortalSession', () => createPortalSession()],
+			['listTrades', () => listTrades()],
+			['createTrade', () => createTrade({ symbol: 'AAPL', trade_type: 'stock', entry_date: '2026-01-01', entry_price: 1, quantity: 1 })],
+			['deleteTradeById', () => deleteTradeById(7)]
+		];
+		const anonymous: [string, () => Promise<unknown>][] = [
 			['analyze', () => analyze('AAPL', 'stock', false, '1w')],
 			['getBars', () => getBars('AAPL', '1h', 100)],
 			['getFinnhub', () => getFinnhub('AAPL')],
@@ -259,23 +284,57 @@ describe('endpoint functions', () => {
 			['getOptionPayoff', () => getOptionPayoff('AAPL', 'AAPL260116C00200000')],
 			['getOptionValueAtPrice', () => getOptionValueAtPrice('AAPL', 'AAPL260116C00200000', 210, '2026-01-10')],
 			['getOptionsMatrix', () => getOptionsMatrix('AAPL', 'AAPL260116C00200000')],
-			['getOptionChance', () => getOptionChance('AAPL', 'AAPL260116C00200000')],
 			['getStrategies', () => getStrategies('AAPL', 200, '2026-01-16', '2026-01-16', undefined, 30, '1w')],
-			['getStrategiesExplanation', () => getStrategiesExplanation('AAPL', 200, 'LONG CALL')],
 			['getStance', () => getStance(trade, 110)],
-			['getAIAnalysis', () => getAIAnalysis('AAPL')],
-			['getMe', () => getMe()],
-			['createCheckoutSession', () => createCheckoutSession()]
+			['register', () => register('a@b.c', 'password1')],
+			['login', () => login('a@b.c', 'password1')],
+			['requestPasswordReset', () => requestPasswordReset('a@b.c')],
+			['confirmPasswordReset', () => confirmPasswordReset('tok', 'newpassword')]
 		];
-		for (const [name, call] of calls) {
+		for (const [name, call] of [...authed, ...anonymous]) {
 			fetchMock.mockClear();
 			await call();
 			const { url, headers } = lastCall(fetchMock);
-			expect(headers.get('Authorization'), name).toBe(`Bearer ${TOKEN}`);
+			const expected = authed.some(([n]) => n === name);
+			expect(headers.get('Authorization'), name).toBe(expected ? `Bearer ${TOKEN}` : null);
 			expect(url, name).not.toMatch(/token/i);
 			expect(url, name).not.toContain(TOKEN);
 			expect(url.startsWith(`${BASE}/api/v1/`), name).toBe(true);
 		}
+	});
+
+	it('sends the new auth, billing and trades requests in the shape the backend expects', async () => {
+		const fetchMock = mockFetch(() => json({}));
+		const expectCall = (url: string, method: string, body?: unknown) => {
+			const c = lastCall(fetchMock);
+			expect(c.url).toBe(`${BASE}${url}`);
+			expect(c.init.method).toBe(method);
+			if (body !== undefined) expect(JSON.parse(c.body!)).toEqual(body);
+		};
+		await login('a@b.c', 'pw');
+		expectCall('/api/v1/auth/login', 'POST', { email: 'a@b.c', password: 'pw' });
+		await changePassword('old', 'new');
+		expectCall('/api/v1/auth/change-password', 'POST', { current_password: 'old', new_password: 'new' });
+		await deleteAccount('pw');
+		expectCall('/api/v1/auth/me', 'DELETE', { password: 'pw' });
+		await requestPasswordReset('a@b.c');
+		expectCall('/api/v1/auth/password-reset/request', 'POST', { email: 'a@b.c' });
+		await confirmPasswordReset('tok', 'new');
+		expectCall('/api/v1/auth/password-reset/confirm', 'POST', { token: 'tok', new_password: 'new' });
+		await createPortalSession();
+		expectCall('/api/v1/billing/portal', 'POST');
+		await listTrades();
+		expectCall('/api/v1/trades', 'GET');
+		await deleteTradeById(7);
+		expectCall('/api/v1/trades/7', 'DELETE');
+	});
+
+	it('a 401 on change-password or delete-account (wrong password) keeps the session', async () => {
+		setSessionToken(TOKEN);
+		mockFetch(() => json({ detail: 'Invalid password' }, 401));
+		await expect(changePassword('x', 'y')).rejects.toMatchObject({ status: 401 });
+		await expect(deleteAccount('x')).rejects.toMatchObject({ status: 401 });
+		expect(getSessionToken()).toBe(TOKEN);
 	});
 
 	it('streams send the bearer header and put no token in the URL', async () => {
