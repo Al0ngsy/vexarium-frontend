@@ -28,7 +28,7 @@ import type {
 } from "./types";
 
 export const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1mo"];
-export const INTRADAY_TFS = new Set(["1m", "5m", "15m", "30m", "1h", "4h"]);
+const INTRADAY_TFS = new Set(["1m", "5m", "15m", "30m", "1h", "4h"]);
 // Poll cadence per intraday timeframe = bar duration (matches backend TTL).
 const TF_MINUTES: Record<string, number> = {
 	"1m": 1,
@@ -39,7 +39,7 @@ const TF_MINUTES: Record<string, number> = {
 	"4h": 240,
 };
 // Timeframes of the compact multi-timeframe verdict strip.
-export const VERDICT_TFS = ["1d", "1w", "1mo"];
+const VERDICT_TFS = ["1d", "1w", "1mo"];
 // Same symbol + timeframe is requested at most once per this window (the main
 // analysis, the verdict strip and a timeframe switch all want the same data).
 const ANALYSIS_TTL_MS = 5 * 60_000;

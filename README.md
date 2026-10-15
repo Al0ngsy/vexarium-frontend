@@ -70,7 +70,9 @@ VITE_API_URL=https://your-api.example.com yarn dev
 
 ```bash
 yarn check               # svelte-check (type checking)
+yarn test                # vitest (unit + component tests)
 yarn build               # production build via @sveltejs/adapter-cloudflare
+yarn deploy              # yarn check + yarn test, then build and upload to Cloudflare Pages
 ```
 
 The app is pre-configured for **Cloudflare Pages** via `@sveltejs/adapter-cloudflare` (SSR, ~5ms cold start on the free tier). Build output goes to `.svelte-kit/cloudflare`.
@@ -87,7 +89,7 @@ The app is pre-configured for **Cloudflare Pages** via `@sveltejs/adapter-cloudf
 5. Add environment variable `VITE_API_URL` pointing at your deployed backend (e.g. `https://vexarium-api.onrender.com`).
 6. Deploy. Optionally set a custom domain (e.g. `app.vexarium.com`).
 
-> The GitHub Actions workflow also runs `yarn build` on every push/PR, so a failed build blocks the branch.
+> The GitHub Actions workflow (`.github/workflows/ci.yml`) runs `yarn check`, `yarn test` and `yarn build` on every push/PR, so a failing check blocks the branch.
 
 ## Design Language
 
