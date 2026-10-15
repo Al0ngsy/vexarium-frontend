@@ -1,34 +1,55 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { createCheckoutSession } from '$lib/api';
-	import { initAuth, getToken, getUser } from '$lib/auth.svelte';
+	import { getToken, getUser, initAuth, refreshUser } from '$lib/auth.svelte';
+	import { authErrorMessage } from '$lib/auth-flow';
+	import { pollUntil } from '$lib/poll';
 	import DisclaimerBanner from '../../components/DisclaimerBanner.svelte';
 
-	let authed = $state(false);
-	let tier = $state('free');
+	/** After Stripe sends the customer back, the webhook that flips the tier can lag. */
+	const ACTIVATION_POLL_MS = 2_000;
+	const ACTIVATION_TIMEOUT_MS = 30_000;
+
+	const authed = $derived(getToken() !== null);
+	const tier = $derived(getUser()?.tier ?? 'free');
+
 	let checkingOut = $state(false);
 	let error = $state<string | null>(null);
+	// null: not returning from checkout, or Pro has arrived. waiting: polling /me. slow: gave up.
+	let activation = $state<'waiting' | 'slow' | null>(null);
 
 	onMount(() => {
 		initAuth();
-		authed = !!getToken();
-		tier = getUser()?.tier ?? 'free';
+		// Read the query here, not via page.url: this page is prerendered, where
+		// SvelteKit forbids reading url.searchParams.
+		if (new URLSearchParams(window.location.search).get('success') !== '1') return;
+		const ctrl = new AbortController();
+		void awaitActivation(ctrl.signal);
+		return () => ctrl.abort();
 	});
 
+	async function awaitActivation(signal: AbortSignal) {
+		activation = 'waiting';
+		const activated = await pollUntil(
+			async () => {
+				await refreshUser();
+				// No session left (expired or rejected): nothing to wait for.
+				return getToken() === null || getUser()?.tier === 'pro';
+			},
+			{ intervalMs: ACTIVATION_POLL_MS, timeoutMs: ACTIVATION_TIMEOUT_MS, signal }
+		);
+		if (signal.aborted) return;
+		activation = activated && getUser()?.tier === 'pro' ? null : 'slow';
+	}
+
 	async function upgrade() {
-		const token = getToken();
-		if (!token) {
-			error = 'Log in to upgrade to Pro.';
-			return;
-		}
 		checkingOut = true;
 		error = null;
 		try {
 			const { checkout_url } = await createCheckoutSession();
 			window.location.href = checkout_url;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Checkout failed';
-		} finally {
+			error = authErrorMessage(e, 'Checkout failed.');
 			checkingOut = false;
 		}
 	}
@@ -44,6 +65,23 @@
 		<p class="label mt-3" style="color: var(--foreground-muted)">
 			Unlock the full technical + AI analysis experience.
 		</p>
+	</div>
+
+	<div aria-live="polite">
+		{#if activation === 'waiting'}
+			<div class="panel mb-6 p-4 text-center" style="border-top: 2px solid var(--accent-primary)">
+				<p class="label" style="text-transform: none">
+					Thank you! Activating your Pro plan. This can take a few seconds…
+				</p>
+			</div>
+		{:else if activation === 'slow'}
+			<div class="panel mb-6 p-4 text-center" style="border-top: 2px solid var(--verdict-hold)">
+				<p class="label" style="text-transform: none">
+					Your payment went through, but activation is taking longer than usual. Reload this page in a minute or check
+					your <a class="text-link" href="/account">account</a>.
+				</p>
+			</div>
+		{/if}
 	</div>
 
 	{#if tier === 'pro'}
@@ -87,11 +125,14 @@
 			</ul>
 			<div class="mt-auto">
 				{#if authed && tier !== 'pro'}
-					<button class="btn-primary w-full" onclick={upgrade} disabled={checkingOut} style="opacity: {checkingOut ? 0.5 : 1}">
+					<button class="btn-primary w-full justify-center" onclick={upgrade} disabled={checkingOut}>
 						{checkingOut ? 'REDIRECTING…' : 'UPGRADE TO PRO'}
 					</button>
 				{:else if !authed}
-					<button class="btn-primary w-full" onclick={() => (window.location.href = '/')}>LOG IN TO UPGRADE</button>
+					<a class="btn-primary w-full justify-center" href="/register?next=%2Fpricing">CREATE ACCOUNT TO UPGRADE</a>
+					<p class="label mt-3 text-center" style="font-weight: 400">
+						Already have an account? <a class="text-link" href="/login?next=%2Fpricing">Log in</a>
+					</p>
 				{:else}
 					<button class="btn-outline w-full" disabled>ACTIVE</button>
 				{/if}
@@ -99,9 +140,9 @@
 		</div>
 	</div>
 
-	{#if error}
-		<p class="label mt-4 text-center" style="color: var(--accent-primary)">{error}</p>
-	{/if}
+	<div aria-live="polite">
+		{#if error}<p class="form-error mt-4 text-center">{error}</p>{/if}
+	</div>
 
 	<p class="label mt-10 text-center" style="color: var(--foreground-subtle)">
 		CANCEL ANYTIME. ⚠ INFORMATIONAL ONLY — NOT FINANCIAL ADVICE.
