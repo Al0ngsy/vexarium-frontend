@@ -133,6 +133,37 @@ describe('computePatternFlags', () => {
 		expect(flags).toContainEqual({ label: 'PSAR flipped below price', dir: 'bullish', ago: 1 });
 	});
 
+	it('flags price crossing above its SMA as bullish', () => {
+		// SMA above price, then below it from the 3rd bar on: the price rose through the average.
+		const a = analysis({ indicator_series: [{ name: 'SMA(50)', kind: 'overlay', points: pts([12, 12, 8, 9]) }] });
+		expect(computePatternFlags(barsFrom([10, 10, 10, 10]), a)).toContainEqual({
+			label: 'Price crossed above SMA',
+			dir: 'bullish',
+			ago: 1
+		});
+	});
+
+	it('flags price crossing below its SMA as bearish', () => {
+		const a = analysis({ indicator_series: [{ name: 'SMA(50)', kind: 'overlay', points: pts([8, 8, 12, 11]) }] });
+		expect(computePatternFlags(barsFrom([10, 10, 10, 10]), a)).toContainEqual({
+			label: 'Price crossed below SMA',
+			dir: 'bearish',
+			ago: 1
+		});
+	});
+
+	it('never calls a single-SMA flip a golden or death cross', () => {
+		for (const sma of [[12, 12, 8, 9], [8, 8, 12, 11]]) {
+			const a = analysis({ indicator_series: [{ name: 'SMA(50)', kind: 'overlay', points: pts(sma) }] });
+			expect(computePatternFlags(barsFrom([10, 10, 10, 10]), a).map((f) => f.label).join()).not.toMatch(/golden|death/i);
+		}
+	});
+
+	it('reports no SMA flag while price stays on one side of the average', () => {
+		const a = analysis({ indicator_series: [{ name: 'SMA(50)', kind: 'overlay', points: pts([8, 8, 9, 9]) }] });
+		expect(computePatternFlags(barsFrom([10, 10, 10, 10]), a)).toEqual([]);
+	});
+
 	it('flags prices within 3% of the 52-week high or low', () => {
 		const high = analysis({ current_price: 99, company: { symbol: 'AAPL', high_52w: 100, low_52w: 50 } });
 		expect(computePatternFlags(barsFrom([99]), high)).toContainEqual({

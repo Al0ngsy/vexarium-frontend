@@ -147,11 +147,14 @@ export function computePatternFlags(
 		return null;
 	};
 
+	// A single SMA against the close: price moving above the average is bullish,
+	// below it bearish. (A golden/death cross is a short SMA crossing a long one;
+	// the series here has only one SMA, so it is not named that.)
 	const sma = series.find((s) => s.name.toUpperCase().includes("SMA"));
 	if (sma) {
-		const f = flipVsPrice(byT(sma.points), "SMA vs price", false);
+		const f = flipVsPrice(byT(sma.points), "SMA", true);
 		if (f) {
-			f.label = f.dir === "bullish" ? "Golden cross (SMA over price)" : "Death cross (SMA under price)";
+			f.label = f.dir === "bullish" ? "Price crossed above SMA" : "Price crossed below SMA";
 			flags.push(f);
 		}
 	}
