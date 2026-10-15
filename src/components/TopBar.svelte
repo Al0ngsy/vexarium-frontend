@@ -64,8 +64,9 @@
   const onAuthPage = $derived(
     ["/login", "/register", "/forgot-password", "/reset-password"].includes(path),
   );
+  // pathname only: url.search is off-limits while prerendering.
   const loginHref = $derived(
-    withNext("/login", onAuthPage ? null : page.url.pathname + page.url.search),
+    withNext("/login", onAuthPage ? null : page.url.pathname),
   );
   let menuOpen = $state(false);
   // Close the menu on navigation.

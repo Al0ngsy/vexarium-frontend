@@ -35,10 +35,10 @@ afterEach(() => {
 
 describe('TopBar auth area', () => {
 	it('shows a Log in link that returns to the current page', () => {
-		open('/s/AAPL?tf=1w');
+		open('/s/AAPL');
 		const link = target.querySelector<HTMLAnchorElement>('a.login-link')!;
 		expect(link.textContent).toBe('Log in');
-		expect(link.getAttribute('href')).toBe('/login?next=%2Fs%2FAAPL%3Ftf%3D1w');
+		expect(link.getAttribute('href')).toBe('/login?next=%2Fs%2FAAPL');
 		expect(target.querySelector('.user-menu')).toBeNull();
 	});
 
