@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Yarn 4 comes from corepack (packageManager in package.json); enable it
+      # before setup-node so the yarn cache step can find the binary.
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - run: yarn install --immutable
+
+      - name: Type check (svelte-check)
+        run: yarn check
+
+      - name: Unit and component tests
+        run: yarn test
+
+      - name: Build (adapter-cloudflare)
+        run: yarn build
+        env:
+          # Baked into the bundle at build time; any URL works for a CI build.
+          VITE_API_URL: https://api.example.invalid
