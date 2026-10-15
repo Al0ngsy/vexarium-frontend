@@ -368,6 +368,105 @@ describe('AnalysisStore: chart bars and comparator', () => {
 		expect(own()).toBe(2);
 	});
 
+	describe('with a tab that can be hidden', () => {
+		/** Minimal document: a hidden flag and visibilitychange events. */
+		function fakeDocument(hidden = false) {
+			const doc = Object.assign(new EventTarget(), { hidden });
+			vi.stubGlobal('document', doc);
+			return {
+				setHidden(h: boolean) {
+					doc.hidden = h;
+					doc.dispatchEvent(new Event('visibilitychange'));
+				}
+			};
+		}
+		const own = () => vi.mocked(getBars).mock.calls.filter((c) => c[0] === 'AAPL' && c[1] === '5m').length;
+		afterEach(() => vi.unstubAllGlobals());
+
+		it('stops polling while hidden and refreshes once, immediately, when visible again', async () => {
+			vi.useFakeTimers();
+			const tab = fakeDocument();
+			const store = new AnalysisStore();
+			store.setSymbol('AAPL');
+			store.chartTf = '5m';
+			await vi.advanceTimersByTimeAsync(0);
+			expect(own()).toBe(1);
+
+			await vi.advanceTimersByTimeAsync(5 * 60_000);
+			expect(own()).toBe(2);
+
+			tab.setHidden(true);
+			await vi.advanceTimersByTimeAsync(60 * 60_000);
+			expect(own()).toBe(2); // nothing while hidden
+
+			tab.setHidden(false);
+			await vi.advanceTimersByTimeAsync(0);
+			expect(own()).toBe(3); // one refresh right away
+			await vi.advanceTimersByTimeAsync(5 * 60_000);
+			expect(own()).toBe(4); // cadence resumes from the refresh
+			store.dispose();
+		});
+
+		it('does not start the cadence for a tab that loads in the background, until it becomes visible', async () => {
+			vi.useFakeTimers();
+			const tab = fakeDocument(true);
+			const store = new AnalysisStore();
+			store.setSymbol('AAPL');
+			store.chartTf = '5m';
+			await vi.advanceTimersByTimeAsync(0);
+			expect(own()).toBe(1); // the initial load still happens
+			await vi.advanceTimersByTimeAsync(30 * 60_000);
+			expect(own()).toBe(1);
+			tab.setHidden(false);
+			await vi.advanceTimersByTimeAsync(0);
+			expect(own()).toBe(2);
+			store.dispose();
+		});
+
+		it('removes the visibility listener on dispose and on a timeframe change', async () => {
+			vi.useFakeTimers();
+			const tab = fakeDocument();
+			const store = new AnalysisStore();
+			store.setSymbol('AAPL');
+			store.chartTf = '5m';
+			await vi.advanceTimersByTimeAsync(0);
+			store.chartTf = '1d'; // not intraday: no polling, no listener
+			await vi.advanceTimersByTimeAsync(0);
+			const calls = vi.mocked(getBars).mock.calls.length;
+			tab.setHidden(true);
+			tab.setHidden(false);
+			await vi.advanceTimersByTimeAsync(0);
+			expect(vi.mocked(getBars).mock.calls.length).toBe(calls);
+
+			store.chartTf = '5m';
+			await vi.advanceTimersByTimeAsync(0);
+			store.dispose();
+			const afterDispose = vi.mocked(getBars).mock.calls.length;
+			tab.setHidden(true);
+			tab.setHidden(false);
+			await vi.advanceTimersByTimeAsync(10 * 60_000);
+			expect(vi.mocked(getBars).mock.calls.length).toBe(afterDispose);
+		});
+
+		it('keeps a single poller when the tab flips repeatedly', async () => {
+			vi.useFakeTimers();
+			const tab = fakeDocument();
+			const store = new AnalysisStore();
+			store.setSymbol('AAPL');
+			store.chartTf = '5m';
+			await vi.advanceTimersByTimeAsync(0);
+			tab.setHidden(true);
+			tab.setHidden(false);
+			tab.setHidden(true);
+			tab.setHidden(false);
+			await vi.advanceTimersByTimeAsync(0);
+			const before = own();
+			await vi.advanceTimersByTimeAsync(5 * 60_000);
+			expect(own()).toBe(before + 1);
+			store.dispose();
+		});
+	});
+
 	it('does not poll daily timeframes and clears the timer when the symbol changes', async () => {
 		vi.useFakeTimers();
 		const store = new AnalysisStore();

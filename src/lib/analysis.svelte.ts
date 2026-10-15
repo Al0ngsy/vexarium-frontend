@@ -84,6 +84,7 @@ export class AnalysisStore {
 	#ctl: AbortController | null = null; // aborted on symbol change
 	#aiCtl: AbortController | null = null;
 	#barsTimer: ReturnType<typeof setInterval> | null = null;
+	#stopVisibilityWatch: (() => void) | null = null;
 	#barsCtl: AbortController | null = null;
 	#compareCtl: AbortController | null = null;
 	#analysisSeq = 0; // newest analysis load wins
@@ -273,8 +274,7 @@ export class AnalysisStore {
 		this.#compareCtl = null;
 		this.#barsCtl?.abort();
 		this.#barsCtl = null;
-		if (this.#barsTimer) clearInterval(this.#barsTimer);
-		this.#barsTimer = null;
+		this.#stopBarsPolling();
 		this.#analysisCache.clear();
 		this.#analysisSeq++;
 		this.#active = "";
@@ -448,8 +448,7 @@ export class AnalysisStore {
 	 */
 	#startBars() {
 		if (!this.#ctl) return;
-		if (this.#barsTimer) clearInterval(this.#barsTimer);
-		this.#barsTimer = null;
+		this.#stopBarsPolling();
 		const sym = this.symbol;
 		const tf = this.#chartTf;
 		// Every restart supersedes the previous load (dispose() aborts it on symbol change).
@@ -478,7 +477,35 @@ export class AnalysisStore {
 		// Intraday bars change every bar: re-fetch at the bar duration so new
 		// candles appear without shifting the window (viewport stays put).
 		if (!INTRADAY_TFS.has(tf)) return;
-		this.#barsTimer = setInterval(() => void load(false), (TF_MINUTES[tf] ?? 1) * 60_000);
+		const periodMs = (TF_MINUTES[tf] ?? 1) * 60_000;
+		const arm = () => {
+			this.#barsTimer = setInterval(() => void load(false), periodMs);
+		};
+		const disarm = () => {
+			if (this.#barsTimer) clearInterval(this.#barsTimer);
+			this.#barsTimer = null;
+		};
+		// A hidden tab polls nothing; coming back refreshes at once (the bars
+		// are stale by then) and restarts the cadence from that moment.
+		const onVisibilityChange = () => {
+			disarm();
+			if (document.hidden) return;
+			void load(false);
+			arm();
+		};
+		if (typeof document !== "undefined") {
+			document.addEventListener("visibilitychange", onVisibilityChange);
+			this.#stopVisibilityWatch = () => document.removeEventListener("visibilitychange", onVisibilityChange);
+			if (document.hidden) return;
+		}
+		arm();
+	}
+
+	#stopBarsPolling() {
+		if (this.#barsTimer) clearInterval(this.#barsTimer);
+		this.#barsTimer = null;
+		this.#stopVisibilityWatch?.();
+		this.#stopVisibilityWatch = null;
 	}
 
 	#startCompare() {
