@@ -1,5 +1,10 @@
-import { getOptionChain, getOptionPayoff, getOptionChance, getStrategies } from './api';
-import { getToken } from './auth.svelte';
+import {
+	getOptionChain,
+	getOptionPayoff,
+	getOptionChance,
+	getStrategies,
+	isAbortError
+} from './api';
 import type {
 	OptionChanceResponse,
 	OptionContract,
@@ -10,6 +15,15 @@ import type {
 // Shared selected-contract store for the options workspace. The chain widget
 // loads the chain and selects a contract; payoff / greeks / probability /
 // matrix / strategies all react to the same selection.
+//
+// Every load is cancellable: a newer chain load supersedes the previous chain
+// AND contract selection, a newer selection supersedes the previous one, and
+// a newer strategies load (timeframe override) supersedes the previous
+// strategies load. Superseded requests are aborted and can never write state.
+let chainCtl: AbortController | null = null;
+let selectCtl: AbortController | null = null;
+let strategiesCtl: AbortController | null = null;
+
 export const store = $state({
 	symbol: '',
 	currentPrice: null as number | null,
@@ -47,13 +61,20 @@ export const store = $state({
 	},
 
 	async loadChain(s: string) {
-		store.symbol = s.toUpperCase();
+		const symbol = s.toUpperCase();
+		chainCtl?.abort();
+		selectCtl?.abort();
+		strategiesCtl?.abort();
+		const ctl = (chainCtl = new AbortController());
+		if (store.symbol !== symbol) resetForSymbol();
+		store.symbol = symbol;
 		store.contractsLoading = true;
 		store.contractsError = null;
 		try {
 			const gte = new Date().toISOString().slice(0, 10);
 			const lte = new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-			const resp = await getOptionChain(store.symbol, gte, lte, 10);
+			const resp = await getOptionChain(symbol, gte, lte, 10, ctl.signal);
+			if (ctl.signal.aborted) return;
 			store.contracts = resp.contracts || [];
 			store.currentPrice = resp.current_price ?? null;
 			store.dayChangePct = resp.day_change_pct ?? null;
@@ -63,21 +84,27 @@ export const store = $state({
 			// Auto-select the ATM contract so every widget renders immediately.
 			await store.selectContract(atmContract()?.symbol ?? '');
 		} catch (e) {
+			if (ctl.signal.aborted || isAbortError(e)) return;
 			store.contracts = [];
 			store.contractsError = e instanceof Error ? e.message : 'Options chain failed';
 		} finally {
-			store.contractsLoading = false;
+			if (chainCtl === ctl) store.contractsLoading = false;
 		}
 	},
 
 	async selectContract(sym: string) {
+		selectCtl?.abort();
+		strategiesCtl?.abort();
+		const ctl = (selectCtl = new AbortController());
 		store.selectedSymbol = sym;
 		if (!sym) {
 			store.payoff = null;
 			store.strategies = null;
+			store.strategiesLoading = false;
 			store.chance = null;
 			return;
 		}
+		const symbol = store.symbol;
 		store.payoff = null;
 		store.payoffError = null;
 		store.strategies = null;
@@ -86,62 +113,85 @@ export const store = $state({
 		store.chance = null;
 		store.chanceError = null;
 		try {
-			store.payoff = await getOptionPayoff(store.symbol, sym);
+			const payoff = await getOptionPayoff(symbol, sym, ctl.signal);
+			if (ctl.signal.aborted) return;
+			store.payoff = payoff;
 		} catch (e) {
+			if (ctl.signal.aborted) return;
 			store.payoffError = e instanceof Error ? e.message : 'Payoff failed';
 		} finally {
-			store.payoffLoading = false;
+			if (!ctl.signal.aborted) store.payoffLoading = false;
 		}
-		try {
-			await store.loadStrategies(sym);
-		} catch (e) {
-			store.strategiesError = e instanceof Error ? e.message : 'Strategies failed';
-		} finally {
-			store.strategiesLoading = false;
-		}
+		await refreshStrategies(sym);
+		if (ctl.signal.aborted) return;
 		// DEV: Pro gate removed during development; re-add the isPro() branch before launch.
 		try {
-			store.chance = await getOptionChance(store.symbol, sym, getToken() ?? undefined);
+			const chance = await getOptionChance(symbol, sym, ctl.signal);
+			if (ctl.signal.aborted) return;
+			store.chance = chance;
 		} catch (e) {
+			if (ctl.signal.aborted) return;
 			store.chance = null;
 			store.chanceError = e instanceof Error ? e.message : null;
 		}
-		},
+	},
 
-		// Fetch the strategy suggestions for the selected contract. `store.strategyTf`
-		// is 'auto' (DTE-matched horizon) or an explicit 1h/1d/1w/1mo override.
-		async loadStrategies(sym: string) {
-			const strike = parseStrike(sym);
-			const exp = parseExpiration(sym);
-			const contract = store.contracts.find((c) => c.symbol === sym);
-			const dte = contract?.expiration_date
-				? Math.max(0, Math.round((new Date(contract.expiration_date).getTime() - Date.now()) / 86400000))
-				: undefined;
-			store.strategies = await getStrategies(
-				store.symbol,
-				strike,
-				exp.gte,
-				exp.lte,
-				undefined,
-				dte,
-				store.strategyTf === 'auto' ? undefined : store.strategyTf
-			);
-		},
+	async setStrategyTf(tf: string) {
+		if (tf === store.strategyTf || !store.selectedSymbol) return;
+		store.strategyTf = tf;
+		await refreshStrategies(store.selectedSymbol);
+	}
+});
 
-		async setStrategyTf(tf: string) {
-			if (tf === store.strategyTf || !store.selectedSymbol) return;
-			store.strategyTf = tf;
-			store.strategiesLoading = true;
-			store.strategiesError = null;
-			try {
-				await store.loadStrategies(store.selectedSymbol);
-			} catch (e) {
-				store.strategiesError = e instanceof Error ? e.message : 'Strategies failed';
-			} finally {
-				store.strategiesLoading = false;
-			}
-		}
-		});
+/** A different underlying: drop everything that belongs to the previous one. */
+function resetForSymbol() {
+	store.contracts = [];
+	store.currentPrice = null;
+	store.dayChangePct = null;
+	store.activeExpiry = '';
+	store.selectedSymbol = '';
+	store.payoff = null;
+	store.payoffError = null;
+	store.strategies = null;
+	store.strategiesError = null;
+	store.strategiesLoading = false;
+	store.chance = null;
+	store.chanceError = null;
+}
+
+// Fetch the strategy suggestions for the selected contract. `store.strategyTf`
+// is 'auto' (DTE-matched horizon) or an explicit 1h/1d/1w/1mo override.
+async function refreshStrategies(sym: string) {
+	strategiesCtl?.abort();
+	const ctl = (strategiesCtl = new AbortController());
+	store.strategiesLoading = true;
+	store.strategiesError = null;
+	try {
+		const strike = parseStrike(sym);
+		const exp = parseExpiration(sym);
+		const contract = store.contracts.find((c) => c.symbol === sym);
+		const dte = contract?.expiration_date
+			? Math.max(0, Math.round((new Date(contract.expiration_date).getTime() - Date.now()) / 86400000))
+			: undefined;
+		const strategies = await getStrategies(
+			store.symbol,
+			strike,
+			exp.gte,
+			exp.lte,
+			undefined,
+			dte,
+			store.strategyTf === 'auto' ? undefined : store.strategyTf,
+			ctl.signal
+		);
+		if (ctl.signal.aborted) return;
+		store.strategies = strategies;
+	} catch (e) {
+		if (ctl.signal.aborted) return;
+		store.strategiesError = e instanceof Error ? e.message : 'Strategies failed';
+	} finally {
+		if (strategiesCtl === ctl) store.strategiesLoading = false;
+	}
+}
 
 function atmContract(): OptionContract | null {
 	if (!store.currentPrice) return store.contracts[0] ?? null;

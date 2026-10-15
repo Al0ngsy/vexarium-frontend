@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { getOptionsMatrix } from '$lib/api';
 	import { positionTip, clearTip } from '$lib/tooltip';
 	import type { OptionsMatrixResponse } from '$lib/types';
@@ -26,22 +27,33 @@
 	let view = $state<'table' | 'graph'>('table');
 	let boxW = $state(0);
 
+	// Reload when the contract (or underlying) changes. loadMatrix reads range /
+	// dates, which must NOT be dependencies here: the sliders reload on release
+	// via handleRange, so tracking them would refetch on every drag tick.
+	let matrixCtl: AbortController | null = null;
 	$effect(() => {
-		if (contractSymbol) loadMatrix();
+		void symbol;
+		if (contractSymbol) untrack(loadMatrix);
+		return () => matrixCtl?.abort();
 	});
 
 	async function loadMatrix() {
 		if (!contractSymbol) return;
+		matrixCtl?.abort();
+		const ctl = (matrixCtl = new AbortController());
 		loading = true;
 		error = null;
 		try {
-			matrix = await getOptionsMatrix(symbol, contractSymbol, range / 100, 100, dates);
+			const m = await getOptionsMatrix(symbol, contractSymbol, range / 100, 100, dates, ctl.signal);
+			if (ctl.signal.aborted) return;
+			matrix = m;
 		} catch (e) {
-			// Keep the previous matrix visible on refresh errors; only a first
-			// load failure ends with matrix === null (error branch shows).
+			// A superseded request never reports. Keep the previous matrix visible
+			// on refresh errors; only a first load failure ends with matrix === null.
+			if (ctl.signal.aborted) return;
 			error = e instanceof Error ? e.message : 'Matrix failed';
 		} finally {
-			loading = false;
+			if (matrixCtl === ctl) loading = false;
 		}
 	}
 

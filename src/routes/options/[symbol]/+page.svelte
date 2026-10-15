@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import WidgetGrid from '../../../components/WidgetGrid.svelte';
 	import WidgetCard from '../../../components/WidgetCard.svelte';
@@ -18,10 +18,15 @@
 
 	const symbol = $derived(String(page.params.symbol || '').toUpperCase());
 
-	// Ensure the header has chain data even if the chain widget gets disabled
-	// (loadChain sets store.symbol synchronously, so a second call never fires).
-	onMount(() => {
-		if (store.symbol !== symbol) void store.loadChain(symbol);
+	// The page owns loading the chain (header + every widget read the shared
+	// store, and the chain widget may be disabled). Runs on mount AND when the
+	// symbol param changes via client-side navigation, which onMount alone
+	// missed. A newer load aborts the previous one inside the store.
+	$effect(() => {
+		const sym = symbol;
+		untrack(() => {
+			if (sym && store.symbol !== sym) void store.loadChain(sym);
+		});
 	});
 
 	const dayChange = $derived(store.dayChangePct);

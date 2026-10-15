@@ -2,7 +2,6 @@
   import { browser } from "$app/environment";
   import { page } from "$app/state";
   import { analyze, getBars, getFinnhub, getMarketNews, getFearGreed, streamAIAnalysis } from "$lib/api";
-  import { getToken } from "$lib/auth.svelte";
   import { formatPrice } from "$lib/format";
   import {
     explainIndicator,
@@ -521,7 +520,6 @@
           if (symbol !== sym) return;
           aiMessage = (aiMessage ?? "") + chunk;
         },
-        getToken() ?? undefined,
         ac.signal,
       );
     } catch (e) {

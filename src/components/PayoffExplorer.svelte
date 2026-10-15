@@ -63,15 +63,22 @@
 		dte > 0 ? new Date(Date.now() + dte * DAY_MS).toISOString().slice(0, 10) : undefined
 	);
 
+	// Dragging fires many requests; only the newest may update the readout.
+	let valueCtl: AbortController | null = null;
 	async function loadValue(p: number) {
 		if (!contractSymbol) return;
+		valueCtl?.abort();
+		const ctl = (valueCtl = new AbortController());
 		loading = true;
 		try {
-			value = await getOptionValueAtPrice(symbol, contractSymbol, p, targetDate);
+			const v = await getOptionValueAtPrice(symbol, contractSymbol, p, targetDate, ctl.signal);
+			if (ctl.signal.aborted) return;
+			value = v;
 		} catch {
+			if (ctl.signal.aborted) return;
 			value = null;
 		} finally {
-			loading = false;
+			if (valueCtl === ctl) loading = false;
 		}
 	}
 

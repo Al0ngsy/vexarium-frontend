@@ -1,13 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import OptionsChain from './OptionsChain.svelte';
 	import { store } from '$lib/contract.svelte';
 
 	let { symbol }: { symbol: string } = $props();
-
-	onMount(() => {
-		if (store.symbol !== symbol.toUpperCase()) void store.loadChain(symbol);
-	});
 
 	const expiries = $derived(store.getExpiries());
 	const chains = $derived(store.getSelectedChain());

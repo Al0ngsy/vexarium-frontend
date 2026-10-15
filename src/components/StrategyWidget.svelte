@@ -2,7 +2,6 @@
 	import StrategyCard from './StrategyCard.svelte';
 	import { store } from '$lib/contract.svelte';
 	import { streamOptionsStrategiesExplanation } from '$lib/api';
-	import { getToken } from '$lib/auth.svelte';
 	import { renderAIMarkdown } from '$lib/markdown';
 
 	const strategies = $derived(store.strategies?.strategies ?? []);
@@ -10,6 +9,11 @@
 	let why = $state<{ name: string; text: string } | null>(null);
 	let whyLoading = $state(false);
 	let whyError = $state<string | null>(null);
+
+	// One explanation stream at a time: a new click aborts the previous one so
+	// its chunks can never interleave into the newer answer.
+	let whyCtl: AbortController | null = null;
+	$effect(() => () => whyCtl?.abort());
 
 	// Session cache: repeat "why" clicks on the same strategy are instant.
 	const whyCache = new Map<string, string>();
@@ -28,6 +32,7 @@
 
 	async function askWhy(name: string, exploreStrategy?: string) {
 		if (!store.selectedSymbol) return;
+		whyCtl?.abort();
 		// DEV: Pro gate removed during development; re-add the isPro() check before launch.
 		// Session cache keyed by everything that changes the answer: symbol,
 		// strike, the verdict timeframe, and the strategy name. Without the
@@ -41,6 +46,7 @@
 			why = { name, text: cached };
 			return;
 		}
+		const ctl = (whyCtl = new AbortController());
 		whyLoading = true;
 		whyError = null;
 		why = { name, text: '' };
@@ -49,20 +55,22 @@
 				store.symbol,
 				strike,
 				(chunk) => {
+					if (ctl.signal.aborted) return;
 					why = { name, text: (why?.text ?? '') + chunk };
 				},
-				getToken() ?? undefined,
 				exploreStrategy,
-				undefined,
+				ctl.signal,
 				tf || undefined
 			);
+			if (ctl.signal.aborted) return;
 			whyCache.set(cacheKey, full);
 			why = { name, text: full };
 		} catch (e) {
+			if (ctl.signal.aborted) return;
 			why = null;
 			whyError = e instanceof Error ? e.message : 'Explanation failed';
 		} finally {
-			whyLoading = false;
+			if (whyCtl === ctl) whyLoading = false;
 		}
 	}
 

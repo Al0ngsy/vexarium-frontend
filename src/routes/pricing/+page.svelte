@@ -24,7 +24,7 @@
 		checkingOut = true;
 		error = null;
 		try {
-			const { checkout_url } = await createCheckoutSession(token);
+			const { checkout_url } = await createCheckoutSession();
 			window.location.href = checkout_url;
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Checkout failed';
