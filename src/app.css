@@ -857,3 +857,67 @@ body {
     gap: 12px;
   }
 }
+
+/* ── Forms (login, register, account) ── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field .hint {
+  font-size: 0.72rem;
+  color: var(--foreground-subtle);
+}
+.input {
+  width: 100%;
+  background-color: var(--surface-2);
+  color: var(--foreground);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+}
+.input:focus-visible {
+  border-color: var(--accent-primary);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+.form-error {
+  min-height: 1.25rem;
+  font-size: 0.8rem;
+  color: var(--verdict-sell);
+}
+.form-ok {
+  font-size: 0.8rem;
+  color: var(--verdict-buy);
+}
+.btn-primary:disabled,
+.btn-outline:disabled,
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-danger {
+  background-color: transparent;
+  color: var(--verdict-strong-sell);
+  border: 1px solid var(--verdict-strong-sell);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--verdict-strong-sell) 12%, transparent);
+}
+.text-link {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.text-link:hover {
+  color: var(--accent-primary-hover);
+  text-decoration: underline;
+}

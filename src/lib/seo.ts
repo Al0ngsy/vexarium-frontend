@@ -6,6 +6,8 @@
 export interface Seo {
 	title: string;
 	description: string;
+	/** Ask search engines to skip the page (account and auth screens). */
+	noindex?: boolean;
 }
 
 export const DEFAULT_SEO: Seo = {
@@ -32,5 +34,14 @@ export function optionsSeo(rawSymbol: string): Seo {
 	return {
 		title: `${symbol} options: chain, greeks, payoff and strategies | VEXARIUM`,
 		description: `${symbol} options workspace: option chain by expiry, greeks, payoff explorer, chance of profit, P/L matrix and strategy ideas. Quotes are delayed and indicative. Informational only, not financial advice.`
+	};
+}
+
+/** SEO for sign-in / account screens: no search value, so keep them out of the index. */
+export function privateSeo(title: string): Seo {
+	return {
+		title: `${title} | VEXARIUM`,
+		description: 'VEXARIUM account. Informational only, not financial advice.',
+		noindex: true
 	};
 }

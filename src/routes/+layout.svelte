@@ -3,6 +3,7 @@
 	import { page } from "$app/state";
 	import favicon from "$lib/assets/favicon.svg";
 	import { wakeUp } from "$lib/api";
+	import { initAuth } from "$lib/auth.svelte";
 	import { DEFAULT_SEO } from "$lib/seo";
 	import "../app.css";
 	import TopBar from "../components/TopBar.svelte";
@@ -17,6 +18,7 @@
 	// first request. Ping /health on load and whenever the tab regains focus so
 	// the backend is warm by the time the user searches.
 	onMount(() => {
+		initAuth();
 		wakeUp();
 		const onVisibility = () => {
 			if (document.visibilityState === "visible") wakeUp();
@@ -30,6 +32,9 @@
 	<link rel="icon" href={favicon} />
 	<title>{seo.title}</title>
 	<meta name="description" content={seo.description} />
+	{#if seo.noindex}
+		<meta name="robots" content="noindex" />
+	{/if}
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content="VEXARIUM" />
 	<meta property="og:title" content={seo.title} />

@@ -1,5 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { getToken, getUser, logout } from "$lib/auth.svelte";
+  import { withNext } from "$lib/auth-flow";
+  import { goto } from "$app/navigation";
   import SymbolSearch from "./SymbolSearch.svelte";
 
   // US market hours (ET) — 9:30–16:00 weekdays. ponytail: no holiday calendar.
@@ -53,7 +56,37 @@
   // Search destination follows the current view: options view searches
   // options, everything else searches stocks/ETFs.
   const searchScope = $derived(activeTab === "options" ? "options" : "stock");
+
+  // Auth: a "Log in" link, or the user menu once signed in. The login link
+  // remembers the current page so the user lands back here afterwards.
+  const authed = $derived(getToken() !== null);
+  const user = $derived(getUser());
+  const onAuthPage = $derived(
+    ["/login", "/register", "/forgot-password", "/reset-password"].includes(path),
+  );
+  const loginHref = $derived(
+    withNext("/login", onAuthPage ? null : page.url.pathname + page.url.search),
+  );
+  let menuOpen = $state(false);
+  // Close the menu on navigation.
+  $effect(() => {
+    void page.url.href;
+    menuOpen = false;
+  });
+
+  function onLogout() {
+    menuOpen = false;
+    logout();
+    void goto("/");
+  }
 </script>
+
+<svelte:window
+  onclick={(e) => {
+    if (menuOpen && !(e.target as Element).closest(".user-menu")) menuOpen = false;
+  }}
+  onkeydown={(e) => e.key === "Escape" && (menuOpen = false)}
+/>
 
 <header class="topbar">
   <a href="/" class="logo" title="VEXARIUM">
@@ -91,7 +124,29 @@
       {market.label}
     </span>
     <span class="conn-chip"><span class="dot"></span>LIVE · IEX</span>
-    <!-- <div class="avatar" title="Guest">Here User Short</div> -->
+    {#if authed}
+      <div class="user-menu">
+        <button
+          type="button"
+          class="avatar"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-label="Account menu"
+          onclick={() => (menuOpen = !menuOpen)}
+        >
+          {(user?.email || "?").charAt(0).toUpperCase()}
+        </button>
+        {#if menuOpen}
+          <div class="menu" role="menu">
+            <span class="menu-email" title={user?.email}>{user?.email ?? "Signed in"}</span>
+            <a href="/account" role="menuitem">Account</a>
+            <button type="button" role="menuitem" onclick={onLogout}>Log out</button>
+          </div>
+        {/if}
+      </div>
+    {:else if !onAuthPage}
+      <a href={loginHref} class="login-link">Log in</a>
+    {/if}
   </div>
 </header>
 
@@ -115,6 +170,70 @@
     gap: 18px;
     font-size: 13px;
     color: var(--foreground-muted);
+  }
+
+  .login-link {
+    color: var(--foreground);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    border: 1px solid var(--accent-primary);
+    border-radius: 8px;
+    padding: 5px 12px;
+  }
+  .login-link:hover {
+    color: var(--accent-primary-hover);
+    border-color: var(--accent-primary-hover);
+  }
+  .user-menu {
+    position: relative;
+  }
+  .user-menu .avatar {
+    border: none;
+    cursor: pointer;
+  }
+  .menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 60;
+    min-width: 200px;
+    max-width: min(280px, 90vw);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-2);
+    border: 1px solid var(--panel-border-active);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px #0008;
+    padding: 6px;
+  }
+  .menu-email {
+    padding: 6px 10px 8px;
+    font-size: 12px;
+    color: var(--foreground-muted);
+    border-bottom: 1px solid var(--panel-border);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .menu a,
+  .menu button {
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--foreground);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .menu a:hover,
+  .menu button:hover {
+    background: var(--surface-active);
   }
 
   @media (max-width: 1080px) {

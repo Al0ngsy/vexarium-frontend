@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SEO, normalizeSymbol, optionsSeo, stockSeo } from './seo';
+import { DEFAULT_SEO, normalizeSymbol, optionsSeo, privateSeo, stockSeo } from './seo';
 
 describe('seo', () => {
 	it('normalises symbols from the URL', () => {
@@ -30,4 +30,13 @@ describe('seo', () => {
 			expect(s.description.length).toBeLessThanOrEqual(320);
 		}
 	});
+});
+
+describe('privateSeo', () => {
+  it('titles the page and marks it noindex', () => {
+    const s = privateSeo('Log in');
+    expect(s.title).toBe('Log in | VEXARIUM');
+    expect(s.noindex).toBe(true);
+    expect(DEFAULT_SEO.noindex).toBeUndefined();
+  });
 });
