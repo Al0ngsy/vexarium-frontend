@@ -175,7 +175,7 @@ describe('request(): errors', () => {
 		off();
 	});
 
-	it('does not log out on 401 without a token, anonymously, with logoutOn401: false or with an explicit token', async () => {
+	it('does not log out on 401 without a token, anonymously or with an explicit token', async () => {
 		const cleared = vi.fn();
 		const off = onSessionCleared(cleared);
 		mockFetch(() => json({ detail: 'no' }, 401));
@@ -184,7 +184,6 @@ describe('request(): errors', () => {
 
 		setSessionToken(TOKEN);
 		await expect(request('/x', { auth: false })).rejects.toBeInstanceOf(ApiError);
-		await expect(request('/x', { auth: true, logoutOn401: false })).rejects.toBeInstanceOf(ApiError);
 		await expect(getMe('other-token')).rejects.toBeInstanceOf(ApiError);
 		expect(getSessionToken()).toBe(TOKEN);
 		expect(cleared).not.toHaveBeenCalled();
@@ -329,12 +328,20 @@ describe('endpoint functions', () => {
 		expectCall('/api/v1/trades/7', 'DELETE');
 	});
 
-	it('a 401 on change-password or delete-account (wrong password) keeps the session', async () => {
+	it('a wrong password (400) keeps the session; an invalid or expired token (401) logs out', async () => {
 		setSessionToken(TOKEN);
-		mockFetch(() => json({ detail: 'Invalid password' }, 401));
-		await expect(changePassword('x', 'y')).rejects.toMatchObject({ status: 401 });
-		await expect(deleteAccount('x')).rejects.toMatchObject({ status: 401 });
+		mockFetch(() => json({ detail: 'Current password is incorrect' }, 400));
+		await expect(changePassword('x', 'y')).rejects.toMatchObject({ status: 400 });
+		await expect(deleteAccount('x')).rejects.toMatchObject({ status: 400 });
 		expect(getSessionToken()).toBe(TOKEN);
+
+		mockFetch(() => json({ detail: 'Invalid or expired token' }, 401));
+		await expect(changePassword('x', 'y')).rejects.toMatchObject({ status: 401 });
+		expect(getSessionToken()).toBeNull();
+
+		setSessionToken(TOKEN);
+		await expect(deleteAccount('x')).rejects.toMatchObject({ status: 401 });
+		expect(getSessionToken()).toBeNull();
 	});
 
 	it('streams send the bearer header and put no token in the URL', async () => {

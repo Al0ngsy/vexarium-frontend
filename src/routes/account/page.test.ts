@@ -130,7 +130,7 @@ describe('/account', () => {
 		});
 
 		it('keeps the dialog and the session after a wrong password', async () => {
-			extra = (c) => (c.method === 'DELETE' ? jsonResponse({ detail: 'Incorrect password' }, 401) : undefined);
+			extra = (c) => (c.method === 'DELETE' ? jsonResponse({ detail: 'Incorrect password' }, 400) : undefined);
 			await open({});
 			buttonByText(/delete account…/i, target).click();
 			flushSync();
@@ -139,6 +139,17 @@ describe('/account', () => {
 			await vi.waitFor(() => expect(dialog()!.textContent).toContain('Incorrect password'));
 			expect(getToken()).toBe('tok');
 			expect(goto).not.toHaveBeenCalled();
+		});
+
+		it('logs out and sends the user to login when the token is invalid or expired (401)', async () => {
+			extra = (c) => (c.method === 'DELETE' ? jsonResponse({ detail: 'Invalid or expired token' }, 401) : undefined);
+			await open({});
+			buttonByText(/delete account…/i, target).click();
+			flushSync();
+			type(dialog()!, 'input', 'pw');
+			submit(dialog()!.querySelector('form'));
+			await vi.waitFor(() => expect(getToken()).toBeNull());
+			await vi.waitFor(() => expect(goto).toHaveBeenCalledWith('/login?next=%2Faccount', { replaceState: true }));
 		});
 
 		it('deletes the account with the password, logs out and leaves', async () => {

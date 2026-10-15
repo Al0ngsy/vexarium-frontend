@@ -171,6 +171,10 @@ export function computePatternFlags(
 		const f = flipVsPrice(byT(psar.points), "PSAR", true);
 		if (f) flags.push(f);
 	}
+	// Direction follows the backend's RSI verdict (indicator_engine._rsi_verdict),
+	// which is contrarian: below 30 strong buy, below 40 buy, 60-70 sell, 70+ strong
+	// sell. Both 30 crossings stay in the buy zone (<40), both 70 crossings in the
+	// sell zone (>=60).
 	const rsi = series.find((s) => s.name.toUpperCase().includes("RSI"));
 	if (rsi) {
 		const v = rsi.points
@@ -184,11 +188,11 @@ export function computePatternFlags(
 				break;
 			}
 			if (prev > 70 && cur <= 70) {
-				flags.push({ label: "RSI crossed below 70, leaving overbought", dir: "bullish", ago: v.length - 1 - i });
+				flags.push({ label: "RSI crossed below 70, leaving overbought", dir: "bearish", ago: v.length - 1 - i });
 				break;
 			}
 			if (prev > 30 && cur <= 30) {
-				flags.push({ label: "RSI crossed below 30 into oversold", dir: "bearish", ago: v.length - 1 - i });
+				flags.push({ label: "RSI crossed below 30 into oversold", dir: "bullish", ago: v.length - 1 - i });
 				break;
 			}
 			if (prev < 70 && cur >= 70) {

@@ -124,6 +124,20 @@ describe('computePatternFlags', () => {
 		});
 	});
 
+	describe('RSI flags follow the backend verdict (below 40 buy, 60 and up sell)', () => {
+		const rsiFlag = (vals: number[]) =>
+			computePatternFlags(barsFrom(vals.map(() => 10)), analysis({ indicator_series: [{ name: 'RSI (14)', kind: 'oscillator', points: pts(vals) }] }));
+
+		it.each([
+			['crossing above 30, leaving oversold', [25, 31], 'RSI crossed above 30, leaving oversold', 'bullish'],
+			['crossing below 30 into oversold', [35, 28], 'RSI crossed below 30 into oversold', 'bullish'],
+			['crossing below 70, leaving overbought', [75, 68], 'RSI crossed below 70, leaving overbought', 'bearish'],
+			['crossing above 70 into overbought', [65, 72], 'RSI crossed above 70 into overbought', 'bearish']
+		])('%s', (_name, vals, label, dir) => {
+			expect(rsiFlag(vals)).toEqual([{ label, dir, ago: 0 }]);
+		});
+	});
+
 	it('flags a PSAR flip below price as bullish', () => {
 		// SAR above price, then below it from the 3rd bar on.
 		const a = analysis({

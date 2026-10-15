@@ -56,9 +56,6 @@ export interface RequestOptions {
 	 * `Authorization: Bearer` when there is one. string: use exactly this token
 	 * (e.g. verifying a fresh login before it is stored). */
 	auth?: boolean | string;
-	/** false: a 401 does not drop the stored session. For endpoints that answer
-	 * 401 for a wrong password the user just typed. Default true. */
-	logoutOn401?: boolean;
 	/** Prefix of ApiError.message, e.g. "Analysis failed". */
 	label?: string;
 	cache?: RequestCache;
@@ -87,7 +84,7 @@ function detailOf(payload: unknown): string | null {
 
 /** Fetch with auth header + error mapping; returns the raw (ok) response. */
 async function send(path: string, opts: RequestOptions = {}): Promise<Response> {
-	const { method = 'GET', body, query, signal, auth = false, logoutOn401 = true, label = 'Request failed', cache } = opts;
+	const { method = 'GET', body, query, signal, auth = false, label = 'Request failed', cache } = opts;
 	const explicit = typeof auth === 'string' ? auth : null;
 	const token = explicit ?? (auth ? getSessionToken() : null);
 
@@ -112,7 +109,7 @@ async function send(path: string, opts: RequestOptions = {}): Promise<Response> 
 	}
 	// A rejected stored token means the session is gone: log out. An explicit
 	// token (fresh login being verified) is the caller's business.
-	if (resp.status === 401 && token && explicit === null && logoutOn401) clearSessionToken();
+	if (resp.status === 401 && token && explicit === null) clearSessionToken();
 	throw new ApiError(`${label}: ${detail ?? resp.status}`, resp.status, detail);
 }
 
@@ -212,7 +209,6 @@ export function changePassword(currentPassword: string, newPassword: string): Pr
 		method: 'POST',
 		body: { current_password: currentPassword, new_password: newPassword },
 		auth: true,
-		logoutOn401: false,
 		label: 'Password change failed'
 	});
 }
@@ -222,7 +218,6 @@ export function deleteAccount(password: string): Promise<void> {
 		method: 'DELETE',
 		body: { password },
 		auth: true,
-		logoutOn401: false,
 		label: 'Account deletion failed'
 	});
 }
