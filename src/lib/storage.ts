@@ -25,6 +25,26 @@ export function deleteTrade(id: string): void {
 	localStorage.setItem(KEY, JSON.stringify(trades));
 }
 
+const UPLOAD_OFFER_KEY = 'vexarium_trades_offer_dismissed';
+
+/** The one-time "upload your local trades to your account" offer was answered. */
+export function isUploadOfferDismissed(): boolean {
+	if (typeof localStorage === 'undefined') return false;
+	try {
+		return localStorage.getItem(UPLOAD_OFFER_KEY) === '1';
+	} catch {
+		return false;
+	}
+}
+
+export function dismissUploadOffer(): void {
+	try {
+		localStorage.setItem(UPLOAD_OFFER_KEY, '1');
+	} catch {
+		// storage unavailable: the offer may reappear, nothing worse
+	}
+}
+
 export interface RecentAnalysis {
 	symbol: string;
 	assetType: AssetType;

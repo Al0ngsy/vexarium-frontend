@@ -1,16 +1,17 @@
 <script lang="ts">
 	import type { SavedTrade, StanceResponse } from '$lib/types';
-	import { deleteTrade } from '$lib/storage';
 	import { STANCE_COLORS, STANCE_LABELS } from '$lib/verdict';
 
 	let {
 		trade,
 		stance,
-		loading
+		loading,
+		onremove
 	}: {
 		trade: SavedTrade;
 		stance: StanceResponse | null;
 		loading: boolean;
+		onremove: (trade: SavedTrade) => void;
 	} = $props();
 
 	const typeLabels: Record<SavedTrade['type'], string> = {
@@ -25,10 +26,7 @@
 	let pnlColor = $derived(pnlPct >= 0 ? '#34d399' : '#f87171');
 
 	function onRemove() {
-		if (confirm(`Remove ${trade.symbol} from portfolio?`)) {
-			deleteTrade(trade.id);
-			window.location.reload();
-		}
+		if (confirm(`Remove ${trade.symbol} from portfolio?`)) onremove(trade);
 	}
 </script>
 
