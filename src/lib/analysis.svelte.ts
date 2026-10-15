@@ -125,6 +125,8 @@ export class AnalysisStore {
 		return this.#compareSymbol;
 	}
 	set compareSymbol(cs: string) {
+		// Comparing against the symbol itself makes no sense; fall back to SPY.
+		if (cs === this.symbol) cs = "SPY";
 		if (cs === this.#compareSymbol) return;
 		this.#compareSymbol = cs;
 		if (this.#active) this.#startCompare();
