@@ -34,10 +34,6 @@
 	}
 </script>
 
-<svelte:head>
-	<title>VEXARIUM — PRICING</title>
-</svelte:head>
-
 <div class="mx-auto max-w-5xl">
 	<DisclaimerBanner />
 

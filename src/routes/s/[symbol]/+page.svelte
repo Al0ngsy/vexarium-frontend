@@ -55,10 +55,6 @@
   }
 </script>
 
-<svelte:head>
-  <title>VEXARIUM: {symbol} analysis</title>
-</svelte:head>
-
 <div>
   <DisclaimerBanner />
 

@@ -26,14 +26,6 @@
 	);
 </script>
 
-<svelte:head>
-	<title>Glossary — VEXARIUM</title>
-	<meta
-		name="description"
-		content="Every technical term VEXARIUM shows, explained in plain English: indicators, greeks, options, strategies, portfolio terms and market metrics."
-	/>
-</svelte:head>
-
 <div class="gloss-grid">
 	<!-- Sticky sidebar: group index, desktop only. -->
 	<nav class="side" aria-label="Glossary groups">

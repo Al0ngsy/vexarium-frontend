@@ -11,7 +11,7 @@
 </script>
 
 <svelte:head>
-	<title>{title}</title>
+	<title>{title} — VEXARIUM</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl py-8">

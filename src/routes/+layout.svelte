@@ -1,12 +1,17 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+	import { page } from "$app/state";
 	import favicon from "$lib/assets/favicon.svg";
 	import { wakeUp } from "$lib/api";
+	import { DEFAULT_SEO } from "$lib/seo";
 	import "../app.css";
 	import TopBar from "../components/TopBar.svelte";
 	import ConsentBanner from "../components/ConsentBanner.svelte";
 
 	let { children } = $props();
+
+	// Pages provide `seo` from their load function; everything else gets the default.
+	const seo = $derived(page.data.seo ?? DEFAULT_SEO);
 
 	// Render free tier sleeps after ~15 min of inactivity and cold-starts on the
 	// first request. Ping /health on load and whenever the tab regains focus so
@@ -23,11 +28,13 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>VEXARIUM</title>
-	<meta
-		name="description"
-		content="VEXARIUM — check before you buy or sell. Technical indicator and options analysis. Informational only, not financial advice."
-	/>
+	<title>{seo.title}</title>
+	<meta name="description" content={seo.description} />
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content="VEXARIUM" />
+	<meta property="og:title" content={seo.title} />
+	<meta property="og:description" content={seo.description} />
+	<meta name="twitter:card" content="summary" />
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">

@@ -86,10 +86,6 @@
 	};
 </script>
 
-<svelte:head>
-	<title>VEXARIUM · {symbol} OPTIONS</title>
-</svelte:head>
-
 <div>
 	<DisclaimerBanner />
 
